@@ -585,7 +585,7 @@ function FirstAidGuide() {
           <div className="modal-content">
             <h2>Emergency Services</h2>
             <p>In case of a medical emergency, call:</p>
-            <a href="tel:911" className="emergency-call-button">Call 911</a>
+            <a href="tel:108" className="emergency-call-button">Call 108</a>
             <p>Poison Control Center: <a href="tel:18002221222">1-800-222-1222</a></p>
             <button className="close-modal-button" onClick={() => setCallModalOpen(false)}>Close</button>
           </div>
