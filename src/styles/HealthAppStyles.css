@@ -1,0 +1,40 @@
+/* HealthAppStyles.css */
+
+.page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(145deg, #f0f4f8, #d9e2ec);
+    padding: 40px 20px;
+  }
+  
+  .card {
+    background-color: #ffffff;
+    padding: 30px 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    max-width: 700px;
+    width: 100%;
+    text-align: center;
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .card:hover {
+    transform: translateY(-4px);
+  }
+  
+  .card h1 {
+    color: #1e3a8a;
+    font-size: 32px;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+  
+  .card p {
+    font-size: 18px;
+    color: #4b5563;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  

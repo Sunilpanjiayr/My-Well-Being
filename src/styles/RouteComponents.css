@@ -1,0 +1,141 @@
+/* src/styles/RouteComponents.css */
+
+/* This CSS targets the Route components as shown in the screenshot */
+
+.Route {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    position: relative;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .Route::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background-color: transparent;
+    transition: width 0.2s ease-in-out;
+  }
+  
+  .Route:hover::before {
+    width: 6px;
+  }
+  
+  .Route[path="water-tracker"]::before {
+    background-color: #4299e1; /* Blue */
+  }
+  
+  .Route[path="exercise"]::before {
+    background-color: #48bb78; /* Green */
+  }
+  
+  .Route[path="symptoms"]::before {
+    background-color: #ed8936; /* Orange */
+  }
+  
+  .Route[path="forum"]::before {
+    background-color: #9f7aea; /* Purple */
+  }
+  
+  .Route[path="sleep"]::before {
+    background-color: #667eea; /* Indigo */
+  }
+  
+  .Route[path="challenges"]::before {
+    background-color: #f56565; /* Red */
+  }
+  
+  .Route[path="health-tracker"]::before {
+    background-color: #38b2ac; /* Teal */
+  }
+  
+  .Route[path="medicine-reminders"]::before {
+    background-color: #d53f8c; /* Pink */
+  }
+  
+  .Route[path="doctor-consultation"]::before {
+    background-color: #805ad5; /* Purple */
+  }
+  
+  .Route[path="mental-wellness"]::before {
+    background-color: #6b46c1; /* Violet */
+  }
+  
+  .Route[path="first-aid"]::before {
+    background-color: #dd6b20; /* Orange */
+  }
+  
+  .Route[path="recipes"]::before {
+    background-color: #319795; /* Teal */
+  }
+  
+  /* Style for the Route element prop */
+  .Route-element {
+    margin-left: 10px;
+    font-weight: 500;
+    color: #4a5568;
+    transition: color 0.2s ease;
+  }
+  
+  .dark .Route-element {
+    color: #e2e8f0;
+  }
+  
+  .Route:hover .Route-element {
+    color: #2d3748;
+  }
+  
+  .dark .Route:hover .Route-element {
+    color: #f7fafc;
+  }
+  
+  /* Active route styling */
+  .Route.active {
+    background-color: #ebf8ff;
+  }
+  
+  .dark .Route.active {
+    background-color: #2c3e50;
+  }
+  
+  .Route.active .Route-element {
+    color: #3182ce;
+    font-weight: 600;
+  }
+  
+  .dark .Route.active .Route-element {
+    color: #63b3ed;
+  }
+  
+  /* Route with icons styling */
+  .Route .icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+    color: #718096;
+  }
+  
+  .dark .Route .icon {
+    color: #a0aec0;
+  }
+  
+  .Route:hover .icon {
+    color: #4a5568;
+  }
+  
+  .dark .Route:hover .icon {
+    color: #e2e8f0;
+  }
+  
+  .Route.active .icon {
+    color: #3182ce;
+  }
+  
+  .dark .Route.active .icon {
+    color: #63b3ed;
+  }

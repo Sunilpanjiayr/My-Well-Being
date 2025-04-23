@@ -1,0 +1,208 @@
+/* src/styles/Dashboard.css */
+
+/* Main dashboard layout */
+.dashboard-page {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    color: #333;
+  }
+  
+  .dashboard-page.dark {
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+  }
+  
+  .dashboard-sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .dashboard-content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 20px;
+  }
+  
+  /* Route components styling based on screenshot */
+  .Route {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark .Route {
+    background-color: #2d2d2d;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .Route:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Individual feature styling */
+  .Route[path="water-tracker"] {
+    border-left: 4px solid #4299e1; /* Blue */
+  }
+  
+  .Route[path="exercise"] {
+    border-left: 4px solid #48bb78; /* Green */
+  }
+  
+  .Route[path="symptoms"] {
+    border-left: 4px solid #ed8936; /* Orange */
+  }
+  
+  .Route[path="forum"] {
+    border-left: 4px solid #9f7aea; /* Purple */
+  }
+  
+  .Route[path="sleep"] {
+    border-left: 4px solid #667eea; /* Indigo */
+  }
+  
+  .Route[path="challenges"] {
+    border-left: 4px solid #f56565; /* Red */
+  }
+  
+  .Route[path="health-tracker"] {
+    border-left: 4px solid #38b2ac; /* Teal */
+  }
+  
+  .Route[path="medicine-reminders"] {
+    border-left: 4px solid #d53f8c; /* Pink */
+  }
+  
+  .Route[path="doctor-consultation"] {
+    border-left: 4px solid #805ad5; /* Purple */
+  }
+  
+  .Route[path="mental-wellness"] {
+    border-left: 4px solid #6b46c1; /* Violet */
+  }
+  
+  .Route[path="first-aid"] {
+    border-left: 4px solid #dd6b20; /* Orange */
+  }
+  
+  .Route[path="recipes"] {
+    border-left: 4px solid #319795; /* Teal */
+  }
+  
+  /* Feature component containers */
+  .DashboardHome, .HealthTracker, .MedicineReminders, 
+  .DoctorConsultation, .MentalWellness, .FirstAidGuide, 
+  .HealthyRecipes, .WaterTracker, .ExerciseRoutines, 
+  .SymptomChecker, .CommunityForum, .SleepTracker, .DailyChallenges {
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+  }
+  
+  .dark .DashboardHome, .dark .HealthTracker, .dark .MedicineReminders, 
+  .dark .DoctorConsultation, .dark .MentalWellness, .dark .FirstAidGuide, 
+  .dark .HealthyRecipes, .dark .WaterTracker, .dark .ExerciseRoutines, 
+  .dark .SymptomChecker, .dark .CommunityForum, .dark .SleepTracker, .dark .DailyChallenges {
+    background-color: #2d2d2d;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Navigate component styling */
+  .Navigate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-radius: 6px;
+    background-color: #e2e8f0;
+    text-align: center;
+    font-weight: 500;
+    margin-top: 16px;
+    color: #4a5568;
+    transition: background-color 0.2s ease;
+  }
+  
+  .dark .Navigate {
+    background-color: #3a3a3a;
+    color: #e2e8f0;
+  }
+  
+  .Navigate:hover {
+    background-color: #cbd5e0;
+  }
+  
+  .dark .Navigate:hover {
+    background-color: #4a5568;
+  }
+  
+  /* Route element styling */
+  .Route > div {
+    margin-left: 10px;
+  }
+  
+  .Route > svg {
+    color: #4a5568;
+    font-size: 1.25rem;
+  }
+  
+  .dark .Route > svg {
+    color: #e2e8f0;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .dashboard-sidebar {
+      width: 0;
+      overflow: hidden;
+      transition: width 0.3s ease;
+    }
+    
+    .dashboard-sidebar.open {
+      width: 250px;
+    }
+    
+    .dashboard-content {
+      margin-left: 0;
+      transition: margin-left 0.3s ease;
+    }
+    
+    .dashboard-content.sidebar-open {
+      margin-left: 250px;
+    }
+    
+    .mobile-menu-toggle {
+      display: block;
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 20;
+      background-color: #ffffff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+    }
+    
+    .dark .mobile-menu-toggle {
+      background-color: #2d2d2d;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+  }

@@ -1,0 +1,109 @@
+/* src/styles/CustomRouteLink.css */
+
+.custom-route {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #4a5568;
+    background-color: white;
+    border-left: 4px solid transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .custom-route.dark {
+    background-color: #2d2d2d;
+    color: #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .custom-route:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .custom-route.dark:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .route-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .route-icon {
+    margin-right: 12px;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .route-label {
+    font-weight: 500;
+  }
+  
+  /* Active route styling */
+  .custom-route.active {
+    background-color: #ebf8ff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+  }
+  
+  .custom-route.active.dark {
+    background-color: #2c3e50;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Custom route colors based on path */
+  .custom-route[href*="water-tracker"] {
+    border-left-color: #4299e1; /* Blue */
+  }
+  
+  .custom-route[href*="exercise"] {
+    border-left-color: #48bb78; /* Green */
+  }
+  
+  .custom-route[href*="symptoms"] {
+    border-left-color: #ed8936; /* Orange */
+  }
+  
+  .custom-route[href*="forum"] {
+    border-left-color: #9f7aea; /* Purple */
+  }
+  
+  .custom-route[href*="sleep"] {
+    border-left-color: #667eea; /* Indigo */
+  }
+  
+  .custom-route[href*="challenges"] {
+    border-left-color: #f56565; /* Red */
+  }
+  
+  .custom-route[href*="health-tracker"] {
+    border-left-color: #38b2ac; /* Teal */
+  }
+  
+  .custom-route[href*="medicine-reminders"] {
+    border-left-color: #d53f8c; /* Pink */
+  }
+  
+  .custom-route[href*="doctor-consultation"] {
+    border-left-color: #805ad5; /* Purple */
+  }
+  
+  .custom-route[href*="mental-wellness"] {
+    border-left-color: #6b46c1; /* Violet */
+  }
+  
+  .custom-route[href*="first-aid"] {
+    border-left-color: #dd6b20; /* Orange */
+  }
+  
+  .custom-route[href*="recipes"] {
+    border-left-color: #319795; /* Teal */
+  }

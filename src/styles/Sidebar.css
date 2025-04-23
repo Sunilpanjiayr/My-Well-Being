@@ -1,0 +1,399 @@
+/* src/styles/Sidebar.css */
+
+/* Sidebar base styling */
+.sidebar {
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    overflow: hidden;
+  }
+  
+  .sidebar.expanded {
+    width: 260px;
+  }
+  
+  .sidebar.collapsed {
+    width: 70px;
+  }
+  
+  .sidebar.dark {
+    background-color: #1e1e2d;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    color: #e2e8f0;
+  }
+  
+  /* Sidebar header */
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid #edf2f7;
+  }
+  
+  .sidebar.dark .sidebar-header {
+    border-bottom: 1px solid #2d3748;
+  }
+  
+  .app-logo {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo-icon {
+    font-size: 24px;
+    margin-right: 12px;
+  }
+  
+  .app-logo h1 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+    color: #2d3748;
+    white-space: nowrap;
+  }
+  
+  .sidebar.dark .app-logo h1 {
+    color: #e2e8f0;
+  }
+  
+  .toggle-button {
+    background: none;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #718096;
+    background-color: #f7fafc;
+    transition: all 0.2s ease;
+  }
+  
+  .sidebar.dark .toggle-button {
+    color: #a0aec0;
+    background-color: #2d3748;
+  }
+  
+  .toggle-button:hover {
+    background-color: #edf2f7;
+    color: #4a5568;
+  }
+  
+  .sidebar.dark .toggle-button:hover {
+    background-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  /* User profile */
+  .user-profile {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #edf2f7;
+  }
+  
+  .sidebar.dark .user-profile {
+    border-bottom: 1px solid #2d3748;
+  }
+  
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #3182ce;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-right: 12px;
+  }
+  
+  .user-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .user-info h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2d3748;
+  }
+  
+  .sidebar.dark .user-info h3 {
+    color: #e2e8f0;
+  }
+  
+  .user-info p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #718096;
+  }
+  
+  .sidebar.dark .user-info p {
+    color: #a0aec0;
+  }
+  
+  /* Menu content */
+  .sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px 0;
+  }
+  
+  .sidebar-content::-webkit-scrollbar {
+    width: 5px;
+  }
+  
+  .sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .sidebar-content::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 20px;
+  }
+  
+  .sidebar.dark .sidebar-content::-webkit-scrollbar-thumb {
+    background-color: #4a5568;
+  }
+  
+  .menu-category {
+    margin-bottom: 20px;
+  }
+  
+  .menu-category h4 {
+    padding: 0 20px;
+    margin: 10px 0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #a0aec0;
+    font-weight: 600;
+  }
+  
+  .sidebar.dark .menu-category h4 {
+    color: #718096;
+  }
+  
+  .menu-items {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    color: #4a5568;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+    margin: 2px 0;
+  }
+  
+  .sidebar.dark .menu-item {
+    color: #e2e8f0;
+  }
+  
+  .menu-item:hover {
+    background-color: #f7fafc;
+    color: #3182ce;
+  }
+  
+  .sidebar.dark .menu-item:hover {
+    background-color: #2d3748;
+    color: #63b3ed;
+  }
+  
+  .menu-item.active {
+    background-color: #ebf8ff;
+    color: #3182ce;
+    font-weight: 500;
+    border-left-color: #3182ce;
+  }
+  
+  .sidebar.dark .menu-item.active {
+    background-color: #2c5282;
+    color: #63b3ed;
+    border-left-color: #63b3ed;
+  }
+  
+  .menu-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 1.2rem;
+  }
+  
+  .collapsed .menu-icon {
+    margin-right: 0;
+  }
+  
+  /* Sidebar footer */
+  .sidebar-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #edf2f7;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .sidebar.dark .sidebar-footer {
+    border-top: 1px solid #2d3748;
+  }
+  
+  .theme-toggle, .logout-button {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background-color: transparent;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+  }
+  
+  .sidebar.dark .theme-toggle, .sidebar.dark .logout-button {
+    color: #e2e8f0;
+  }
+  
+  .theme-toggle:hover, .logout-button:hover {
+    background-color: #f7fafc;
+    color: #3182ce;
+  }
+  
+  .sidebar.dark .theme-toggle:hover, .sidebar.dark .logout-button:hover {
+    background-color: #2d3748;
+    color: #63b3ed;
+  }
+  
+  .logout-button {
+    color: #e53e3e;
+  }
+  
+  .sidebar.dark .logout-button {
+    color: #fc8181;
+  }
+  
+  .logout-button:hover {
+    color: #c53030;
+    background-color: #fff5f5;
+  }
+  
+  .sidebar.dark .logout-button:hover {
+    color: #feb2b2;
+    background-color: #3d2a2a;
+  }
+  
+  /* Collapsed state specific styling */
+  .sidebar.collapsed .menu-category h4,
+  .sidebar.collapsed .user-info,
+  .sidebar.collapsed .menu-item span,
+  .sidebar.collapsed .theme-toggle span,
+  .sidebar.collapsed .logout-button span {
+    display: none;
+  }
+  
+  .sidebar.collapsed .menu-item {
+    justify-content: center;
+    padding: 12px 0;
+  }
+  
+  .sidebar.collapsed .theme-toggle,
+  .sidebar.collapsed .logout-button {
+    justify-content: center;
+  }
+  
+  .sidebar.collapsed .menu-icon {
+    margin-right: 0;
+  }
+  
+  /* Responsive styling */
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    
+    .sidebar.expanded {
+      transform: translateX(0);
+      width: 260px;
+    }
+    
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+  }
+  
+  /* Tooltip for collapsed state */
+  .sidebar.collapsed .menu-item::after,
+  .sidebar.collapsed .theme-toggle::after,
+  .sidebar.collapsed .logout-button::after {
+    content: attr(title);
+    position: absolute;
+    left: 70px;
+    padding: 5px 10px;
+    background-color: #4a5568;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+    z-index: 1001;
+  }
+  
+  .sidebar.collapsed .menu-item:hover::after,
+  .sidebar.collapsed .theme-toggle:hover::after,
+  .sidebar.collapsed .logout-button:hover::after {
+    opacity: 1;
+  }
+  
+  /* Animation effects */
+  @keyframes slideIn {
+    from {
+      transform: translateX(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  .menu-item, .theme-toggle, .logout-button {
+    animation: slideIn 0.3s ease forwards;
+  }
+  
+  .menu-item:nth-child(1) { animation-delay: 0.05s; }
+  .menu-item:nth-child(2) { animation-delay: 0.1s; }
+  .menu-item:nth-child(3) { animation-delay: 0.15s; }
+  .menu-item:nth-child(4) { animation-delay: 0.2s; }
+  .menu-item:nth-child(5) { animation-delay: 0.25s; }
+  .menu-item:nth-child(6) { animation-delay: 0.3s; }
+  .menu-item:nth-child(7) { animation-delay: 0.35s; }
+  .menu-item:nth-child(8) { animation-delay: 0.4s; }
+  .menu-item:nth-child(9) { animation-delay: 0.45s; }
+  .menu-item:nth-child(10) { animation-delay: 0.5s; }
+  .menu-item:nth-child(11) { animation-delay: 0.55s; }
+  .menu-item:nth-child(12) { animation-delay: 0.6s; }
+  .theme-toggle { animation-delay: 0.65s; }
+  .logout-button { animation-delay: 0.7s; }

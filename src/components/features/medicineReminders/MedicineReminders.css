@@ -1,0 +1,1508 @@
+/* src/components/features/medicineReminders/MedicineReminders.css */
+
+.medicine-reminders {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .medicine-reminders.dark-mode {
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Header Styles */
+  .medicine-reminder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .dark-mode .medicine-reminder-header {
+    border-bottom-color: #333;
+  }
+  
+  .header-content h1 {
+    font-size: 28px;
+    margin: 0;
+    color: #2c3e50;
+  }
+  
+  .dark-mode .header-content h1 {
+    color: #e0e0e0;
+  }
+  
+  .header-content p {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin: 5px 0 0;
+  }
+  
+  .dark-mode .header-content p {
+    color: #aaa;
+  }
+  
+  .add-medication-button {
+    display: flex;
+    align-items: center;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .add-medication-button:hover {
+    background-color: #3a7bc8;
+  }
+  
+  .medication-icon {
+    margin-right: 8px;
+    font-size: 18px;
+  }
+  
+  /* Tabs Styles */
+  .tabs {
+    display: flex;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark-mode .tabs {
+    background-color: #2a2a2a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .tabs button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #7f8c8d;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .dark-mode .tabs button {
+    color: #aaa;
+  }
+  
+  .tabs button:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .dark-mode .tabs button:hover {
+    background-color: #333;
+  }
+  
+  .tabs button.active {
+    color: #4a90e2;
+    border-bottom: 3px solid #4a90e2;
+    background-color: rgba(74, 144, 226, 0.05);
+  }
+  
+  .dark-mode .tabs button.active {
+    background-color: rgba(74, 144, 226, 0.1);
+  }
+  
+  /* Tab Content */
+  .tab-content {
+    min-height: 500px;
+  }
+  
+  /* Medications Tab */
+  .medications-tab {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark-mode .medications-tab {
+    background-color: #2a2a2a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .search-filter-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .search-box {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+  }
+  
+  .search-box input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  .dark-mode .search-box input {
+    background-color: #333;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+  
+  .clear-search {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #7f8c8d;
+    cursor: pointer;
+    font-size: 18px;
+  }
+  
+  /* Medication Cards Grid */
+  .medications-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .medication-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .dark-mode .medication-card {
+    background-color: #333;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  .medication-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark-mode .medication-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  .medication-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .medication-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  .medication-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: #2c3e50;
+    flex: 1;
+  }
+  
+  .dark-mode .medication-name {
+    color: #f0f0f0;
+  }
+  
+  .refill-indicator {
+    background-color: #e74c3c;
+    color: white;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 10px;
+  }
+  
+  .medication-dosage {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+  }
+  
+  .dark-mode .medication-dosage {
+    color: #aaa;
+  }
+  
+  .medication-frequency {
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+  }
+  
+  .dark-mode .medication-frequency {
+    color: #aaa;
+  }
+  
+  .medication-reminders {
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-bottom: 15px;
+  }
+  
+  .dark-mode .medication-reminders {
+    color: #aaa;
+  }
+  
+  .reminders-count {
+    color: #27ae60;
+  }
+  
+  .dark-mode .reminders-count {
+    color: #2ecc71;
+  }
+  
+  .no-reminders {
+    color: #e74c3c;
+  }
+  
+  .dark-mode .no-reminders {
+    color: #ff6b6b;
+  }
+  
+  .view-details {
+    width: 100%;
+    background-color: #f5f5f5;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    color: #4a90e2;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .view-details:hover {
+    background-color: #e5e5e5;
+  }
+  
+  .dark-mode .view-details {
+    background-color: #333;
+    color: #5d9cec;
+  }
+  
+  .dark-mode .view-details:hover {
+    background-color: #3a3a3a;
+  }
+  
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+  }
+  
+  .empty-state h3 {
+    color: #2c3e50;
+    margin: 0 0 10px;
+  }
+  
+  .dark-mode .empty-state h3 {
+    color: #f0f0f0;
+  }
+  
+  .empty-state p {
+    color: #7f8c8d;
+    margin: 0 0 20px;
+  }
+  
+  .dark-mode .empty-state p {
+    color: #aaa;
+  }
+  
+  /* Medication Details */
+  .medication-details {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark-mode .medication-details {
+    background-color: #2a2a2a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .back-button {
+    background: none;
+    border: none;
+    color: #4a90e2;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  
+  .back-button:hover {
+    text-decoration: underline;
+  }
+  
+  .medication-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .edit-button, .delete-button {
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .edit-button {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #333;
+  }
+  
+  .dark-mode .edit-button {
+    background-color: #333;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+  
+  .delete-button {
+    background-color: #e74c3c;
+    border: none;
+    color: white;
+  }
+  
+  .medication-title-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .medication-color-indicator {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 15px;
+  }
+  
+  .medication-title-content {
+    flex: 1;
+  }
+  
+  .medication-title-content h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 22px;
+  }
+  
+  .dark-mode .medication-title-content h2 {
+    color: #f0f0f0;
+  }
+  
+  .medication-category-tag {
+    display: inline-block;
+    background-color: #f5f5f5;
+    color: #7f8c8d;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+  }
+  
+  .dark-mode .medication-category-tag {
+    background-color: #333;
+    color: #aaa;
+  }
+  
+  .medication-info-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .dark-mode .medication-info-card {
+    background-color: #333;
+  }
+  
+  .medication-info-card h3 {
+    margin: 0 0 15px;
+    color: #2c3e50;
+    font-size: 16px;
+  }
+  
+  .dark-mode .medication-info-card h3 {
+    color: #f0f0f0;
+  }
+  
+  .info-row {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  
+  .info-label {
+    width: 120px;
+    color: #7f8c8d;
+    font-size: 14px;
+  }
+  
+  .dark-mode .info-label {
+    color: #aaa;
+  }
+  
+  .info-value {
+    flex: 1;
+    color: #2c3e50;
+    font-size: 14px;
+  }
+  
+  .dark-mode .info-value {
+    color: #f0f0f0;
+  }
+  
+  .refill-needed {
+    color: #e74c3c;
+  }
+  
+  .dark-mode .refill-needed {
+    color: #ff6b6b;
+  }
+  
+  .refill-badge {
+    background-color: #e74c3c;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 10px;
+  }
+  
+  .notes-value {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .dark-mode .notes-value {
+    color: #bbb;
+  }
+  
+  /* Reminders Section */
+  .medication-reminders-section {
+    margin-top: 30px;
+  }
+  
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .section-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 18px;
+  }
+  
+  .dark-mode .section-header h3 {
+    color: #f0f0f0;
+  }
+  
+  .add-reminder-button {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .add-reminder-button:hover {
+    background-color: #3a7bc8;
+  }
+  
+  .reminder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .reminder-item {
+    display: flex;
+    align-items: center;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    padding: 12px 15px;
+  }
+  
+  .dark-mode .reminder-item {
+    background-color: #333;
+  }
+  
+  .reminder-item.disabled {
+    opacity: 0.6;
+  }
+  
+  .reminder-time {
+    width: 80px;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .dark-mode .reminder-time {
+    color: #f0f0f0;
+  }
+  
+  .reminder-info {
+    flex: 1;
+  }
+  
+  .reminder-days {
+    color: #7f8c8d;
+    font-size: 13px;
+  }
+  
+  .dark-mode .reminder-days {
+    color: #aaa;
+  }
+  
+  .reminder-notes {
+    color: #7f8c8d;
+    font-size: 12px;
+    margin-top: 3px;
+    font-style: italic;
+  }
+  
+  .dark-mode .reminder-notes {
+    color: #aaa;
+  }
+  
+  .reminder-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .delete-reminder {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .no-reminders-message {
+    text-align: center;
+    padding: 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    color: #7f8c8d;
+  }
+  
+  .dark-mode .no-reminders-message {
+    background-color: #333;
+    color: #aaa;
+  }
+  
+  .no-reminders-message p {
+    margin-bottom: 15px;
+  }
+  
+  /* Reminders Tab */
+  .reminders-tab {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark-mode .reminders-tab {
+    background-color: #2a2a2a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .actions-bar {
+    margin-bottom: 20px;
+  }
+  
+  .today-reminders-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .dark-mode .today-reminders-card {
+    background-color: #333;
+  }
+  
+  .today-reminders-card h3 {
+    margin: 0 0 15px;
+    color: #2c3e50;
+    font-size: 18px;
+  }
+  
+  .dark-mode .today-reminders-card h3 {
+    color: #f0f0f0;
+  }
+  
+  .today-reminders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .today-reminder-item {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark-mode .today-reminder-item {
+    background-color: #3a3a3a;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  .reminder-time-block {
+    width: 80px;
+  }
+  
+  .reminder-time {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 16px;
+  }
+  
+  .dark-mode .reminder-time {
+    color: #f0f0f0;
+  }
+  
+  .medication-color-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+  }
+  
+  .reminder-content {
+    flex: 1;
+    margin: 0 15px;
+  }
+  
+  .reminder-medication-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 3px;
+  }
+  
+  .dark-mode .reminder-medication-name {
+    color: #f0f0f0;
+  }
+  
+  .reminder-dosage {
+    color: #7f8c8d;
+    font-size: 14px;
+  }
+  
+  .dark-mode .reminder-dosage {
+    color: #aaa;
+  }
+  
+  .reminder-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .mark-taken-button, .skip-button {
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .mark-taken-button {
+    background-color: #27ae60;
+    border: none;
+    color: white;
+  }
+  
+  .skip-button {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    color: #333;
+  }
+  
+  .dark-mode .skip-button {
+    background-color: #333;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+  
+  .no-reminders-today {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+  }
+  
+  .dark-mode .no-reminders-today {
+    color: #aaa;
+  }
+  
+  .all-reminders-section h3 {
+    margin: 0 0 20px;
+    color: #2c3e50;
+    font-size: 18px;
+  }
+  
+  .dark-mode .all-reminders-section h3 {
+    color: #f0f0f0;
+  }
+  
+  .reminders-by-medication {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .medication-reminders-group {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+  }
+  
+  .dark-mode .medication-reminders-group {
+    background-color: #333;
+  }
+  
+  .medication-group-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .medication-color-block {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  .medication-group-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 16px;
+  }
+  
+  .dark-mode .medication-group-name {
+    color: #f0f0f0;
+  }
+  
+  .medication-reminders-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .reminder-list-item {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    border-radius: 6px;
+    padding: 10px 15px;
+  }
+  
+  .dark-mode .reminder-list-item {
+    background-color: #3a3a3a;
+  }
+  
+  .reminder-list-item.disabled {
+    opacity: 0.6;
+  }
+  
+  .reminder-list-item .reminder-time {
+    width: 80px;
+  }
+  
+  .reminder-list-item .reminder-days {
+    flex: 1;
+  }
+  
+  .delete-reminder-small {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  /* Schedule Tab */
+  .schedule-tab {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark-mode .schedule-tab {
+    background-color: #2a2a2a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .weekly-schedule h3 {
+    margin: 0 0 20px;
+    color: #2c3e50;
+    font-size: 18px;
+  }
+  
+  .dark-mode .weekly-schedule h3 {
+    color: #f0f0f0;
+  }
+  
+  .schedule-grid {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 30px;
+  }
+  
+  .schedule-header {
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .dark-mode .schedule-header {
+    border-bottom-color: #444;
+  }
+  
+  .time-column {
+    width: 120px;
+    color: #7f8c8d;
+    font-weight: 600;
+  }
+  
+  .day-column {
+    flex: 1;
+    text-align: center;
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  
+  .dark-mode .day-column {
+    color: #f0f0f0;
+  }
+  
+  .time-slot-row {
+    display: flex;
+    margin-bottom: 15px;
+  }
+  
+  .time-label {
+    width: 120px;
+    color: #7f8c8d;
+    font-size: 14px;
+    padding: 5px 0;
+  }
+  
+  .day-cell {
+    flex: 1;
+    min-height: 60px;
+    padding: 5px;
+  }
+  
+  .schedule-pill {
+    padding: 5px 8px;
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+  
+  .pill-time {
+    font-weight: 600;
+  }
+  
+  .pill-med {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .empty-schedule {
+    text-align: center;
+    padding: 40px 20px;
+  }
+  
+  .empty-schedule .empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+  }
+  
+  .empty-schedule h3 {
+    margin: 0 0 10px;
+    color: #2c3e50;
+  }
+  
+  .dark-mode .empty-schedule h3 {
+    color: #f0f0f0;
+  }
+  
+  .empty-schedule p {
+    margin: 0 0 20px;
+    color: #7f8c8d;
+  }
+  
+  .dark-mode .empty-schedule p {
+    color: #aaa;
+  }
+  
+  /* Refill Reminders */
+  .refill-reminders-section h3 {
+    margin: 0 0 20px;
+    color: #2c3e50;
+    font-size: 18px;
+  }
+  
+  .dark-mode .refill-reminders-section h3 {
+    color: #f0f0f0;
+  }
+  
+  .refill-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+  }
+  
+  .refill-card {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+  }
+  
+  .dark-mode .refill-card {
+    background-color: #333;
+  }
+  
+  .refill-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .refill-date {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
+  
+  .dark-mode .refill-date {
+    color: #aaa;
+  }
+  
+  .days-remaining {
+    font-weight: 600;
+    color: #27ae60;
+    margin-bottom: 5px;
+  }
+  
+  .days-remaining.urgent {
+    color: #e74c3c;
+  }
+  
+  .dark-mode .days-remaining.urgent {
+    color: #ff6b6b;
+  }
+  
+  .quantity-remaining {
+    color: #7f8c8d;
+    font-size: 14px;
+  }
+  
+  .dark-mode .quantity-remaining {
+    color: #aaa;
+  }
+  
+  .no-refills-message {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+  }
+  
+  .dark-mode .no-refills-message {
+    color: #aaa;
+  }
+  
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal {
+    background-color: #fff;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .dark-mode .modal {
+    background-color: #2a2a2a;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    color: #e0e0e0;
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .dark-mode .modal-header {
+    border-bottom-color: #444;
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 20px;
+  }
+  
+  .dark-mode .modal-header h2 {
+    color: #e0e0e0;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #7f8c8d;
+    cursor: pointer;
+  }
+  
+  .dark-mode .close-button {
+    color: #aaa;
+  }
+  
+  .close-button:hover {
+    color: #333;
+  }
+  
+  .dark-mode .close-button:hover {
+    color: #f0f0f0;
+  }
+  
+  /* Form Styles */
+  .form-section {
+    margin-bottom: 25px;
+  }
+  
+  .form-section h3 {
+    margin: 0 0 15px;
+    color: #2c3e50;
+    font-size: 16px;
+  }
+  
+  .dark-mode .form-section h3 {
+    color: #f0f0f0;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: #2c3e50;
+    font-weight: 500;
+  }
+  
+  .dark-mode .form-group label {
+    color: #e0e0e0;
+  }
+  
+  .form-row {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .form-row .form-group {
+    flex: 1;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #fff;
+  }
+  
+  .dark-mode .form-group input,
+  .dark-mode .form-group select,
+  .dark-mode .form-group textarea {
+    background-color: #333;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+  }
+  
+  .checkbox-group input {
+    width: auto;
+    margin-right: 10px;
+  }
+  
+  /* Day Selector */
+  .day-selector {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+  }
+  
+  .day-option {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background-color: #f5f5f5;
+    color: #2c3e50;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  
+  .dark-mode .day-option {
+    background-color: #333;
+    color: #e0e0e0;
+  }
+  
+  .day-option.selected {
+    background-color: #4a90e2;
+    color: white;
+  }
+  
+  /* Time Slots */
+  .time-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .time-slot {
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #2c3e50;
+    cursor: pointer;
+  }
+  
+  .dark-mode .time-slot {
+    background-color: #333;
+    color: #e0e0e0;
+  }
+  
+  .time-slot.active {
+    background-color: #4a90e2;
+    color: white;
+  }
+  
+  .custom-time-input {
+    margin-top: 10px;
+  }
+  
+  /* Toggle Switch */
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+  }
+  
+  .toggle-switch.small {
+    width: 40px;
+    height: 20px;
+  }
+  
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+  }
+  
+  .dark-mode .toggle-slider {
+    background-color: #555;
+  }
+  
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  
+  .toggle-switch.small .toggle-slider:before {
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+  }
+  
+  input:checked + .toggle-slider {
+    background-color: #4a90e2;
+  }
+  
+  input:focus + .toggle-slider {
+    box-shadow: 0 0 1px #4a90e2;
+  }
+  
+  input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+  }
+  
+  .toggle-switch.small input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+  }
+  
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 20px;
+  }
+  
+  /* Button Styles */
+  .primary-button {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .primary-button:hover {
+    background-color: #3a7bc8;
+  }
+  
+  .secondary-button {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .dark-mode .secondary-button {
+    background-color: #333;
+    color: #e0e0e0;
+    border-color: #444;
+  }
+  
+  .secondary-button:hover {
+    background-color: #e5e5e5;
+  }
+  
+  .dark-mode .secondary-button:hover {
+    background-color: #3a3a3a;
+  }
+  
+  /* No Results */
+  .no-results {
+    text-align: center;
+    padding: 30px;
+    color: #7f8c8d;
+  }
+  
+  .dark-mode .no-results {
+    color: #aaa;
+  }
+  
+  .no-results p {
+    margin-bottom: 15px;
+  }
+  
+  /* Disclaimer */
+  .medicine-disclaimer {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.6;
+  }
+  
+  .dark-mode .medicine-disclaimer {
+    background-color: #2d2d2d;
+    color: #aaa;
+  }
+  
+  .medicine-disclaimer strong {
+    color: #2c3e50;
+  }
+  
+  .dark-mode .medicine-disclaimer strong {
+    color: #f0f0f0;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .medicine-reminder-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+    }
+    
+    .add-medication-button {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    .medications-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .today-reminder-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .reminder-time-block {
+      margin-bottom: 10px;
+    }
+    
+    .reminder-content {
+      margin: 10px 0;
+    }
+    
+    .reminder-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    .modal {
+      width: 95%;
+      padding: 15px;
+    }
+    
+    .day-option {
+      width: 30px;
+      height: 30px;
+      font-size: 12px;
+    }
+    
+    .time-slots {
+      flex-direction: column;
+    }
+    
+    .time-slot {
+      width: 100%;
+      text-align: center;
+    }
+  }
