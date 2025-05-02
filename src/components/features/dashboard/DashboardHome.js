@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme } from '../../../contexts/ThemeContext';
+import Chatbot from '../chatbot/Chatbot'; // Import the Chatbot component
 import '../../../styles/DashboardHome.css';
 
 function DashboardHome() {
@@ -226,6 +227,9 @@ function DashboardHome() {
           </div>
         </div>
       </div>
+      
+      {/* Add the Chatbot component */}
+      <Chatbot />
     </div>
   );
 }

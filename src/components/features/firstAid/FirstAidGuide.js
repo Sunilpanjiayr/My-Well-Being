@@ -38,8 +38,8 @@ function FirstAidGuide() {
           description: 'Make sure the scene is safe, then tap the person on the shoulder and shout "Are you OK?" to ensure they need help.'
         },
         {
-          title: 'Call 911 for assistance',
-          description: 'If the person does not respond, call 911 or ask a bystander to do so. If possible, ask a bystander to find an AED.'
+          title: 'Call 108 or 104 for assistance',
+          description: 'If the person does not respond, call 108 or ask a bystander to do so. If possible, ask a bystander to find an AED.'
         },
         {
           title: 'Open the airway',
@@ -141,7 +141,7 @@ function FirstAidGuide() {
         },
         {
           title: 'Seek immediate medical attention',
-          description: 'Call emergency services (911) or get the person to an emergency room as quickly as possible.'
+          description: 'Call emergency services (108) or get the person to an emergency room as quickly as possible.'
         }
       ],
       warnings: [
@@ -243,7 +243,7 @@ function FirstAidGuide() {
           description: 'Common symptoms include chest pain or discomfort, upper body discomfort, shortness of breath, cold sweat, nausea, and lightheadedness. Women may experience less obvious symptoms like fatigue, indigestion, and back or jaw pain.'
         },
         {
-          title: 'Call emergency services (911)',
+          title: 'Call emergency services (108)',
           description: 'Do this immediately if you suspect someone is having a heart attack. Don nott wait to see if symptoms improve.'
         },
         {
@@ -288,7 +288,7 @@ function FirstAidGuide() {
           description: 'This is crucial information for healthcare providers, as certain treatments for stroke are time-sensitive and most effective when given quickly after symptoms begin.'
         },
         {
-          title: 'Call emergency services (911)',
+          title: 'Call emergency services (108)',
           description: 'Do this immediately if you suspect someone is having a stroke, even if symptoms seem to improve or go away.'
         },
         {
@@ -329,7 +329,7 @@ function FirstAidGuide() {
           description: 'Signs include shivering, confusion, slurred speech, drowsiness, weak pulse, shallow breathing, loss of coordination, and in severe cases, a complete lack of shivering and unconsciousness.'
         },
         {
-          title: 'Call emergency services (911)',
+          title: 'Call emergency services (108 or 104)',
           description: 'Moderate to severe hypothermia is a medical emergency and requires immediate medical attention.'
         },
         {
@@ -419,7 +419,7 @@ function FirstAidGuide() {
           description: 'Make sure you are not at risk of being poisoned yourself, especially with gas poisoning or hazardous chemicals.'
         },
         {
-          title: 'Call poison control or 911',
+          title: 'Call poison control or 108',
           description: 'For ingested poisons, call the Poison Control Center (1-800-222-1222) or 911 immediately. For other types or if the person is unconscious, not breathing, or having seizures, call 911 directly.'
         },
         {
