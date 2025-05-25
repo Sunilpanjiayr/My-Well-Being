@@ -1,698 +1,1535 @@
-/* src/components/features/chatbot/ProfessionalChatbot.css */
+/* ====================================================================================
+   DR. HEALTH CHATBOT - COMPLETE CSS STYLES
+   Version: 1.0.0
+   Description: Comprehensive styling for AI-powered medical assistant chatbot
+   ==================================================================================== */
 
-.chatbot-container.integrated {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1000;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  }
+/* ====================================================================================
+   CSS VARIABLES & THEME CONFIGURATION
+   ==================================================================================== */
+
+.dr-health-container {
+  --primary-color: #0065A3;
+  --primary-dark: #004d7a;
+  --primary-light: #4d9ecf;
+  --secondary-color: #5A67D8;
+  --success-color: #48bb78;
+  --warning-color: #ed8936;
+  --danger-color: #e53e3e;
+  --info-color: #4299e1;
   
-  /* Chat Toggle Button */
-  .chat-toggle-btn {
-    width: 56px;
-    height: 56px;
-    border-radius: 28px;
-    background: linear-gradient(145deg, #3182ce 0%, #2c5282 100%);
-    color: white;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 6px 16px rgba(49, 130, 206, 0.25);
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    position: relative;
-  }
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-inverse: #ffffff;
   
-  .chat-toggle-btn:hover {
-    background: linear-gradient(145deg, #4299e1 0%, #3182ce 100%);
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(49, 130, 206, 0.3);
-  }
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7fafc;
+  --bg-tertiary: #e2e8f0;
+  --bg-hover: #edf2f7;
+  --bg-active: #e2e8f0;
   
-  .chat-toggle-btn:active {
-    transform: scale(0.95);
-  }
+  --border-color: #e2e8f0;
+  --border-radius: 12px;
+  --border-radius-sm: 8px;
+  --border-radius-lg: 16px;
+  --border-radius-full: 9999px;
   
-  .chat-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    background-color: #e53e3e;
-    color: white;
-    width: 22px;
-    height: 22px;
-    border-radius: 11px;
-    font-size: 12px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    animation: pulse 2s infinite;
-  }
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4);
-    }
-    70% {
-      box-shadow: 0 0 0 8px rgba(229, 62, 62, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
-    }
-  }
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
   
-  /* Chat Window */
-  .chat-window {
-    position: absolute;
-    bottom: 75px;
-    right: 0;
-    width: 380px;
-    height: 600px;
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-    display: flex;
-    flex-direction: column;
-    transform: scale(0);
-    transform-origin: bottom right;
-    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.3s ease;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", monospace;
+  
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+}
+
+/* Dark mode theme */
+.dr-health-container.dark {
+  --primary-color: #4d9ecf;
+  --primary-dark: #0065A3;
+  --primary-light: #7bb8db;
+  
+  --text-primary: #f7fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #a0aec0;
+  
+  --bg-primary: #1a202c;
+  --bg-secondary: #2d3748;
+  --bg-tertiary: #4a5568;
+  --bg-hover: #4a5568;
+  --bg-active: #718096;
+  
+  --border-color: #4a5568;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* ====================================================================================
+   BASE CONTAINER STYLES
+   ==================================================================================== */
+
+.dr-health-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: var(--z-index-modal);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dr-health-container * {
+  box-sizing: border-box;
+}
+
+/* ====================================================================================
+   CHAT TOGGLE BUTTON
+   ==================================================================================== */
+
+.dr-health-container .chat-toggle-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--border-radius-full);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.dr-health-container .chat-toggle-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-xl);
+}
+
+.dr-health-container .chat-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.dr-health-container .chat-toggle-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.6s ease;
+}
+
+.dr-health-container .chat-toggle-btn:hover::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.dr-health-container .chat-toggle-btn svg {
+  width: 28px;
+  height: 28px;
+  color: var(--text-inverse);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .chat-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger-color);
+  color: var(--text-inverse);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--border-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(229, 62, 62, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
+  }
+}
+
+/* ====================================================================================
+   FEATURE BUTTONS (Accessibility, Settings, Export, etc.)
+   ==================================================================================== */
+
+/* Feature buttons container - vertical stack */
+.dr-health-container .feature-buttons {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: calc(var(--z-index-modal) - 1);
+}
+
+.dr-health-container .accessibility-toggle-btn,
+.dr-health-container .settings-toggle-btn,
+.dr-health-container .export-btn,
+.dr-health-container .health-tip-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--border-radius-full);
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.dr-health-container .accessibility-toggle-btn:hover,
+.dr-health-container .settings-toggle-btn:hover,
+.dr-health-container .export-btn:hover,
+.dr-health-container .health-tip-btn:hover {
+  transform: translateX(-4px);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.dr-health-container .accessibility-toggle-btn svg,
+.dr-health-container .settings-toggle-btn svg,
+.dr-health-container .export-btn svg,
+.dr-health-container .health-tip-btn svg {
+  width: 20px;
+  height: 20px;
+  color: var(--primary-color);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* ====================================================================================
+   CHAT WINDOW
+   ==================================================================================== */
+
+.dr-health-container .chat-window {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 400px;
+  height: 600px;
+  max-height: 80vh;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: scale(0.9) translateY(20px);
+  pointer-events: none;
+  transition: all var(--transition-slow);
+  overflow: hidden;
+}
+
+.dr-health-container .chat-window.open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: all;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dr-health-container .chat-window {
+    width: calc(100vw - 40px);
+    height: calc(100vh - 120px);
+    max-height: none;
+    bottom: 80px;
+  }
+}
+
+/* ====================================================================================
+   CHAT HEADER
+   ==================================================================================== */
+
+.dr-health-container .chat-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--text-inverse);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dr-health-container .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dr-health-container .header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.dr-health-container .header-avatar svg {
+  width: 28px;
+  height: 28px;
+  color: var(--text-inverse);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .header-info h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.dr-health-container .status-indicator {
+  font-size: 13px;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dr-health-container .status-indicator::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: #48bb78;
+  border-radius: var(--border-radius-full);
+  display: inline-block;
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.dr-health-container .header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dr-health-container .header-actions button {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  backdrop-filter: blur(10px);
+}
+
+.dr-health-container .header-actions button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.dr-health-container .header-actions button svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-inverse);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .voice-btn.active {
+  background: var(--danger-color) !important;
+  animation: recording 1.5s infinite;
+}
+
+@keyframes recording {
+  0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(229, 62, 62, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+}
+
+/* ====================================================================================
+   MESSAGES CONTAINER
+   ==================================================================================== */
+
+.dr-health-container .messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--bg-secondary);
+  scroll-behavior: smooth;
+}
+
+.dr-health-container .messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dr-health-container .messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dr-health-container .messages-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--border-radius-full);
+}
+
+.dr-health-container .messages-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* AI Status Indicator */
+.dr-health-container .ai-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}
+
+.dr-health-container .ai-status-icon {
+  margin-right: 8px;
+  position: relative;
+}
+
+.dr-health-container .ai-pulse {
+  width: 12px;
+  height: 12px;
+  background: var(--success-color);
+  border-radius: var(--border-radius-full);
+  display: inline-block;
+  animation: ai-pulse 2s infinite;
+}
+
+@keyframes ai-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(72, 187, 120, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+  }
+}
+
+.dr-health-container .ai-status-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.dr-health-container .ai-status-text svg {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-color);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* Medical Safety Notice */
+.dr-health-container .medical-safety-notice {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border: 1px solid #91d5ff;
+  border-radius: var(--border-radius);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dr-health-container.dark .medical-safety-notice {
+  background: linear-gradient(135deg, rgba(0, 101, 163, 0.2) 0%, rgba(0, 101, 163, 0.1) 100%);
+  border-color: rgba(0, 101, 163, 0.4);
+}
+
+.dr-health-container .medical-safety-notice svg {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+  color: var(--primary-color);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .medical-safety-notice p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ====================================================================================
+   MESSAGE STYLES
+   ==================================================================================== */
+
+.dr-health-container .message {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  animation: messageSlide 0.3s ease-out;
+}
+
+@keyframes messageSlide {
+  from {
     opacity: 0;
-    overflow: hidden;
+    transform: translateY(10px);
   }
-  
-  .chat-window.open {
-    transform: scale(1);
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dr-health-container .message.user {
+  flex-direction: row-reverse;
+}
+
+.dr-health-container .message.system {
+  justify-content: center;
+}
+
+.dr-health-container .message.system .message-content {
+  max-width: 100%;
+}
+
+.dr-health-container .message.system .message-bubble {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 8px 16px;
+}
+
+/* Message Avatars */
+.dr-health-container .avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.dr-health-container .assistant-avatar {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  border: 2px solid var(--primary-color);
+}
+
+.dr-health-container .user-avatar {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8edfb 100%);
+  border: 2px solid var(--secondary-color);
+}
+
+.dr-health-container .avatar svg {
+  width: 24px;
+  height: 24px;
+  color: var(--primary-color);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .user-avatar svg {
+  color: var(--secondary-color);
+}
+
+/* Message Content */
+.dr-health-container .message-content {
+  max-width: 75%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dr-health-container .message-bubble {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  word-wrap: break-word;
+  position: relative;
+}
+
+.dr-health-container .message.user .message-bubble {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--text-inverse);
+  border: none;
+}
+
+/* Message Formatting */
+.dr-health-container .formatted-message {
+  line-height: 1.6;
+}
+
+.dr-health-container .message-paragraph {
+  margin: 0 0 8px 0;
+}
+
+.dr-health-container .message-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.dr-health-container .message-heading {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 12px 0 8px 0;
+}
+
+.dr-health-container .message-heading:first-child {
+  margin-top: 0;
+}
+
+.dr-health-container .message-list-item {
+  position: relative;
+  padding-left: 20px;
+  margin: 4px 0;
+}
+
+.dr-health-container .message-list-item::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  width: 4px;
+  height: 4px;
+  background: var(--text-secondary);
+  border-radius: var(--border-radius-full);
+}
+
+.dr-health-container .message.user .message-list-item::before {
+  background: var(--text-inverse);
+}
+
+.dr-health-container .message-spacer {
+  height: 8px;
+}
+
+/* Message Timestamp */
+.dr-health-container .message-timestamp {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.dr-health-container .ai-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dr-health-container .ai-indicator svg {
+  width: 12px;
+  height: 12px;
+  color: var(--primary-color);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* Message Feedback */
+.dr-health-container .message-feedback {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dr-health-container .feedback-btn {
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-base);
+}
+
+.dr-health-container .feedback-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.dr-health-container .feedback-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .feedback-btn:hover svg {
+  color: var(--primary-color);
+}
+
+/* Urgency Levels */
+.dr-health-container .message.critical .message-bubble {
+  border: 2px solid var(--danger-color);
+  background: #fff5f5;
+}
+
+.dr-health-container .message.high .message-bubble {
+  border: 2px solid var(--warning-color);
+  background: #fffaf0;
+}
+
+.dr-health-container.dark .message.critical .message-bubble {
+  background: rgba(229, 62, 62, 0.1);
+}
+
+.dr-health-container.dark .message.high .message-bubble {
+  background: rgba(237, 137, 54, 0.1);
+}
+
+/* Health Info Cards */
+.dr-health-container .health-info-cards {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dr-health-container .health-info-card {
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  border: 1px solid;
+}
+
+.dr-health-container .health-info-card.emergency {
+  background: #fff5f5;
+  border-color: var(--danger-color);
+}
+
+.dr-health-container .health-info-card.warning {
+  background: #fffaf0;
+  border-color: var(--warning-color);
+}
+
+.dr-health-container .health-info-card.info {
+  background: #e6f7ff;
+  border-color: var(--info-color);
+}
+
+.dr-health-container .health-info-card.success {
+  background: #f0f9ff;
+  border-color: var(--success-color);
+}
+
+.dr-health-container.dark .health-info-card.emergency {
+  background: rgba(229, 62, 62, 0.1);
+}
+
+.dr-health-container.dark .health-info-card.warning {
+  background: rgba(237, 137, 54, 0.1);
+}
+
+.dr-health-container.dark .health-info-card.info {
+  background: rgba(66, 153, 225, 0.1);
+}
+
+.dr-health-container.dark .health-info-card.success {
+  background: rgba(72, 187, 120, 0.1);
+}
+
+.dr-health-container .card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dr-health-container .card-header svg {
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .health-info-card.emergency .card-header svg {
+  color: var(--danger-color);
+}
+
+.dr-health-container .health-info-card.warning .card-header svg {
+  color: var(--warning-color);
+}
+
+.dr-health-container .health-info-card.info .card-header svg {
+  color: var(--info-color);
+}
+
+.dr-health-container .health-info-card.success .card-header svg {
+  color: var(--success-color);
+}
+
+.dr-health-container .card-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dr-health-container .card-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+/* Typing Indicator */
+.dr-health-container .thinking .typing-indicator {
+  padding: 16px 24px;
+}
+
+.dr-health-container .typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.dr-health-container .typing-dots span {
+  width: 8px;
+  height: 8px;
+  background: var(--text-muted);
+  border-radius: var(--border-radius-full);
+  animation: typing 1.4s infinite;
+}
+
+.dr-health-container .typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dr-health-container .typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-10px);
     opacity: 1;
   }
-  
-  /* Chat Header */
-  .chat-header {
-    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-    color: white;
-    padding: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .header-left {
-    display: flex;
-    align-items: center;
-  }
-  
-  .header-avatar {
-    width: 38px;
-    height: 38px;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 19px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 12px;
-    font-size: 22px;
-    color: white;
-  }
-  
-  .header-info {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .header-info h3 {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
-  
-  .status-indicator {
-    font-size: 13px;
-    opacity: 0.9;
-    display: flex;
-    align-items: center;
-    margin-top: 3px;
-  }
-  
-  .status-indicator::before {
-    content: "";
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #68d391;
-    margin-right: 6px;
-    box-shadow: 0 0 0 2px rgba(104, 211, 145, 0.4);
-    animation: pulse 2s infinite;
-  }
-  
-  /* Header actions */
-  .header-actions {
-    display: flex;
-    align-items: center;
-  }
-  
-  .clear-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 16px;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 10px;
-    transition: all 0.2s;
-  }
-  
-  .clear-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-  }
-  
-  .close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 16px;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-  }
-  
-  .close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-  }
-  
-  /* Health Metrics Dashboard */
-  .health-metrics {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    padding: 16px;
-    background-color: #f0f9ff;
-    margin: 12px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(49, 130, 206, 0.1);
-    border: 1px solid rgba(49, 130, 206, 0.1);
-  }
-  
-  .metric {
-    display: flex;
-    flex-direction: column;
-    padding: 12px;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .metric-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-    color: #3182ce;
-  }
-  
-  .metric-info {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .metric-value {
-    font-weight: 700;
-    font-size: 18px;
-    color: #2d3748;
-    margin-bottom: 2px;
-  }
-  
-  .metric-label {
-    font-size: 12px;
-    color: #718096;
-    font-weight: 500;
-  }
-  
-  .metric-progress {
-    width: 100%;
-    height: 4px;
-    background-color: #e2e8f0;
-    border-radius: 2px;
-    margin-top: 8px;
-    overflow: hidden;
-  }
-  
-  .progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #3182ce 0%, #4299e1 100%);
-    border-radius: 2px;
-    transition: width 0.5s ease;
-  }
-  
-  /* Messages Container */
-  .messages-container {
-    flex: 1;
-    padding: 6px 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    background-color: #f8fafc;
-    scroll-behavior: smooth;
-  }
-  
-  .messages-container::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .messages-container::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .messages-container::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.1);
-    border-radius: 20px;
-  }
-  
-  /* Message Styles */
-  .message {
-    display: flex;
-    align-items: flex-end;
-    max-width: 100%;
-    position: relative;
-    margin-bottom: 16px;
-    animation: fadeIn 0.3s ease-out;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .message.assistant {
-    justify-content: flex-start;
-  }
-  
-  .message.user {
-    justify-content: flex-end;
-  }
-  
-  .avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-    color: #2d3748;
-  }
-  
-  .assistant-avatar {
-    background-color: #ebf8ff;
-    color: #3182ce;
-    margin-right: 10px;
-    box-shadow: 0 2px 5px rgba(49, 130, 206, 0.1);
-  }
-  
-  .user-avatar {
-    background-color: #c6f6d5;
-    color: #38a169;
-    margin-left: 10px;
-    box-shadow: 0 2px 5px rgba(56, 161, 105, 0.1);
-  }
-  
-  .message-content {
-    display: flex;
-    flex-direction: column;
-    max-width: 80%;
-  }
-  
-  .message-bubble {
-    padding: 12px 16px;
-    border-radius: 18px;
-    font-size: 14px;
-    line-height: 1.5;
-    position: relative;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-  }
-  
-  .message-bubble:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .message.assistant .message-bubble {
-    background-color: white;
-    color: #2d3748;
-    border-bottom-left-radius: 4px;
-    border: 1px solid #e2e8f0;
-  }
-  
-  .message.user .message-bubble {
-    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-    color: white;
-    border-bottom-right-radius: 4px;
-  }
-  
-  .message-timestamp {
-    font-size: 10px;
-    color: #a0aec0;
-    margin-top: 4px;
-    padding: 0 8px;
-  }
-  
-  .message.user .message-timestamp {
-    text-align: right;
-  }
-  
-  /* Typing Indicator */
-  .typing-indicator {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-  }
-  
-  .typing-indicator span {
-    width: 8px;
-    height: 8px;
-    background-color: #cbd5e0;
-    border-radius: 50%;
-    display: inline-block;
-    margin: 0 3px;
-    opacity: 0.8;
-    animation: typing 1.4s infinite;
-  }
-  
-  .typing-indicator span:nth-child(1) {
-    animation-delay: 0s;
-  }
-  
-  .typing-indicator span:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  
-  .typing-indicator span:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-  
-  @keyframes typing {
-    0%, 100% {
-      transform: translateY(0);
-      opacity: 0.8;
-    }
-    50% {
-      transform: translateY(-6px);
-      opacity: 1;
-    }
-  }
-  
-  /* Suggested Queries */
-  .suggested-queries {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 14px 16px;
-    background-color: white;
-    border-top: 1px solid #e2e8f0;
-  }
-  
-  .query-pill {
-    background-color: #ebf8ff;
-    color: #3182ce;
-    border: 1px solid #bee3f8;
-    border-radius: 18px;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  }
-  
-  .query-pill:hover {
-    background-color: #bee3f8;
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .query-pill:active {
-    transform: scale(0.98);
-  }
-  
-  /* Input Container */
-  .input-container {
-    padding: 14px 16px;
-    border-top: 1px solid #e2e8f0;
-    display: flex;
-    background-color: white;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-  }
-  
-  .input-container input {
-    flex: 1;
-    padding: 12px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 24px;
-    outline: none;
-    font-size: 14px;
-    background-color: #f8fafc;
-    transition: all 0.3s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) inset;
-  }
-  
-  .input-container input::placeholder {
-    color: #a0aec0;
-  }
-  
-  .input-container input:focus {
-    border-color: #3182ce;
-    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
-    background-color: white;
-  }
-  
-  .send-button {
-    width: 44px;
-    height: 44px;
-    margin-left: 10px;
-    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-    color: white;
-    border: none;
-    border-radius: 22px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
-    box-shadow: 0 2px 5px rgba(44, 82, 130, 0.2);
-  }
-  
-  .send-button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(44, 82, 130, 0.3);
-  }
-  
-  .send-button:active:not(:disabled) {
-    transform: scale(0.95);
-  }
-  
-  .send-button:disabled {
-    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-  
-  /* Dark Mode Styling */
-  .chatbot-container.integrated.dark .chat-window {
-    background-color: #1a202c;
-    border: 1px solid #2d3748;
-  }
-  
-  .chatbot-container.integrated.dark .chat-header {
-    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
-  }
-  
-  .chatbot-container.integrated.dark .messages-container {
-    background-color: #171923;
-  }
-  
-  .chatbot-container.integrated.dark .message.assistant .message-bubble {
-    background-color: #2d3748;
-    color: #e2e8f0;
-    border: 1px solid #4a5568;
-  }
-  
-  .chatbot-container.integrated.dark .input-container {
-    background-color: #1a202c;
-    border-top: 1px solid #2d3748;
-  }
-  
-  .chatbot-container.integrated.dark .input-container input {
-    background-color: #2d3748;
-    border-color: #4a5568;
-    color: #e2e8f0;
-  }
-  
-  .chatbot-container.integrated.dark .input-container input::placeholder {
-    color: #718096;
-  }
-  
-  .chatbot-container.integrated.dark .input-container input:focus {
-    border-color: #4299e1;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
-  }
-  
-  .chatbot-container.integrated.dark .suggested-queries {
-    background-color: #1a202c;
-    border-top: 1px solid #2d3748;
-  }
-  
-  .chatbot-container.integrated.dark .query-pill {
-    background-color: #2c5282;
-    color: #e2e8f0;
-    border-color: #4299e1;
-  }
-  
-  .chatbot-container.integrated.dark .query-pill:hover {
-    background-color: #3182ce;
-  }
-  
-  .chatbot-container.integrated.dark .message-timestamp {
-    color: #718096;
-  }
-  
-  .chatbot-container.integrated.dark .health-metrics {
-    background-color: #2d3748;
-    border-color: #4a5568;
-  }
-  
-  .chatbot-container.integrated.dark .metric {
-    background-color: #1a202c;
-  }
-  
-  .chatbot-container.integrated.dark .metric-value {
-    color: #e2e8f0;
-  }
-  
-  .chatbot-container.integrated.dark .metric-label {
-    color: #a0aec0;
-  }
-  
-  .chatbot-container.integrated.dark .metric-progress {
-    background-color: #4a5568;
-  }
-  
-  .chatbot-container.integrated.dark .assistant-avatar {
-    background-color: #2c5282;
-    color: #bee3f8;
-  }
-  
-  .chatbot-container.integrated.dark .user-avatar {
-    background-color: #276749;
-    color: #c6f6d5;
-  }
-  
-  /* Responsive design - Mobile optimization */
-  @media (max-width: 480px) {
-    .chat-window {
-      width: calc(100vw - 30px);
-      height: 550px;
-      bottom: 75px;
-      right: 15px;
-    }
-    
-    .chat-toggle-btn {
-      width: 50px;
-      height: 50px;
-      right: 15px;
-      bottom: 15px;
-    }
-    
-    .health-metrics {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      padding: 10px;
-      margin: 10px;
-    }
-    
-    .metric {
-      padding: 8px;
-    }
-    
-    .metric-value {
-      font-size: 16px;
-    }
-    
-    .message-bubble {
-      padding: 10px 14px;
-      font-size: 13px;
-    }
-  }
-  
-  /* Animations for chat window elements */
-  @keyframes slideIn {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  
-  .health-metrics {
-    animation: slideIn 0.4s forwards;
-  }
-  
-  /* Loading animation for health data fetching */
-  .loading-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100px;
-  }
-  
-  .loading-spinner {
+}
+
+/* AI Thinking Indicator */
+.dr-health-container .ai-thinking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dr-health-container .ai-thinking-animation {
+  position: relative;
+}
+
+.dr-health-container .thinking-brain {
+  animation: brain-pulse 1.5s ease-in-out infinite;
+}
+
+.dr-health-container .thinking-brain .pulse {
+  animation: pulse-lines 1.5s ease-in-out infinite;
+}
+
+@keyframes brain-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes pulse-lines {
+  0%, 100% { 
+    stroke-dasharray: 0 20;
+    stroke-dashoffset: 0;
+  }
+  50% { 
+    stroke-dasharray: 20 20;
+    stroke-dashoffset: -20;
+  }
+}
+
+.dr-health-container .ai-thinking-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ====================================================================================
+   SUGGESTED QUERIES
+   ==================================================================================== */
+
+.dr-health-container .suggested-queries-container {
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.dr-health-container .suggested-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.dr-health-container .suggested-title svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .suggested-queries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dr-health-container .query-pill {
+  padding: 6px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-full);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dr-health-container .query-pill:hover {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ====================================================================================
+   INPUT CONTAINER
+   ==================================================================================== */
+
+.dr-health-container .input-container {
+  padding: 16px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  position: relative;
+}
+
+.dr-health-container .input-container.voice-recording {
+  background: linear-gradient(90deg, 
+    rgba(229, 62, 62, 0.05) 0%, 
+    rgba(229, 62, 62, 0.1) 50%, 
+    rgba(229, 62, 62, 0.05) 100%);
+  animation: voice-recording-bg 2s ease-in-out infinite;
+}
+
+@keyframes voice-recording-bg {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.dr-health-container .input-container input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-full);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  transition: all var(--transition-base);
+  outline: none;
+}
+
+.dr-health-container .input-container input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 101, 163, 0.1);
+  background: var(--bg-primary);
+}
+
+.dr-health-container .input-container input::placeholder {
+  color: var(--text-muted);
+}
+
+.dr-health-container .voice-input-button,
+.dr-health-container .send-button {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-full);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.dr-health-container .voice-input-button {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.dr-health-container .voice-input-button:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.dr-health-container .voice-input-button.recording {
+  background: var(--danger-color);
+  border-color: var(--danger-color);
+  animation: recording 1.5s infinite;
+}
+
+.dr-health-container .voice-input-button svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.dr-health-container .voice-input-button.recording svg {
+  color: var(--text-inverse);
+}
+
+.dr-health-container .send-button {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: var(--text-inverse);
+}
+
+.dr-health-container .send-button:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.dr-health-container .send-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.dr-health-container .send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dr-health-container .send-button svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-inverse);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* ====================================================================================
+   AI DISCLAIMER
+   ==================================================================================== */
+
+.dr-health-container .ai-disclaimer {
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ====================================================================================
+   ACCESSIBILITY MENU
+   ==================================================================================== */
+
+.dr-health-container .accessibility-menu,
+.dr-health-container .settings-menu {
+  position: fixed;
+  bottom: 90px;
+  right: 80px;
+  width: 320px;
+  max-height: 500px;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: 20px;
+  overflow-y: auto;
+  z-index: var(--z-index-modal);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.dr-health-container .accessibility-menu h3,
+.dr-health-container .settings-menu h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dr-health-container .accessibility-controls,
+.dr-health-container .settings-controls,
+.dr-health-container .feature-controls,
+.dr-health-container .data-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dr-health-container .accessibility-option,
+.dr-health-container .settings-option,
+.dr-health-container .feature-option,
+.dr-health-container .ai-option,
+.dr-health-container .language-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dr-health-container .accessibility-option label,
+.dr-health-container .settings-option label,
+.dr-health-container .feature-option label,
+.dr-health-container .ai-option label,
+.dr-health-container .language-option label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.dr-health-container .control-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dr-health-container .control-buttons button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all var(--transition-base);
+}
+
+.dr-health-container .control-buttons button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.dr-health-container .control-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dr-health-container .control-buttons span {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 30px;
+  text-align: center;
+}
+
+/* Toggle Buttons */
+.dr-health-container .toggle-on,
+.dr-health-container .toggle-off {
+  padding: 6px 16px;
+  border-radius: var(--border-radius-full);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.dr-health-container .toggle-on {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  border-color: var(--primary-color);
+}
+
+.dr-health-container .toggle-off {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.dr-health-container .toggle-on:hover {
+  background: var(--primary-dark);
+}
+
+.dr-health-container .toggle-off:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+/* AI Level Buttons */
+.dr-health-container .ai-level-buttons,
+.dr-health-container .language-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.dr-health-container .ai-level-buttons button,
+.dr-health-container .language-buttons button {
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.dr-health-container .ai-level-buttons button:hover,
+.dr-health-container .language-buttons button:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.dr-health-container .ai-level-buttons button.selected,
+.dr-health-container .language-buttons button.selected {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  border-color: var(--primary-color);
+}
+
+/* Reset Buttons */
+.dr-health-container .reset-settings-btn,
+.dr-health-container .reset-profile-btn,
+.dr-health-container .export-chat-btn,
+.dr-health-container .generate-summary-btn,
+.dr-health-container .clear-chat-btn {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-align: center;
+}
+
+.dr-health-container .reset-profile-btn {
+  background: #fff5f5;
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+.dr-health-container .reset-profile-btn:hover {
+  background: var(--danger-color);
+  color: var(--text-inverse);
+}
+
+.dr-health-container .reset-settings-btn:hover,
+.dr-health-container .export-chat-btn:hover,
+.dr-health-container .generate-summary-btn:hover,
+.dr-health-container .clear-chat-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.dr-health-container .profile-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ====================================================================================
+   TOOLTIP STYLES
+   ==================================================================================== */
+
+.dr-health-container .tooltip-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.dr-health-container .tooltip-text {
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: var(--text-inverse);
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base);
+  z-index: var(--z-index-tooltip);
+}
+
+.dr-health-container .tooltip-text::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+}
+
+.dr-health-container .tooltip-container:hover .tooltip-text {
+  opacity: 1;
+}
+
+/* ====================================================================================
+   ACCESSIBILITY ADJUSTMENTS
+   ==================================================================================== */
+
+/* Font Size Levels */
+.dr-health-container .chat-window.font-size-1 {
+  font-size: 14px;
+}
+
+.dr-health-container .chat-window.font-size-2 {
+  font-size: 16px;
+}
+
+.dr-health-container .chat-window.font-size-3 {
+  font-size: 18px;
+}
+
+.dr-health-container .chat-window.font-size-4 {
+  font-size: 20px;
+}
+
+/* High Contrast Mode */
+.dr-health-container .chat-window.high-contrast {
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0f0f0;
+  --border-color: #000000;
+}
+
+.dr-health-container.dark .chat-window.high-contrast {
+  --text-primary: #ffffff;
+  --text-secondary: #dddddd;
+  --bg-primary: #000000;
+  --bg-secondary: #1a1a1a;
+  --border-color: #ffffff;
+}
+
+.dr-health-container .chat-window.high-contrast .message-bubble {
+  border-width: 2px;
+}
+
+/* Reduced Motion */
+.dr-health-container .chat-window.reduced-motion,
+.dr-health-container .chat-window.reduced-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ====================================================================================
+   AI LEVEL SPECIFIC STYLES
+   ==================================================================================== */
+
+.dr-health-container[data-ai-level="1"] .ai-status-text::after {
+  content: " - Fast & Simple";
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.dr-health-container[data-ai-level="2"] .ai-status-text::after {
+  content: " - Balanced & Detailed";
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.dr-health-container[data-ai-level="3"] .ai-status-text::after {
+  content: " - Comprehensive Analysis";
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* ====================================================================================
+   RESPONSIVE DESIGN
+   ==================================================================================== */
+
+@media (max-width: 768px) {
+  .dr-health-container {
+    bottom: 10px;
+    right: 10px;
+  }
+  
+  .dr-health-container .chat-toggle-btn {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .dr-health-container .accessibility-toggle-btn,
+  .dr-health-container .settings-toggle-btn,
+  .dr-health-container .export-btn,
+  .dr-health-container .health-tip-btn {
     width: 40px;
     height: 40px;
-    border: 4px solid rgba(49, 130, 206, 0.1);
-    border-radius: 50%;
-    border-top-color: #3182ce;
-    animation: spin 1s ease-in-out infinite;
   }
   
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+  .dr-health-container .accessibility-menu,
+  .dr-health-container .settings-menu {
+    width: calc(100vw - 40px);
+    right: 20px;
+    bottom: 80px;
   }
+  
+  .dr-health-container .suggested-queries-container {
+    padding: 8px 12px;
+  }
+  
+  .dr-health-container .query-pill {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dr-health-container .message-content {
+    max-width: 85%;
+  }
+  
+  .dr-health-container .header-info h3 {
+    font-size: 16px;
+  }
+  
+  .dr-health-container .status-indicator {
+    font-size: 12px;
+  }
+}
+
+/* ====================================================================================
+   PRINT STYLES
+   ==================================================================================== */
+
+@media print {
+  .dr-health-container {
+    display: none;
+  }
+}
+
+/* ====================================================================================
+   CUSTOM SCROLLBAR FOR ALL BROWSERS
+   ==================================================================================== */
+
+.dr-health-container *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dr-health-container *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dr-health-container *::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--border-radius-full);
+}
+
+.dr-health-container *::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Firefox */
+.dr-health-container * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+/* ====================================================================================
+   ANIMATION OPTIMIZATIONS
+   ==================================================================================== */
+
+.dr-health-container * {
+  will-change: auto;
+}
+
+.dr-health-container .chat-window,
+.dr-health-container .message,
+.dr-health-container .typing-dots span {
+  will-change: transform, opacity;
+}
+
+/* ====================================================================================
+   END OF DR. HEALTH CHATBOT STYLES
+   ==================================================================================== */

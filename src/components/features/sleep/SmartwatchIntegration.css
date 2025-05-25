@@ -1,0 +1,685 @@
+/* src/components/features/sleepTracker/SmartwatchIntegration.css */
+
+/* Smartwatch Setup Component */
+.smartwatch-setup {
+  background-color: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 2rem;
+}
+
+.smartwatch-setup h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* Connection Setup */
+.connection-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.connection-methods {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.method-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.method-option:hover {
+  border-color: var(--color-good);
+}
+
+.method-option input[type="radio"] {
+  margin: 0;
+}
+
+.method-option input[type="radio"]:checked + span {
+  color: var(--color-good);
+  font-weight: 600;
+}
+
+.provider-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.provider-selection label {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.provider-selection select {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.provider-selection select:focus {
+  outline: none;
+  border-color: var(--color-good);
+}
+
+.connect-button {
+  padding: 1rem 2rem;
+  background-color: var(--color-good);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.connect-button:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.connect-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-poor);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* Supported Devices */
+.supported-devices {
+  margin-top: 1rem;
+}
+
+.toggle-supported {
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-supported:hover {
+  background-color: var(--bg-primary);
+}
+
+.devices-list {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.devices-list h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.device-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.device-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.device-brand {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Connected Device */
+.connected-device {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.device-info {
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+
+.device-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-indicator.connected {
+  background-color: var(--color-excellent);
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.device-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Realtime Stats */
+.realtime-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.stat {
+  text-align: center;
+  padding: 0.75rem;
+  background-color: var(--bg-secondary);
+  border-radius: 0.5rem;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Device Capabilities */
+.device-capabilities {
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+
+.device-capabilities h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.capabilities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.capability {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.capability-name {
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.capability-status {
+  font-weight: 600;
+}
+
+.capability-status.supported {
+  color: var(--color-excellent);
+}
+
+.capability-status.unsupported {
+  color: var(--text-tertiary);
+}
+
+/* Sync Controls */
+.sync-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sync-button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-good);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sync-button:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.sync-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.last-sync {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.disconnect-button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.disconnect-button:hover {
+  background-color: var(--color-poor);
+  color: white;
+}
+
+/* Smart Sleep Analysis */
+.smart-sleep-analysis {
+  background-color: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.analysis-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.view-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-tabs button {
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-tabs button:hover {
+  background-color: var(--bg-primary);
+}
+
+.view-tabs button.active {
+  background-color: var(--color-good);
+  color: white;
+}
+
+/* Analysis Overview */
+.analysis-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.overview-card {
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+
+.overview-card h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.score-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.score-trend {
+  padding: 0.25rem 0.75rem;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--color-excellent);
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.duration-display {
+  text-align: center;
+}
+
+.duration-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.duration-bar {
+  height: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.duration-fill {
+  height: 100%;
+  background-color: var(--color-good);
+  transition: width 0.5s ease;
+}
+
+/* Heart Stats */
+.heart-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.heart-stat {
+  text-align: center;
+}
+
+.heart-stat .stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.heart-stat .stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Phase Bars */
+.phase-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.phase-bar {
+  display: grid;
+  grid-template-columns: 60px 1fr 50px;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phase-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.phase-progress {
+  height: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.phase-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.phase-fill.deep {
+  background-color: var(--phase-deep);
+}
+
+.phase-fill.rem {
+  background-color: var(--phase-rem);
+}
+
+.phase-time {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+/* Personalized Insights */
+.personalized-insights {
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+}
+
+.personalized-insights h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.insight-card {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid;
+}
+
+.insight-card:last-child {
+  margin-bottom: 0;
+}
+
+.insight-card.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-left-color: var(--color-fair);
+}
+
+.insight-card.info {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left-color: var(--color-good);
+}
+
+.insight-card h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.insight-card p {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.recommendation {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.rec-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.recommendation span:last-child {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Realtime Monitoring */
+.realtime-monitoring {
+  background-color: var(--bg-primary);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  margin-top: 1rem;
+}
+
+.realtime-monitoring h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.monitoring-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.monitoring-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 0.5rem;
+}
+
+.monitoring-stat .stat-icon {
+  font-size: 2rem;
+}
+
+.monitoring-stat .stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.monitoring-stat .stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Responsive Design for Smartwatch Components */
+@media (max-width: 768px) {
+  .connection-methods {
+    flex-direction: column;
+  }
+  
+  .realtime-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .overview-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .analysis-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .view-tabs {
+    width: 100%;
+    justify-content: stretch;
+  }
+  
+  .view-tabs button {
+    flex: 1;
+  }
+}
