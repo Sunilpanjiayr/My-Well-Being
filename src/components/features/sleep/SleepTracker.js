@@ -454,6 +454,22 @@ function SleepTracker() {
     );
     localStorage.setItem("healthConnectionStress", healthConnections.stress);
 
+    onMessageListener()
+      .then((payload) => {
+        setNotification({
+          show: true,
+          message: payload.notification.body,
+          type: "success",
+        });
+        setTimeout(
+          () => setNotification({ show: false, message: "", type: "" }),
+          3000
+        );
+      })
+      .catch((err) =>
+        console.error("Failed to receive foreground message:", err)
+      );
+
     // Calculate sleep trends
     calculateSleepTrends();
 
@@ -461,15 +477,15 @@ function SleepTracker() {
     calculateSleepPhases();
 
     // Calculate weekly goal progress
-    calculateWeeklyProgress();
-  }, [
-    sleepLogs,
-    sleepGoal,
-    reminderTime,
-    reminderEnabled,
-    darkMode,
-    healthConnections,
-  ]);
+  //   calculateWeeklyProgress();
+  // }, [
+  //   sleepLogs,
+  //   sleepGoal,
+  //   reminderTime,
+  //   reminderEnabled,
+  //   darkMode,
+  //   healthConnections,
+  // ]);
 
   // Calculate duration when bedtime/wakeup changes
   useEffect(() => {
