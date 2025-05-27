@@ -58,19 +58,32 @@ const ConsultationRoom = () => {
     console.log('🎥 Requesting user media...');
     
     const constraintOptions = [
-      // Try basic quality first to avoid conflicts
+      // Try HD quality first
+      {
+        video: { 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        },
+        audio: { 
+          echoCancellation: true, 
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      },
+      // Fallback to basic quality
       {
         video: { 
           width: { ideal: 640 }, 
           height: { ideal: 480 },
-          frameRate: { ideal: 15 }
+          frameRate: { ideal: 24 }
         },
         audio: { 
           echoCancellation: true, 
           noiseSuppression: true
         }
       },
-      // Fallback to very basic
+      // Minimum quality
       {
         video: { 
           width: 320, 
@@ -79,16 +92,17 @@ const ConsultationRoom = () => {
         },
         audio: true
       },
-      // Audio only
+      // Audio only as last resort
       {
         video: false,
         audio: true
       }
     ];
 
+    let lastError = null;
     for (let i = 0; i < constraintOptions.length; i++) {
       try {
-        console.log(`🔄 Trying constraint option ${i + 1}:`, constraintOptions[i]);
+        console.log(`🔄 Trying media constraint option ${i + 1}:`, constraintOptions[i]);
         
         const stream = await navigator.mediaDevices.getUserMedia(constraintOptions[i]);
         
@@ -100,22 +114,18 @@ const ConsultationRoom = () => {
         });
 
         return stream;
-        
       } catch (err) {
-        console.warn(`⚠️ Constraint option ${i + 1} failed:`, err.message);
+        console.warn(`⚠️ Failed with constraint option ${i + 1}:`, err.message);
+        lastError = err;
         
+        // Break early if permission is denied
         if (err.name === 'NotAllowedError') {
-          throw new Error('Camera/microphone access denied. Please allow permissions and refresh.');
-        } else if (err.name === 'NotReadableError') {
-          if (i < 2) continue; // Try next option
-          throw new Error('Camera is busy. Please close other tabs/applications using the camera.');
-        }
-        
-        if (i === constraintOptions.length - 1) {
-          throw err;
+          throw new Error('Camera/microphone access denied by user');
         }
       }
     }
+    
+    throw lastError || new Error('Failed to access media devices');
   }, []);
 
   // FIXED: Simplified and more reliable video setup
@@ -182,73 +192,52 @@ const ConsultationRoom = () => {
   }, []);
 
   const cleanup = useCallback(() => {
-    if (isCleaningUp.current) return;
+    console.log('🧹 Cleaning up...');
     isCleaningUp.current = true;
-    
-    console.log('🧹 Cleaning up WebRTC resources...');
     
     // Clear timeouts
     if (initTimeoutRef.current) {
       clearTimeout(initTimeoutRef.current);
-      initTimeoutRef.current = null;
     }
-    
     if (offerTimeoutRef.current) {
       clearTimeout(offerTimeoutRef.current);
-      offerTimeoutRef.current = null;
     }
     
-    // Stop stream cleanup
-    if (streamCleanupRef.current) {
-      streamCleanupRef.current();
-      streamCleanupRef.current = null;
-    }
-    
-    // Stop local stream tracks
+    // Stop local stream
     if (localStream) {
       localStream.getTracks().forEach(track => {
-        console.log(`🛑 Stopping ${track.kind} track`);
         track.stop();
+        console.log(`🎥 Stopped ${track.kind} track`);
       });
     }
-
-    // Clean up peer connection
-    if (peerConnectionRef.current) {
-      try {
-        peerConnectionRef.current.close();
-        console.log('🔌 Closed peer connection');
-      } catch (e) {
-        console.warn('Warning closing peer connection:', e);
-      }
-      peerConnectionRef.current = null;
-    }
-
-    // Clear video elements
+    
+    // Clean up video elements
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
     }
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = null;
     }
-
+    
+    // Close peer connection
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    
+    // Disconnect from signaling
+    SignalingService.disconnect();
+    
     // Reset state
     setLocalStream(null);
     setRemoteStream(null);
-    hasRemoteDescription.current = false;
-    pendingCandidates.current = [];
-    setConnectionState('new');
     setIsConnected(false);
-
-    // Disconnect signaling service
-    try {
-      if (SignalingService && SignalingService.isConnected && SignalingService.isConnected()) {
-        SignalingService.disconnect();
-      }
-    } catch (e) {
-      console.warn('Warning disconnecting signaling:', e);
-    }
+    setConnectionState('new');
+    pendingCandidates.current = [];
+    hasRemoteDescription.current = false;
     
     isCleaningUp.current = false;
+    console.log('✅ Cleanup complete');
   }, [localStream]);
 
   const processPendingCandidates = useCallback(async () => {
@@ -270,274 +259,282 @@ const ConsultationRoom = () => {
     pendingCandidates.current = [];
   }, []);
 
-  const createPeerConnection = useCallback(async (stream) => {
-    // Clean up existing connection
-    if (peerConnectionRef.current) {
-      console.log('🔄 Cleaning up existing peer connection...');
-      try {
-        peerConnectionRef.current.close();
-      } catch (e) {
-        console.warn('Warning closing existing PC:', e);
-      }
-      peerConnectionRef.current = null;
-    }
-
-    console.log('🔗 Creating new peer connection...');
+  const handleConnectionRecovery = useCallback(async () => {
+    console.log('🔄 Attempting connection recovery...');
     
-    const pc = new RTCPeerConnection({
+    try {
+      // Clean up existing connection
+      cleanup();
+      
+      // Short delay before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (!isCleaningUp.current) {
+        console.log('🔄 Reinitializing WebRTC...');
+        if (consultation) {
+          await initializeWebRTC(consultation);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Recovery failed:', err);
+      setError('Failed to reconnect. Please refresh the page.');
+    }
+  }, [cleanup, consultation]);
+
+  const createPeerConnection = useCallback(() => {
+    console.log('🔧 Creating peer connection...');
+    
+    const configuration = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
       ],
       iceCandidatePoolSize: 10
-    });
+    };
 
-    // Add local tracks
-    if (stream) {
-      stream.getTracks().forEach(track => {
-        try {
-          pc.addTrack(track, stream);
-          console.log(`✅ Added local ${track.kind} track`);
-        } catch (e) {
-          console.error('Error adding track:', e);
-        }
+    const pc = new RTCPeerConnection(configuration);
+    
+    // Add local stream tracks to peer connection
+    if (localStream) {
+      console.log('📤 Adding local stream tracks to peer connection');
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
       });
     }
 
-    // Handle remote tracks
-    pc.ontrack = (event) => {
-      console.log('📺 Received remote track:', event.track.kind);
-      
-      if (event.streams && event.streams[0]) {
-        const remoteStream = event.streams[0];
-        console.log('🎥 Setting remote stream');
-        setRemoteStream(remoteStream);
-        
-        // Setup remote video
-        setTimeout(() => {
-          if (remoteVideoRef.current && !isCleaningUp.current) {
-            setupVideoElement(remoteVideoRef.current, remoteStream, false);
-          }
-        }, 100);
-      }
-    };
-
-    // ICE candidate handling
-    pc.onicecandidate = ({ candidate }) => {
-      if (candidate && !isCleaningUp.current) {
-        console.log('🧊 Generated ICE candidate');
-        SignalingService.sendSignal({ 
+    // Handle ICE candidate events
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log('🧊 New ICE candidate:', event.candidate.type);
+        SignalingService.sendSignal({
           type: 'ice-candidate',
-          candidate: {
-            candidate: candidate.candidate,
-            sdpMLineIndex: candidate.sdpMLineIndex,
-            sdpMid: candidate.sdpMid,
-            usernameFragment: candidate.usernameFragment
-          }
+          candidate: event.candidate
         });
       }
     };
 
-    // Connection state handling
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-      console.log('🔄 Connection state:', state);
-      setConnectionState(state);
+    // Handle ICE connection state changes
+    pc.oniceconnectionstatechange = () => {
+      console.log('🔄 ICE connection state:', pc.iceConnectionState);
+      setConnectionState(pc.iceConnectionState);
       
-      if (state === 'connected') {
-        setIsConnected(true);
-        setLoading(false);
-        setLoadingStatus('');
-        setError('');
-        console.log('🎉 WebRTC connection established!');
-      } else if (state === 'failed') {
-        console.error('❌ Connection failed');
-        setError('Connection failed. Network or firewall issues may be preventing the connection.');
-        setIsConnected(false);
-      } else if (state === 'disconnected') {
-        console.warn('⚠️ Connection disconnected');
-        setIsConnected(false);
+      // Handle disconnections
+      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+        console.warn('⚠️ ICE connection failed or disconnected');
+        setError('Connection lost. Attempting to reconnect...');
+        
+        // Attempt recovery
+        if (!isCleaningUp.current) {
+          handleConnectionRecovery();
+        }
       }
     };
 
-    // ICE connection state
-    pc.oniceconnectionstatechange = () => {
-      console.log('🧊 ICE state:', pc.iceConnectionState);
+    // Handle signaling state changes
+    pc.onsignalingstatechange = () => {
+      console.log('🔄 Signaling state:', pc.signalingState);
     };
 
-    peerConnectionRef.current = pc;
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log('🔄 Connection state:', pc.connectionState);
+      
+      if (pc.connectionState === 'connected') {
+        setIsConnected(true);
+        setError('');
+      } else if (pc.connectionState === 'failed') {
+        setIsConnected(false);
+        setError('Connection failed. Please try again.');
+      }
+    };
+
+    // Handle remote stream
+    pc.ontrack = (event) => {
+      console.log('📥 Received remote track:', event.track.kind);
+      
+      if (event.streams && event.streams[0]) {
+        console.log('📥 Setting remote stream');
+        setRemoteStream(event.streams[0]);
+      }
+    };
+
+    // Handle negotiation needed
+    pc.onnegotiationneeded = async () => {
+      console.log('🤝 Negotiation needed');
+      
+      if (pc.signalingState === 'stable' && !isCleaningUp.current) {
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          
+          SignalingService.sendSignal({
+            type: 'offer',
+            offer: pc.localDescription
+          });
+        } catch (err) {
+          console.error('❌ Error during negotiation:', err);
+        }
+      }
+    };
+
     return pc;
-  }, [setupVideoElement]);
+  }, [localStream, handleConnectionRecovery]);
 
   const handleSignal = useCallback(async (data) => {
-    const pc = peerConnectionRef.current;
-    if (!pc || pc.signalingState === 'closed' || isCleaningUp.current) {
-      console.warn('⚠️ Ignoring signal - connection not ready');
+    console.log('📨 Handling signal:', data.type || 'ice-candidate');
+    
+    if (!peerConnectionRef.current || isCleaningUp.current) {
+      console.warn('⚠️ No peer connection available or cleaning up');
       return;
     }
 
     try {
-      console.log('📨 Handling signal:', data.type);
+      const pc = peerConnectionRef.current;
 
-      if (data.type === 'offer' && data.offer) {
-        console.log('📥 Processing offer...');
+      if (data.offer) {
+        console.log('📥 Received offer');
         
-        if (pc.signalingState === 'stable' || pc.signalingState === 'have-local-offer') {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-          hasRemoteDescription.current = true;
-          
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          console.log('✅ Created answer');
-          
-          SignalingService.sendSignal({ 
-            type: 'answer',
-            answer: { type: answer.type, sdp: answer.sdp }
-          });
-          
-          await processPendingCandidates();
+        if (pc.signalingState !== 'stable') {
+          console.warn('⚠️ Signaling state not stable, waiting...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
-      }
-      else if (data.type === 'answer' && data.answer) {
-        console.log('📥 Processing answer...');
         
-        if (pc.signalingState === 'have-local-offer') {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-          hasRemoteDescription.current = true;
-          await processPendingCandidates();
-        }
-      }
-      else if (data.type === 'ice-candidate' && data.candidate) {
-        if (hasRemoteDescription.current && pc.signalingState !== 'closed') {
-          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } else {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+        hasRemoteDescription.current = true;
+        
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        
+        SignalingService.sendSignal({
+          type: 'answer',
+          answer: pc.localDescription
+        });
+        
+      } else if (data.answer) {
+        console.log('📥 Received answer');
+        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        hasRemoteDescription.current = true;
+        
+      } else if (data.candidate) {
+        console.log('📥 Received ICE candidate');
+        
+        if (!hasRemoteDescription.current) {
+          console.log('⏳ Queuing ICE candidate');
           pendingCandidates.current.push(data.candidate);
+          return;
+        }
+        
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (err) {
+          if (!pc.remoteDescription) {
+            console.log('⏳ Still queuing ICE candidate');
+            pendingCandidates.current.push(data.candidate);
+          } else {
+            console.warn('❌ Error adding ICE candidate:', err);
+          }
         }
       }
+      
+      // Add any pending candidates
+      if (hasRemoteDescription.current && pendingCandidates.current.length > 0) {
+        console.log('📥 Adding pending candidates:', pendingCandidates.current.length);
+        
+        const candidates = pendingCandidates.current;
+        pendingCandidates.current = [];
+        
+        for (const candidate of candidates) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (err) {
+            console.warn('❌ Error adding pending candidate:', err);
+          }
+        }
+      }
+      
     } catch (err) {
       console.error('❌ Error handling signal:', err);
+      setError('Connection error. Please try again.');
     }
-  }, [processPendingCandidates]);
+  }, []);
+
+  const retryCamera = useCallback(async () => {
+    console.log('🔄 Retrying camera access...');
+    setCameraError('');
+    setError('');
+    setLoading(true);
+    
+    // Clean up first
+    cleanup();
+    
+    // Wait a bit then retry
+    setTimeout(() => {
+      if (consultation) {
+        initializeWebRTC(consultation);
+      }
+    }, 1000);
+  }, [cleanup, consultation]);
 
   const initializeWebRTC = useCallback(async (consultationData) => {
-    if (isInitializing.current || isCleaningUp.current) {
-      console.log('⏭️ Already initializing or cleaning up');
-      return;
-    }
-
-    if (!roomId || !consultationData) {
-      console.log('⏭️ Missing requirements');
+    console.log('🚀 Initializing WebRTC...');
+    
+    if (isInitializing.current) {
+      console.log('⏳ Already initializing...');
       return;
     }
     
+    isInitializing.current = true;
+    setLoading(true);
+    setLoadingStatus('Initializing video call...');
+    
     try {
-      isInitializing.current = true;
+      // Request camera/mic access
       setLoadingStatus('Requesting camera access...');
-      console.log('🚀 Starting WebRTC initialization...');
-
-      // Get user media
-      let stream;
-      try {
-        stream = await requestUserMedia();
-        console.log('✅ Got media stream');
-        
-        // Set up cleanup
-        streamCleanupRef.current = () => {
-          if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-          }
-        };
-        
-        setLocalStream(stream);
-        
-        // Setup local video immediately
-        if (localVideoRef.current && stream) {
-          setTimeout(() => {
-            if (!isCleaningUp.current) {
-              setupVideoElement(localVideoRef.current, stream, true);
-            }
-          }, 100);
-        }
-        
-      } catch (err) {
-        console.error('❌ Media access failed:', err);
-        setCameraError(err.message);
-        setError(err.message);
-        setLoading(false);
-        return;
-      }
-
-      setLoadingStatus('Connecting to signaling server...');
-
-      // Connect to signaling
-      try {
-        await SignalingService.connect(roomId);
-        console.log('✅ Connected to signaling server');
-      } catch (err) {
-        console.error('❌ Signaling connection failed:', err);
-        setError('Cannot connect to signaling server. Please refresh and try again.');
-        setLoading(false);
-        return;
-      }
-
-      setLoadingStatus('Setting up peer connection...');
-
-      // Create peer connection
-      const pc = await createPeerConnection(stream);
-      SignalingService.onSignal(handleSignal);
-
-      // Role detection
-      const currentUserId = auth.currentUser?.uid;
-      const doctorId = consultationData?.doctorId;
-      const isDoctor = currentUserId === doctorId;
+      const stream = await requestUserMedia();
       
-      console.log('👤 Role:', isDoctor ? 'Doctor' : 'Patient');
-
+      if (isCleaningUp.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      
+      // Set up local video
+      setLocalStream(stream);
+      if (localVideoRef.current) {
+        setupVideoElement(localVideoRef.current, stream, true);
+      }
+      
+      // Connect to signaling server
+      setLoadingStatus('Connecting to server...');
+      await SignalingService.connect(roomId);
+      
+      if (isCleaningUp.current) return;
+      
+      // Create peer connection
+      setLoadingStatus('Setting up connection...');
+      const pc = createPeerConnection();
+      peerConnectionRef.current = pc;
+      
+      // Register signal handler
+      SignalingService.onSignal(handleSignal);
+      
+      // If we're the doctor, send the initial offer
+      const isDoctor = auth.currentUser?.uid === consultationData.doctorId;
       if (isDoctor) {
-        setLoadingStatus('Creating offer...');
+        setLoadingStatus('Initiating call...');
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
         
-        // Create offer with proper timing and error handling
-        offerTimeoutRef.current = setTimeout(async () => {
-          try {
-            if (!pc || pc.signalingState === 'closed' || isCleaningUp.current) {
-              console.error('❌ Cannot create offer - connection closed');
-              return;
-            }
-            
-            console.log('🩺 Creating offer... PC state:', pc.signalingState);
-            
-            const offer = await pc.createOffer({
-              offerToReceiveAudio: true,
-              offerToReceiveVideo: true
-            });
-            
-            if (pc.signalingState === 'closed' || isCleaningUp.current) {
-              console.error('❌ Connection closed during offer creation');
-              return;
-            }
-            
-            await pc.setLocalDescription(offer);
-            console.log('✅ Created and set offer');
-            
-            const success = SignalingService.sendSignal({ 
-              type: 'offer',
-              offer: { type: offer.type, sdp: offer.sdp }
-            });
-            
-            console.log(success ? '📤 Offer sent' : '❌ Failed to send offer');
-            
-          } catch (err) {
-            console.error('❌ Failed to create offer:', err);
-            setError('Failed to create connection offer: ' + err.message);
-          }
-        }, 2000); // Increased delay to ensure everything is ready
-        
+        SignalingService.sendSignal({
+          type: 'offer',
+          offer: pc.localDescription
+        });
       } else {
         setLoadingStatus('Waiting for doctor...');
         console.log('🤒 Patient - waiting for offer...');
       }
-
-      // Connection timeout
+      
+      // Set connection timeout
       initTimeoutRef.current = setTimeout(() => {
         if (!isConnected && !isCleaningUp.current) {
           console.log('⏰ Connection timeout');
@@ -545,89 +542,138 @@ const ConsultationRoom = () => {
           setLoadingStatus('');
           setError('Connection is taking longer than expected. Chat is available below.');
         }
-      }, 25000);
-
+      }, 45000);
+      
     } catch (err) {
       console.error('❌ WebRTC initialization error:', err);
       setError('Failed to initialize video call: ' + err.message);
+      setCameraError(err.message);
       setLoading(false);
     } finally {
       isInitializing.current = false;
+      setLoading(false);
     }
-  }, [roomId, requestUserMedia, setupVideoElement, createPeerConnection, handleSignal, isConnected]);
+  }, [roomId, requestUserMedia, createPeerConnection, handleSignal, isConnected, setupVideoElement]);
 
-  // Initialize consultation
+  // Effect for fetching initial data and messages
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
+    setLoadingStatus('Loading consultation details...');
+
+    const messagesQueryFn = (consultationId) => query(
+      collection(db, 'consultationMessages'),
+      where('consultationId', '==', consultationId),
+      orderBy('timestamp', 'asc')
+    );
+
     let unsubscribeMessages = null;
 
-    const fetchData = async () => {
-      if (!roomId) return;
+    const loadInitialData = async () => {
+      if (!roomId) {
+        if (isMounted) {
+          setError('Room ID is missing.');
+          setLoading(false);
+        }
+        return;
+      }
 
       try {
-        setLoading(true);
-        setLoadingStatus('Loading consultation details...');
-
         const consultationRef = doc(db, 'consultations', roomId);
         const consultationSnap = await getDoc(consultationRef);
 
         if (!consultationSnap.exists()) {
-          throw new Error('Consultation not found');
-        }
-
-        const consultationData = consultationSnap.data();
-        if (isMounted) {
-          setConsultation(consultationData);
-          console.log('✅ Loaded consultation data');
-          
-          if (!isChatMode) {
-            // Small delay to ensure component is ready
-            setTimeout(() => {
-              if (isMounted && !isCleaningUp.current) {
-                initializeWebRTC(consultationData);
-              }
-            }, 1000);
-          } else {
-            setLoading(false);
-          }
-        }
-
-        // Messages listener
-        const messagesQuery = query(
-          collection(db, 'consultationMessages'),
-          where('consultationId', '==', roomId),
-          orderBy('timestamp', 'asc')
-        );
-
-        unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
           if (isMounted) {
-            const newMessages = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-            setMessages(newMessages);
-            setTimeout(scrollToBottom, 100);
+            setError('Consultation not found');
+            setLoading(false); // Stop loading if consultation not found
           }
-        });
+          return; // Exit if no consultation
+        }
 
-      } catch (error) {
-        console.error('❌ Error fetching consultation:', error);
+        const newConsultationData = consultationSnap.data();
         if (isMounted) {
-          setError('Failed to load consultation: ' + error.message);
+          setConsultation(newConsultationData);
+          console.log('✅ Loaded consultation data:', newConsultationData);
+
+          if (unsubscribeMessages) {
+            unsubscribeMessages();
+          }
+          unsubscribeMessages = onSnapshot(messagesQueryFn(roomId), (snapshot) => {
+            if (isMounted) {
+              const newMessages = snapshot.docs.map(docSnapshot => ({ id: docSnapshot.id, ...docSnapshot.data() }));
+              setMessages(newMessages);
+              setTimeout(scrollToBottom, 100);
+            }
+          });
+        }
+      } catch (err) {
+        console.error('❌ Error fetching consultation:', err);
+        if (isMounted) {
+          setError('Failed to load consultation: ' + err.message);
           setLoading(false);
         }
       }
+      // setLoading(false) will be handled by the WebRTC init effect or chat mode logic
     };
 
-    fetchData();
+    loadInitialData();
 
     return () => {
+      console.log('🧹 Cleaning up data fetching effect for roomId:', roomId);
       isMounted = false;
       if (unsubscribeMessages) {
+        console.log('Unsubscribing messages listener');
         unsubscribeMessages();
       }
     };
-  }, [roomId, isChatMode, initializeWebRTC, scrollToBottom]);
+  }, [roomId, scrollToBottom]); // Only depends on roomId and stable scrollToBottom
+
+  // Effect for initializing WebRTC or handling chat mode
+  useEffect(() => {
+    console.log('[WebRTC Init Effect] Triggered. Deps:', { hasConsultation: !!consultation, isChatMode, isInitializing: isInitializing.current, isCleaningUp: isCleaningUp.current });
+
+    if (isChatMode) {
+      console.log('[WebRTC Init Effect] Chat mode. Setting loading false.');
+      setLoading(false);
+      setLoadingStatus('');
+      return; // Done for chat mode
+    }
+
+    if (!consultation) {
+      console.log('[WebRTC Init Effect] No consultation data yet. Waiting...');
+      // setLoading(true); // Ensure loading is true if we are waiting for consultation for WebRTC
+      // setLoadingStatus('Loading consultation details...');
+      return; // Wait for consultation data
+    }
+
+    // At this point, consultation is available and it's not chat mode.
+    if (isInitializing.current) {
+      console.log('[WebRTC Init Effect] Already initializing WebRTC.');
+      return;
+    }
+
+    if (isCleaningUp.current) {
+      console.log('[WebRTC Init Effect] Currently cleaning up. Aborting WebRTC init.');
+      return;
+    }
+
+    // Conditions met to initialize WebRTC
+    console.log('[WebRTC Init Effect] Conditions met. Scheduling initializeWebRTC.');
+    const initTimer = setTimeout(() => {
+      // Final check before actual call
+      if (consultation && !isChatMode && !isInitializing.current && !isCleaningUp.current) {
+        console.log('[WebRTC Init Effect] Calling initializeWebRTC inside setTimeout');
+        initializeWebRTC(consultation);
+      } else {
+        console.warn('[WebRTC Init Effect] Conditions changed before setTimeout callback. Not initializing WebRTC.', { hasConsultation: !!consultation, isChatMode, isInitializing: isInitializing.current, isCleaningUp: isCleaningUp.current });
+      }
+    }, 100); // Minimal delay to allow DOM to settle and break sync chain
+
+    return () => {
+      console.log('[WebRTC Init Effect] Clearing WebRTC initialization timeout.');
+      clearTimeout(initTimer);
+    };
+  }, [consultation, isChatMode, initializeWebRTC]); // initializeWebRTC is a dependency here
 
   // Cleanup on unmount
   useEffect(() => {
@@ -670,23 +716,6 @@ const ConsultationRoom = () => {
         setIsAudioEnabled(!isAudioEnabled);
       }
     }
-  };
-
-  const retryCamera = async () => {
-    console.log('🔄 Retrying camera access...');
-    setCameraError('');
-    setError('');
-    setLoading(true);
-    
-    // Clean up first
-    cleanup();
-    
-    // Wait a bit then retry
-    setTimeout(() => {
-      if (consultation) {
-        initializeWebRTC(consultation);
-      }
-    }, 1000);
   };
 
   return (
