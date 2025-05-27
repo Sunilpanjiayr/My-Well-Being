@@ -1,7 +1,3 @@
-import {
-  requestNotificationPermission,
-  onMessageListener,
-} from "../firebaseConfig";
 // src/components/features/sleepTracker/SleepTracker.js
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { saveAs } from "file-saver";
@@ -1021,34 +1017,9 @@ function SleepTracker() {
   };
 
   // Save Settings
-  const handleSaveSettings = async () => {
+  const handleSaveSettings = () => {
     setShowSaved(true);
     setTimeout(() => setShowSaved(false), 2000);
-
-    if (reminderEnabled) {
-      await requestNotificationPermission(setNotification);
-      // Schedule notification (simplified client-side scheduling)
-      const now = new Date();
-      const [hours, minutes] = reminderTime.split(":").map(Number);
-      const reminderDate = new Date();
-      reminderDate.setHours(hours, minutes, 0, 0);
-
-      // If reminder time is in the past today, schedule for tomorrow
-      if (reminderDate < now) {
-        reminderDate.setDate(reminderDate.getDate() + 1);
-      }
-
-      const timeUntilReminder = reminderDate.getTime() - now.getTime();
-
-      setTimeout(() => {
-        if (reminderEnabled) {
-          const notification = new Notification("Bedtime Reminder", {
-            body: `It's ${reminderTime}! Time to prepare for bed to meet your ${sleepGoal}-hour sleep goal.`,
-            icon: "/favicon.ico",
-          });
-        }
-      }, timeUntilReminder);
-    }
 
     setNotification({
       show: true,
