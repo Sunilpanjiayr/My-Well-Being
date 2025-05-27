@@ -6,27 +6,28 @@ const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 
-// Configure CORS - More permissive for development
+// Configure CORS
 app.use(cors({
-  origin: "*",  // In production, replace with specific origins
+  origin: ["http://localhost:3000", "http://localhost:3001"],
   methods: ["GET", "POST"],
   credentials: true
 }));
 
 const io = socketIo(server, {
   cors: {
-    origin: "*",  // In production, replace with specific origins
+    origin: ["http://localhost:3000", "http://localhost:3001"],
     methods: ["GET", "POST"],
     credentials: true
   },
   transports: ['polling', 'websocket'],
   allowEIO3: true,
-  pingTimeout: 60000,  // Increased ping timeout
-  pingInterval: 25000  // Increased ping interval
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // Store active rooms and their participants
 const rooms = new Map();
+const userSocketMap = new Map(); // Map userId to socketId
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -36,160 +37,239 @@ app.get('/health', (req, res) => {
     connections: io.engine.clientsCount,
     rooms: {
       total: rooms.size,
-      active: Array.from(rooms.keys())
+      active: Array.from(rooms.keys()),
+      details: Array.from(rooms.entries()).map(([roomId, users]) => ({
+        roomId,
+        users: Array.from(users)
+      }))
     }
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'WebRTC Signaling Server',
+    status: 'running',
+    timestamp: new Date().toISOString()
   });
 });
 
 // Socket connection handling
 io.on('connection', (socket) => {
-  console.log(`🔌 New connection: ${socket.id}`);
+  console.log(`\n🔌 NEW CONNECTION`);
+  console.log(`   Socket ID: ${socket.id}`);
+  console.log(`   Time: ${new Date().toISOString()}`);
+  console.log(`   Total connections: ${io.engine.clientsCount}`);
   
-  let currentRoom = null;
-  
-  // Join room handler
-  socket.on('join-room', async (data) => {
-    try {
-      const { roomId, userId } = data;
-      
-      if (!roomId || !userId) {
-        throw new Error('Missing roomId or userId');
-      }
-      
-      // Leave current room if any
-      if (currentRoom) {
-        await socket.leave(currentRoom);
-        const room = rooms.get(currentRoom);
-        if (room) {
-          room.delete(userId);
-          if (room.size === 0) {
-            rooms.delete(currentRoom);
-          }
-        }
-      }
-      
-      // Join new room
-      await socket.join(roomId);
-      currentRoom = roomId;
-      
-      // Initialize room if doesn't exist
-      if (!rooms.has(roomId)) {
-        rooms.set(roomId, new Set());
-      }
-      rooms.get(roomId).add(userId);
-      
-      // Get other users in room
-      const otherUsers = Array.from(rooms.get(roomId)).filter(id => id !== userId);
-      
-      // Notify user of successful join
-      socket.emit('room-joined', {
-        roomId,
-        userCount: rooms.get(roomId).size,
-        otherUsers
-      });
-      
-      // Notify others in room
-      socket.to(roomId).emit('user-joined', {
-        userId,
-        userCount: rooms.get(roomId).size
-      });
-      
-    } catch (error) {
-      console.error('Room join error:', error);
-      socket.emit('error', {
-        type: 'room-join-error',
-        message: error.message
-      });
-    }
-  });
-  
-  // Signal relay handler
-  socket.on('signal', (data) => {
-    try {
-      const { roomId, fromUserId, toUserId } = data;
-      
-      if (!roomId || !fromUserId) {
-        throw new Error('Missing required signal data');
-      }
-      
-      // Validate user is in room
-      const room = rooms.get(roomId);
-      if (!room || !room.has(fromUserId)) {
-        throw new Error('User not in room');
-      }
-      
-      console.log(`📡 Signal: ${data.type || 'ICE'} from ${fromUserId}`);
-      
-      // Relay signal to room or specific user
-      if (toUserId) {
-        socket.to(roomId).emit('signal', data);
-      } else {
-        socket.to(roomId).emit('signal', data);
-      }
-      
-    } catch (error) {
-      console.error('Signal relay error:', error);
-      socket.emit('error', {
-        type: 'signal-error',
-        message: error.message
-      });
-    }
-  });
-  
-  // Disconnect handler
-  socket.on('disconnect', () => {
-    console.log(`🔌 Disconnection: ${socket.id}`);
+  // Handle room joining
+  socket.on('join-room', (roomId, userId) => {
+    console.log(`\n👤 USER JOINING ROOM`);
+    console.log(`   Room ID: ${roomId}`);
+    console.log(`   User ID: ${userId}`);
+    console.log(`   Socket ID: ${socket.id}`);
     
-    if (currentRoom) {
-      const room = rooms.get(currentRoom);
-      if (room) {
-        // Find userId in room
-        const userId = Array.from(room).find(id => {
-          const sockets = io.sockets.adapter.rooms.get(currentRoom);
-          return sockets && !sockets.has(socket.id);
+    // Leave any previous rooms
+    const previousRooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+    previousRooms.forEach(room => {
+      socket.leave(room);
+      console.log(`   Left previous room: ${room}`);
+    });
+    
+    // Join the new room
+    socket.join(roomId);
+    
+    // Initialize room if it doesn't exist
+    if (!rooms.has(roomId)) {
+      rooms.set(roomId, new Set());
+      console.log(`   Created new room: ${roomId}`);
+    }
+    
+    const room = rooms.get(roomId);
+    
+    // Store user mapping
+    userSocketMap.set(userId, socket.id);
+    socket.userId = userId;
+    socket.roomId = roomId;
+    
+    // Add user to room
+    room.add(userId);
+    
+    console.log(`   Room ${roomId} now has ${room.size} users: [${Array.from(room).join(', ')}]`);
+    
+    // Notify others in the room about the new user
+    socket.broadcast.to(roomId).emit('user-connected', userId);
+    console.log(`   Broadcasted 'user-connected' for ${userId} to room ${roomId}`);
+    
+    // Send confirmation to the joining user
+    socket.emit('room-joined', {
+      roomId,
+      userId,
+      roomSize: room.size,
+      otherUsers: Array.from(room).filter(id => id !== userId)
+    });
+    
+    console.log(`✅ User ${userId} successfully joined room ${roomId}`);
+  });
+  
+  // Handle signaling (for WebRTC offer/answer/ice-candidates)
+  socket.on('signal', (data) => {
+    console.log(`\n📡 SIGNAL RECEIVED`);
+    console.log(`   From: ${data.fromUserId || socket.userId}`);
+    console.log(`   To: ${data.toUserId || 'broadcast'}`);
+    console.log(`   Type: ${data.type || 'unknown'}`);
+    console.log(`   Room: ${data.roomId || socket.roomId}`);
+    
+    const roomId = data.roomId || socket.roomId;
+    
+    if (!roomId) {
+      console.warn(`   ⚠️ No room ID provided for signal`);
+      return;
+    }
+    
+    // Forward the signal to other users in the room
+    if (data.toUserId) {
+      // Send to specific user
+      const targetSocketId = userSocketMap.get(data.toUserId);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('signal', {
+          ...data,
+          fromUserId: socket.userId
         });
-        
-        if (userId) {
-          room.delete(userId);
-          if (room.size === 0) {
-            rooms.delete(currentRoom);
-          }
-          
-          // Notify others in room
-          socket.to(currentRoom).emit('user-left', {
-            userId,
-            userCount: room.size
-          });
-        }
+        console.log(`   ✅ Signal forwarded to specific user ${data.toUserId}`);
+      } else {
+        console.warn(`   ⚠️ Target user ${data.toUserId} not found`);
       }
+    } else {
+      // Broadcast to all users in room except sender
+      socket.broadcast.to(roomId).emit('signal', {
+        ...data,
+        fromUserId: socket.userId
+      });
+      console.log(`   ✅ Signal broadcasted to room ${roomId}`);
     }
   });
   
-  // Heartbeat handlers
+  // Handle heartbeat
   socket.on('heartbeat-ping', () => {
-    socket.emit('heartbeat-pong', { timestamp: Date.now() });
+    socket.emit('heartbeat-pong', { 
+      timestamp: Date.now(),
+      socketId: socket.id 
+    });
+  });
+  
+  // Handle custom events
+  socket.on('get-room-info', (roomId) => {
+    const room = rooms.get(roomId);
+    socket.emit('room-info', {
+      roomId,
+      users: room ? Array.from(room) : [],
+      userCount: room ? room.size : 0
+    });
+  });
+  
+  // Handle disconnection
+  socket.on('disconnect', (reason) => {
+    console.log(`\n🔌 USER DISCONNECTED`);
+    console.log(`   Socket ID: ${socket.id}`);
+    console.log(`   User ID: ${socket.userId}`);
+    console.log(`   Room ID: ${socket.roomId}`);
+    console.log(`   Reason: ${reason}`);
+    console.log(`   Time: ${new Date().toISOString()}`);
+    
+    const userId = socket.userId;
+    const roomId = socket.roomId;
+    
+    if (userId && roomId) {
+      // Remove user from room
+      const room = rooms.get(roomId);
+      if (room) {
+        room.delete(userId);
+        console.log(`   Removed ${userId} from room ${roomId}`);
+        
+        // Clean up empty rooms
+        if (room.size === 0) {
+          rooms.delete(roomId);
+          console.log(`   Deleted empty room ${roomId}`);
+        } else {
+          console.log(`   Room ${roomId} now has ${room.size} users: [${Array.from(room).join(', ')}]`);
+        }
+        
+        // Notify others in the room
+        socket.broadcast.to(roomId).emit('user-disconnected', userId);
+        console.log(`   Notified room ${roomId} about ${userId} disconnection`);
+      }
+      
+      // Remove from user mapping
+      userSocketMap.delete(userId);
+    }
+    
+    console.log(`   Remaining connections: ${io.engine.clientsCount - 1}`);
+    console.log(`   Active rooms: ${rooms.size}`);
+  });
+  
+  // Handle errors
+  socket.on('error', (error) => {
+    console.error(`\n💣 SOCKET ERROR`);
+    console.error(`   Socket ID: ${socket.id}`);
+    console.error(`   User ID: ${socket.userId}`);
+    console.error(`   Error: ${error.message}`);
+    console.error(`   Stack: ${error.stack}`);
   });
 });
 
-// Error handling
+// Global error handling
 server.on('error', (error) => {
-  console.error('Server error:', error);
+  console.error('\n💥 SERVER ERROR:');
+  console.error('   Message:', error.message);
+  console.error('   Code:', error.code);
+  console.error('   Stack:', error.stack);
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  console.error('\n💥 UNCAUGHT EXCEPTION:');
+  console.error('   Message:', error.message);
+  console.error('   Stack:', error.stack);
+  console.error('   Shutting down gracefully...');
+  
+  // Close server gracefully
+  server.close(() => {
+    process.exit(1);
+  });
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('\n💥 UNHANDLED REJECTION:');
+  console.error('   Promise:', promise);
+  console.error('   Reason:', reason);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('\n🔄 SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('\n🔄 SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
 
 const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, () => {
-  console.log(`\n🚀 SIGNALING SERVER RUNNING`);
+  console.log(`\n🚀 WEBRTC SIGNALING SERVER STARTED`);
+  console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`   Port: ${PORT}`);
+  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Time: ${new Date().toISOString()}`);
-  console.log(`   URL: http://localhost:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/health`);
+  console.log(`   Health Check: http://localhost:${PORT}/health`);
+  console.log(`   WebSocket: ws://localhost:${PORT}`);
+  console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });

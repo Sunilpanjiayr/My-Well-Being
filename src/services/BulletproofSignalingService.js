@@ -1,171 +1,148 @@
 import { io } from 'socket.io-client';
 import { auth } from '../components/Auth/firebase';
 
-class BulletproofSignalingService {
+class SimplifiedSignalingService {
   constructor() {
     this.socket = null;
     this.roomId = null;
-    this.onSignalCallback = null;
-    this.isConnecting = false;
-    this.connectionAttempts = 0;
-    this.maxAttempts = 3; // Max connection attempts for a connect() call
-    this.attemptTimeoutDuration = 10000; // Timeout for each individual attempt
-    this.heartbeatInterval = null;
-    this.reconnectTimeout = null;
-    this.lastHeartbeat = null;
+    this.isConnected = false;
     this.serverUrl = 'http://localhost:3001';
+    this.callbacks = {
+      onUserConnected: null,
+      onUserDisconnected: null,
+      onSignal: null,
+      onError: null
+    };
   }
 
   async connect(roomId) {
-    console.log(`\n🎯 CONNECTING TO SIGNALING SERVER (Service Call)`);
-    console.log(`   Room: ${roomId}`);
-
-    if (this.isConnecting) {
-      console.log('⏳ Connection sequence already in progress...');
-      // This should ideally return the existing promise or handle queueing.
-      // For now, let's reject to prevent parallel unstable attempts.
-      return Promise.reject(new Error('Connection sequence already in progress.'));
-    }
+    console.log(`🎯 Connecting to signaling server for room: ${roomId}`);
 
     if (this.socket?.connected && this.roomId === roomId) {
       console.log('✅ Already connected to this room');
       return Promise.resolve();
     }
 
-    await this.disconnect(); // Clean up any existing connection first
-
-    this.isConnecting = true;
-    this.roomId = roomId;
-    this.connectionAttempts = 0; // Reset attempts for this new connect sequence
+    // Clean up existing connection
+    await this.disconnect();
 
     return new Promise((resolve, reject) => {
       if (!auth.currentUser?.uid) {
-        this.isConnecting = false;
         reject(new Error('User not authenticated'));
         return;
       }
+
       const userId = auth.currentUser.uid;
-      console.log(`👤 User ID: ${userId}`);
+      console.log(`👤 Connecting as user: ${userId}`);
 
-      const attemptConnection = () => {
-        if (this.connectionAttempts >= this.maxAttempts) {
-          this.isConnecting = false;
-          console.error(`❌ Failed to connect after ${this.maxAttempts} attempts.`);
-          reject(new Error(`Failed to connect to signaling server after ${this.maxAttempts} attempts.`));
-          return;
-        }
+      // Create new socket connection
+      this.socket = io(this.serverUrl, {
+        transports: ['polling', 'websocket'],
+        timeout: 20000,
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 2000
+      });
 
-        this.connectionAttempts++;
-        console.log(`🔄 Connecting to: ${this.serverUrl} (Attempt ${this.connectionAttempts}/${this.maxAttempts})`);
+      const connectionTimeout = setTimeout(() => {
+        console.error('❌ Connection timeout');
+        this.socket?.disconnect();
+        reject(new Error('Connection timeout'));
+      }, 30000);
 
-        // Ensure previous socket is fully cleaned for this attempt
-        if (this.socket) {
-          this.socket.removeAllListeners();
-          this.socket.disconnect(); // Use disconnect for Socket.IO
-          this.socket = null;
-        }
-
-        this.socket = io(this.serverUrl, {
-          transports: ['websocket', 'polling'],
-          timeout: this.attemptTimeoutDuration, // Socket.IO's own timeout for the connection attempt
-          forceNew: true, // Ensures a new connection, good for retries
-          reconnection: false, // Disable Socket.IO's automatic reconnection; we manage retries.
-          query: {
-            roomId,
-            userId,
-          },
-        });
-
-        let attemptTimer = setTimeout(() => {
-          console.warn(`⏰ Attempt ${this.connectionAttempts} timed out after ${this.attemptTimeoutDuration / 1000}s.`);
-          if (this.socket) {
-            this.socket.disconnect(); // Trigger cleanup and connect_error if it hasn't fired
-          }
-          // connect_error handler will call attemptConnection() or reject if max attempts reached
-          // If connect_error is not triggered by disconnect, we might need to call attemptConnection here.
-          // However, socket.disconnect() should ideally lead to connect_error or a clean close.
-          // To be safe, if socket still exists, call attemptConnection.
-          // This timeout primarily guards against hangs where connect_error isn't fired.
-          // The 'timeout' option in io() should make connect_error fire.
-        }, this.attemptTimeoutDuration + 1000); // Slightly longer than socket.io timeout
-
-        this.socket.on('connect', () => {
-          clearTimeout(attemptTimer);
-          console.log(`✅ CONNECTED SUCCESSFULLY!`);
-          console.log(`   Server: ${this.serverUrl}`);
-          console.log(`   Socket ID: ${this.socket.id}`);
-          console.log(`   Transport: ${this.socket.io.engine.transport.name}`);
-
-          this.isConnecting = false;
-          this.lastHeartbeat = Date.now();
-          this.socket.emit('join-room', { roomId, userId });
-          this.startHeartbeat();
-          resolve();
-        });
-
-        this.socket.on('connect_error', (error) => {
-          clearTimeout(attemptTimer);
-          console.warn(`❌ Connection attempt ${this.connectionAttempts} error: ${error.message}`);
-          // Disconnect explicitly to clean up this socket instance before next attempt
-          if (this.socket) {
-            this.socket.disconnect();
-          }
-          // Proceed to the next attempt or fail
-          setTimeout(attemptConnection, 2000); // Wait 2s before next attempt
-        });
+      // Connection successful
+      this.socket.on('connect', () => {
+        clearTimeout(connectionTimeout);
+        console.log('✅ Socket connected:', this.socket.id);
+        this.isConnected = true;
+        this.roomId = roomId;
         
-        this.socket.on('disconnect', (reason) => {
-          // This handles disconnects *after* a connection was made, or if server drops.
-          // For initial connection failures, 'connect_error' is the primary event.
-          console.log(`🔌 Socket disconnected during connection phase. Reason: ${reason}`);
-          // If 'connect_error' didn't handle this, and we are still in isConnecting phase, retry.
-          // This might be redundant if connect_error always fires for failed initial connections.
-          // clearTimeout(attemptTimer); // already cleared by connect or connect_error usually
-          // if (this.isConnecting) { // Ensure we are still in the initial connection process
-          //  console.log('Disconnected during connection attempt, trying next.');
-          //  attemptConnection();
-          // }
-        });
+        // Join the room
+        this.socket.emit('join-room', roomId, userId);
+        resolve();
+      });
 
-        // Other event handlers (signal, room-joined etc.) should be ideally set up
-        // after successful connection, or ensure they are re-bound if socket is recreated.
-        // For simplicity here, they are bound each time.
-        this.socket.on('connection_success', (data) => console.log('🎉 SERVER ACKNOWLEDGED CONNECTION', data));
-        this.socket.on('room-joined', (data) => console.log('🏠 SUCCESSFULLY JOINED ROOM', data));
-        this.socket.on('signal', (data) => {
-          if (data.fromUserId === userId) return;
-          if (this.onSignalCallback) this.onSignalCallback(data);
-        });
-        this.socket.on('error', (socketError) => console.error('💣 Socket.IO reported an error:', socketError));
+      // Connection failed
+      this.socket.on('connect_error', (error) => {
+        clearTimeout(connectionTimeout);
+        console.error('❌ Connection failed:', error.message);
+        this.isConnected = false;
+        reject(new Error(`Connection failed: ${error.message}`));
+      });
 
-      }; // End of attemptConnection
+      // Room joined successfully
+      this.socket.on('room-joined', (data) => {
+        console.log('🏠 Successfully joined room:', data);
+      });
 
-      attemptConnection(); // Start the first attempt
+      // User connected to room
+      this.socket.on('user-connected', (userId) => {
+        console.log('👤 User connected:', userId);
+        if (this.callbacks.onUserConnected) {
+          this.callbacks.onUserConnected(userId);
+        }
+      });
+
+      // User disconnected from room
+      this.socket.on('user-disconnected', (userId) => {
+        console.log('👤 User disconnected:', userId);
+        if (this.callbacks.onUserDisconnected) {
+          this.callbacks.onUserDisconnected(userId);
+        }
+      });
+
+      // Signal received
+      this.socket.on('signal', (data) => {
+        console.log('📡 Signal received:', data.type || 'unknown');
+        if (this.callbacks.onSignal) {
+          this.callbacks.onSignal(data);
+        }
+      });
+
+      // Handle disconnection
+      this.socket.on('disconnect', (reason) => {
+        console.log('🔌 Socket disconnected:', reason);
+        this.isConnected = false;
+        
+        if (reason === 'io server disconnect') {
+          // Server initiated disconnect, try to reconnect
+          console.log('🔄 Server disconnected, attempting to reconnect...');
+        }
+      });
+
+      // Handle errors
+      this.socket.on('error', (error) => {
+        console.error('💣 Socket error:', error);
+        if (this.callbacks.onError) {
+          this.callbacks.onError(error);
+        }
+      });
     });
   }
 
   async disconnect() {
-    console.log('🔌 Disconnecting from signaling server (Service Call)...');
-    this.stopHeartbeat();
-    clearTimeout(this.reconnectTimeout); // Clear any scheduled auto-reconnect
+    console.log('🔌 Disconnecting from signaling server...');
     
     if (this.socket) {
-      this.socket.removeAllListeners(); // Clean up listeners
-      this.socket.disconnect(); // Use disconnect for socket.io
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
       this.socket = null;
     }
     
+    this.isConnected = false;
     this.roomId = null;
-    // this.isConnecting should be false if disconnect is called outside a connect sequence
-    // If called *during* a connect sequence, the connect promise should handle isConnecting.
-    // For a general disconnect, setting it to false is safe.
-    this.isConnecting = false; 
-    console.log('🔌 Disconnected from signaling server complete.');
+    console.log('✅ Disconnected successfully');
   }
 
   sendSignal(data) {
     if (!this.socket?.connected) {
       console.warn('⚠️ Cannot send signal: not connected');
+      return false;
+    }
+
+    if (!this.roomId) {
+      console.warn('⚠️ Cannot send signal: no room ID');
       return false;
     }
 
@@ -177,10 +154,9 @@ class BulletproofSignalingService {
         timestamp: Date.now()
       };
 
-      console.log(`📤 SENDING SIGNAL:`, {
-        type: data.type || 'ice-candidate',
+      console.log('📤 Sending signal:', {
+        type: data.type || 'unknown',
         roomId: this.roomId,
-        fromUserId: signalData.fromUserId,
         hasOffer: !!data.offer,
         hasAnswer: !!data.answer,
         hasCandidate: !!data.candidate
@@ -194,63 +170,35 @@ class BulletproofSignalingService {
     }
   }
 
+  // Set callbacks
+  onUserConnected(callback) {
+    this.callbacks.onUserConnected = callback;
+  }
+
+  onUserDisconnected(callback) {
+    this.callbacks.onUserDisconnected = callback;
+  }
+
   onSignal(callback) {
-    if (typeof callback !== 'function') {
-      console.error('❌ Signal callback must be a function');
-      return;
-    }
-    this.onSignalCallback = callback;
-    console.log('✅ Signal callback registered');
+    this.callbacks.onSignal = callback;
   }
 
-  startHeartbeat() {
-    this.stopHeartbeat();
-    
-    this.heartbeatInterval = setInterval(() => {
-      if (this.socket?.connected) {
-        this.socket.emit('heartbeat-ping');
-        
-        // Check if we've missed too many heartbeats
-        if (this.lastHeartbeat && Date.now() - this.lastHeartbeat > 30000) {
-          console.warn('⚠️ Missed heartbeats - reconnecting...');
-          this.scheduleReconnect();
-        }
-      }
-    }, 15000);
-
-    this.socket.on('heartbeat-pong', () => {
-      this.lastHeartbeat = Date.now();
-    });
+  onError(callback) {
+    this.callbacks.onError = callback;
   }
 
-  stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-  }
-
-  scheduleReconnect() {
-    if (this.reconnectTimeout) return;
-    
-    this.reconnectTimeout = setTimeout(async () => {
-      try {
-        await this.connect(this.roomId);
-      } catch (error) {
-        console.error('❌ Reconnection failed:', error);
-      }
-      this.reconnectTimeout = null;
-    }, 5000);
-  }
-
-  isConnected() {
+  // Utility methods
+  isSocketConnected() {
     return this.socket?.connected || false;
   }
 
   getConnectionState() {
     if (!this.socket) return 'disconnected';
-    if (this.isConnecting) return 'connecting';
     return this.socket.connected ? 'connected' : 'disconnected';
+  }
+
+  getCurrentRoom() {
+    return this.roomId;
   }
 
   getDebugInfo() {
@@ -260,12 +208,10 @@ class BulletproofSignalingService {
       socketId: this.socket?.id,
       roomId: this.roomId,
       transport: this.socket?.io?.engine?.transport?.name,
-      isConnecting: this.isConnecting,
-      hasCallback: !!this.onSignalCallback,
-      lastHeartbeat: this.lastHeartbeat,
-      connectionAttempts: this.connectionAttempts
+      serverUrl: this.serverUrl
     };
   }
 }
 
-export default new BulletproofSignalingService();
+// Export singleton instance
+export default new SimplifiedSignalingService();
