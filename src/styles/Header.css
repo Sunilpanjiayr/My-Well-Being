@@ -1,4 +1,4 @@
-/* src/styles/Header.css */
+/* src/styles/Header.css - COMPLETE REPLACEMENT FILE */
 
 .site-header {
   position: fixed;
@@ -379,11 +379,11 @@
   }
 }
 
-/* Main content fixes */
-main {
-  padding-top: 80px; /* Add space for the fixed header */
+/* REMOVED: The problematic main padding rule that was causing empty space */
+/* main {
+  padding-top: 80px;
   min-height: calc(100vh - 80px);
-}
+} */
 
 /* Registration form styles */
 .auth-container {
@@ -399,13 +399,3 @@ main {
   background-color: #1e1e1e;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
-
-/* Remove the problematic logo-container that was positioning the logo absolutely */
-/* .logo-container {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: auto;
-  height: auto;
-  z-index: 10;
-} */

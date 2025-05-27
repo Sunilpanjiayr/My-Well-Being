@@ -232,7 +232,10 @@ function HomePage() {
             </p>
             <div className="hero-buttons">
               <Link to="/register" className="primary-button pulse">Get Started Today</Link>
-              <Link to="/login" className="secondary-button">Log In</Link>
+  <div className="login-options">
+    <Link to="/login" className="secondary-button">Patient Login</Link>
+    <Link to="/doctorLogin" className="secondary-button doctor-btn">Healthcare Professional Login</Link>
+    </div>
             </div>
             <div className="hero-features">
               <div className="hero-feature">

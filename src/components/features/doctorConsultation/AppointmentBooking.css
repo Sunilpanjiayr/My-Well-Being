@@ -1,0 +1,460 @@
+.appointment-booking {
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .appointment-booking {
+  background-color: #333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.booking-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.dark .booking-header h2 {
+  color: #f0f0f0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.dark .close-button {
+  color: #bbb;
+}
+
+.doctor-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.dark .doctor-summary {
+  background-color: #444;
+}
+
+.doctor-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.doctor-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.doctor-info h3 {
+  margin: 0 0 4px 0;
+  color: #333;
+}
+
+.dark .doctor-info h3 {
+  color: #f0f0f0;
+}
+
+.doctor-info p {
+  margin: 0;
+  color: #666;
+}
+
+.dark .doctor-info p {
+  color: #bbb;
+}
+
+.consultation-fee {
+  font-weight: 500;
+  color: #ef6c00 !important;
+}
+
+.dark .consultation-fee {
+  color: #ff9800 !important;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #b91c1c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dark .error-message {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.error-message button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+}
+
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  color: #333;
+  font-weight: 500;
+}
+
+.dark .form-group label {
+  color: #f0f0f0;
+}
+
+.consultation-types {
+  display: flex;
+  gap: 12px;
+}
+
+.type-button {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: none;
+  color: #666;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark .type-button {
+  border-color: #444;
+  color: #bbb;
+}
+
+.type-button.active {
+  border-color: #ef6c00;
+  color: #ef6c00;
+  background-color: rgba(239, 108, 0, 0.1);
+}
+
+.dark .type-button.active {
+  border-color: #ff9800;
+  color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+}
+
+input[type="date"] {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.dark input[type="date"] {
+  background-color: #444;
+  border-color: #555;
+  color: #f0f0f0;
+}
+
+.time-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.time-slot {
+  padding: 8px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background: none;
+  color: #666;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark .time-slot {
+  border-color: #444;
+  color: #bbb;
+}
+
+.time-slot.active {
+  border-color: #ef6c00;
+  color: #ef6c00;
+  background-color: rgba(239, 108, 0, 0.1);
+}
+
+.dark .time-slot.active {
+  border-color: #ff9800;
+  color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+}
+
+textarea {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  min-height: 120px;
+  resize: vertical;
+}
+
+.dark textarea {
+  background-color: #444;
+  border-color: #555;
+  color: #f0f0f0;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-upload input[type="file"] {
+  display: none;
+}
+
+.upload-button {
+  padding: 12px 24px;
+  background-color: #f5f5f5;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  color: #666;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dark .upload-button {
+  background-color: #444;
+  border-color: #555;
+  color: #bbb;
+}
+
+.upload-progress {
+  margin-top: 12px;
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dark .progress-bar {
+  background-color: #444;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #ef6c00;
+  transition: width 0.3s ease;
+}
+
+.dark .progress-fill {
+  background-color: #ff9800;
+}
+
+.uploaded-files {
+  margin-top: 16px;
+}
+
+.uploaded-files h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.dark .uploaded-files h4 {
+  color: #f0f0f0;
+}
+
+.uploaded-files ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.uploaded-files li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.dark .uploaded-files li {
+  background-color: #444;
+}
+
+.uploaded-files li button {
+  padding: 4px 8px;
+  background-color: #fee2e2;
+  border: none;
+  border-radius: 4px;
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.dark .uploaded-files li button {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.book-button {
+  padding: 12px;
+  background-color: #ef6c00;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 8px;
+}
+
+.book-button:hover:not(:disabled) {
+  background-color: #e65100;
+}
+
+.book-button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+}
+
+.dark .book-button {
+  background-color: #ff9800;
+  color: #1a1a1a;
+}
+
+.dark .book-button:hover:not(:disabled) {
+  background-color: #f57c00;
+}
+
+.dark .book-button:disabled {
+  background-color: #444;
+  color: #666;
+}
+
+.active-consultation-alert {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.active-consultation-alert h3 {
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.active-consultation-alert p {
+  color: #166534;
+  margin-bottom: 16px;
+}
+
+.join-consultation-btn {
+  background-color: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.join-consultation-btn:hover {
+  background-color: #16a34a;
+}
+
+/* Dark mode styles */
+.dark .active-consultation-alert {
+  background-color: #064e3b;
+  border-color: #059669;
+}
+
+.dark .active-consultation-alert h3,
+.dark .active-consultation-alert p {
+  color: #ecfdf5;
+}
+
+.dark .join-consultation-btn {
+  background-color: #059669;
+}
+
+.dark .join-consultation-btn:hover {
+  background-color: #047857;
+}
+
+@media (max-width: 480px) {
+  .appointment-booking {
+    padding: 16px;
+  }
+
+  .consultation-types {
+    flex-direction: column;
+  }
+
+  .time-slots {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+
+  .doctor-summary {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .file-upload {
+    flex-direction: column;
+  }
+
+  .upload-button {
+    width: 100%;
+    text-align: center;
+  }
+} 

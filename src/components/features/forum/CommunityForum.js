@@ -1,16 +1,45 @@
 // src/components/features/forum/CommunityForum.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { useAuth } from '../../../contexts/AuthContext';
+import { auth, db } from '../../Auth/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { 
+  fetchTopics, 
+  createTopic,
+  fetchTopic,
+  createReply,
+  likeTopic,
+  likeReply,
+  toggleBookmark,
+  reportContent,
+  getUserBookmarks
+} from './api/forumApi';
 import './CommunityForum.css';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 function CommunityForum() {
   const { darkMode } = useTheme();
-  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const params = useParams();
+  const location = useLocation();
+  
+  // User states
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userName, setUserName] = useState('');
+  const [userAvatar, setUserAvatar] = useState('👤');
+  const [userBookmarks, setUserBookmarks] = useState([]);
+  
+  // UI states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeTopic, setActiveTopic] = useState(null);
   const [topics, setTopics] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [activeView, setActiveView] = useState('forum'); // 'forum', 'bookmarks', 'myTopics'
+  
+  // Form states
   const [newTopicForm, setNewTopicForm] = useState({
     visible: false,
     title: '',
@@ -18,13 +47,131 @@ function CommunityForum() {
     content: ''
   });
   const [replyContent, setReplyContent] = useState('');
-  const [sortOrder, setSortOrder] = useState('newest');
-  const [userBookmarks, setUserBookmarks] = useState([]);
+  
+  // Report modal states
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportItemId, setReportItemId] = useState(null);
   const [reportItemType, setReportItemType] = useState(null);
-  const [activeView, setActiveView] = useState('forum'); // 'forum', 'bookmarks', 'myTopics'
+
+  // Forum statistics
+  const [forumStats, setForumStats] = useState({
+    topicsCount: 0,
+    postsCount: 0,
+    membersCount: 0,
+    newestMember: 'User'
+  });
+
+  // Get current user info when component mounts
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        
+        try {
+          // Get user profile from Firestore for additional data (gender, etc)
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          
+          // Set username - prefer displayName, fallback to Firestore data or email
+          setUserName(
+            user.displayName || 
+            (userDoc.exists() ? userDoc.data().username : null) || 
+            user.email?.split('@')[0] || 
+            'User'
+          );
+          
+          // Set avatar - prefer photoURL, fallback to Firestore data or first letter
+          const userPhotoURL = user.photoURL;
+          const firestoreAvatarUrl = userDoc.exists() ? userDoc.data().avatarUrl : null;
+          
+          if (userPhotoURL) {
+            setUserAvatar(userPhotoURL);
+          } else if (firestoreAvatarUrl) {
+            setUserAvatar(firestoreAvatarUrl);
+          } else {
+            const firstLetter = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+            setUserAvatar(firstLetter);
+          }
+          
+          // Load user bookmarks
+          try {
+            const bookmarks = await getUserBookmarks(user.uid);
+            setUserBookmarks(bookmarks);
+          } catch (error) {
+            console.error('Failed to load bookmarks:', error);
+          }
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+          setUserName(user.displayName || user.email?.split('@')[0] || 'User');
+          setUserAvatar(user.displayName?.charAt(0).toUpperCase() || '👤');
+        }
+      } else {
+        setCurrentUser(null);
+        setUserBookmarks([]);
+        setUserName('');
+        setUserAvatar('👤');
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Check if we're viewing a specific topic (from URL)
+  useEffect(() => {
+    if (params.topicId) {
+      loadTopic(params.topicId);
+    }
+  }, [params.topicId]);
+
+  // Load topics based on filters
+  const loadTopics = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {
+        category: activeCategory === 'all' ? null : activeCategory,
+        search: searchQuery.trim() || null,
+        sort: sortOrder,
+        view: activeView,
+        userId: currentUser?.uid
+      };
+      const data = await fetchTopics(params);
+      setTopics(data);
+      
+      // Update forum statistics
+      setForumStats(prev => ({
+        ...prev,
+        topicsCount: data.length,
+        postsCount: data.reduce((total, topic) => total + (topic.replyCount || 0) + 1, 0)
+      }));
+    } catch (error) {
+      console.error('Failed to load topics:', error);
+      setError('Failed to load topics. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeCategory, searchQuery, sortOrder, activeView, currentUser]);
+
+  useEffect(() => {
+    // Don't load topics if we're viewing a specific topic
+    if (!params.topicId) {
+      loadTopics();
+    }
+  }, [loadTopics, params.topicId]);
+
+  // Load a specific topic with replies
+  const loadTopic = async (topicId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const topic = await fetchTopic(topicId);
+      setActiveTopic(topic);
+    } catch (error) {
+      console.error('Failed to load topic:', error);
+      setError('Failed to load topic details. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Forum categories
   const categories = [
@@ -37,273 +184,6 @@ function CommunityForum() {
     { id: 'wellness', name: 'Wellness Tips' },
     { id: 'success', name: 'Success Stories' }
   ];
-
-  // Sample topics data
-  const sampleTopics = [
-    {
-      id: 1,
-      title: 'Tips for staying hydrated throughout the day',
-      category: 'general',
-      author: {
-        id: 101,
-        name: 'HealthEnthusiast',
-        avatar: '👩‍⚕️',
-        joinDate: '2023-01-15'
-      },
-      content: 'I struggle to drink enough water daily. What are your best tips for staying hydrated? I have tried setting reminders but often ignore them when I am busy. Any creative solutions?',
-      date: '2023-06-10T10:30:00Z',
-      replies: [
-        {
-          id: 101,
-          author: {
-            id: 102,
-            name: 'WaterChampion',
-            avatar: '💧',
-            joinDate: '2022-11-03'
-          },
-          content: 'I keep a large water bottle at my desk and mark time goals on it with a permanent marker. For example, 8am - 1/4 full, 10am - 1/2 full, etc. It is a visual reminder that really works for me!',
-          date: '2023-06-10T11:15:00Z',
-          likes: 15
-        },
-        {
-          id: 102,
-          author: {
-            id: 103,
-            name: 'FitnessFanatic',
-            avatar: '🏋️',
-            joinDate: '2022-08-22'
-          },
-          content: 'I use an app called "WaterMinder" that sends me notifications and tracks my intake. It gamifies the experience which I find motivating. Also, I add fruit slices to make the water more appealing.',
-          date: '2023-06-10T13:45:00Z',
-          likes: 8
-        }
-      ],
-      views: 89,
-      likes: 12,
-      isPinned: true,
-      isLocked: false,
-      tags: ['hydration', 'daily habits', 'water']
-    },
-    {
-      id: 2,
-      title: 'How to establish a consistent meditation practice?',
-      category: 'mental',
-      author: {
-        id: 105,
-        name: 'MindfulSeeker',
-        avatar: '🧘',
-        joinDate: '2022-09-18'
-      },
-      content: 'I have been trying to establish a regular meditation practice for months, but I can not seem to stick with it. I start strong for a few days and then life gets busy and I skip a day, which turns into weeks. How do you maintain consistency with meditation?',
-      date: '2023-06-05T08:15:00Z',
-      replies: [
-        {
-          id: 201,
-          author: {
-            id: 108,
-            name: 'ZenMaster',
-            avatar: '☯️',
-            joinDate: '2021-12-10'
-          },
-          content: 'Start small - even just 2 minutes a day is better than nothing. I began with a tiny commitment that was impossible to fail at, then gradually increased the time. Also, try to meditate at the same time each day, ideally attaching it to an existing habit (like after brushing your teeth).',
-          date: '2023-06-05T09:30:00Z',
-          likes: 23
-        }
-      ],
-      views: 132,
-      likes: 18,
-      isPinned: false,
-      isLocked: false,
-      tags: ['meditation', 'mental health', 'habits', 'mindfulness']
-    },
-    {
-      id: 3,
-      title: 'Success with intermittent fasting',
-      category: 'success',
-      author: {
-        id: 110,
-        name: 'HealthJourney',
-        avatar: '🥗',
-        joinDate: '2022-10-05'
-      },
-      content: 'I wanted to share my experience with intermittent fasting (16:8 method) over the past 3 months. I have lost 15 pounds, have more energy throughout the day, and my blood pressure has improved significantly according to my last check-up. Happy to answer any questions about my journey!',
-      date: '2023-05-28T15:45:00Z',
-      replies: [
-        {
-          id: 301,
-          author: {
-            id: 115,
-            name: 'NutritionNerd',
-            avatar: '🍎',
-            joinDate: '2022-07-30'
-          },
-          content: 'That iss fantastic progress! What was the hardest part of adjusting to the fasting window? And did you make any other dietary changes alongside IF?',
-          date: '2023-05-28T16:20:00Z',
-          likes: 7
-        },
-        {
-          id: 302,
-          author: {
-            id: 110,
-            name: 'HealthJourney',
-            avatar: '🥗',
-            joinDate: '2022-10-05'
-          },
-          content: 'The first week was definitely the hardest - I was used to eating right after waking up. I started by pushing breakfast back by an hour each day until I reached my 16:8 window. I also cut back on processed foods and added more vegetables to my meals, which I think contributed significantly to the results.',
-          date: '2023-05-28T17:45:00Z',
-          likes: 12
-        }
-      ],
-      views: 245,
-      likes: 37,
-      isPinned: false,
-      isLocked: false,
-      tags: ['intermittent fasting', 'weight loss', 'success story']
-    },
-    {
-      id: 4,
-      title: 'Best home workout equipment for small spaces?',
-      category: 'fitness',
-      author: {
-        id: 120,
-        name: 'ApartmentFitness',
-        avatar: '🏠',
-        joinDate: '2023-01-08'
-      },
-      content: 'I live in a small apartment and want to create a home gym setup without taking up too much space. What equipment would you recommend that is versatile, compact, and effective for full-body workouts?',
-      date: '2023-06-08T14:10:00Z',
-      replies: [
-        {
-          id: 401,
-          author: {
-            id: 121,
-            name: 'FitnessCoach',
-            avatar: '💪',
-            joinDate: '2021-11-15'
-          },
-          content: 'Resistance bands are my top recommendation for small spaces! They are incredibly versatile, can provide progressive resistance, and fold up to practically nothing. Pair those with adjustable dumbbells (the kind where you can change the weight plates), a doorway pull-up bar, and a foldable yoga mat. With just these items, you can do hundreds of different exercises targeting every muscle group.',
-          date: '2023-06-08T15:30:00Z',
-          likes: 19
-        }
-      ],
-      views: 178,
-      likes: 15,
-      isPinned: false,
-      isLocked: false,
-      tags: ['home gym', 'fitness equipment', 'small space', 'workouts']
-    },
-    {
-      id: 5,
-      title: 'Managing anxiety with nutrition',
-      category: 'nutrition',
-      author: {
-        id: 130,
-        name: 'CalmSeeker',
-        avatar: '🌿',
-        joinDate: '2022-12-20'
-      },
-      content: 'I have been experiencing increased anxiety lately, and I have read that certain foods can either help or worsen anxiety symptoms. Has anyone noticed specific dietary changes that helped with their anxiety levels? Looking for personal experiences rather than just general advice.',
-      date: '2023-06-01T11:20:00Z',
-      replies: [
-        {
-          id: 501,
-          author: {
-            id: 131,
-            name: 'NutritionalHealing',
-            avatar: '🥦',
-            joinDate: '2022-05-18'
-          },
-          content: 'I noticed a significant improvement when I reduced caffeine and sugar intake. I used to drink 4-5 cups of coffee daily and had terrible anxiety. Now I limit myself to one cup in the morning and have replaced other caffeine with herbal teas like chamomile and lavender. Also, increasing omega-3 rich foods like fatty fish, walnuts, and flaxseeds seemed to help stabilize my mood over time.',
-          date: '2023-06-01T12:15:00Z',
-          likes: 22
-        }
-      ],
-      views: 203,
-      likes: 28,
-      isPinned: false,
-      isLocked: false,
-      tags: ['anxiety', 'nutrition', 'mental health', 'diet']
-    }
-  ];
-
-  // Load topics and user data on component mount
-  useEffect(() => {
-    // In a real app, this would be an API call to fetch topics
-    setTopics(sampleTopics);
-    
-    // Load bookmarks from localStorage
-    const savedBookmarks = JSON.parse(localStorage.getItem('forumBookmarks')) || [];
-    setUserBookmarks(savedBookmarks);
-  }, []);
-
-  // Save bookmarks when they change
-  useEffect(() => {
-    localStorage.setItem('forumBookmarks', JSON.stringify(userBookmarks));
-  }, [userBookmarks]);
-
-  // Filter topics based on category and search query
-  const getFilteredTopics = () => {
-    const filteredByCategory = activeCategory === 'all' 
-      ? topics 
-      : topics.filter(topic => topic.category === activeCategory);
-    
-    if (!searchQuery.trim()) return filteredByCategory;
-    
-    const lowerCaseQuery = searchQuery.toLowerCase();
-    return filteredByCategory.filter(topic => 
-      topic.title.toLowerCase().includes(lowerCaseQuery) ||
-      topic.content.toLowerCase().includes(lowerCaseQuery) ||
-      topic.tags.some(tag => tag.toLowerCase().includes(lowerCaseQuery))
-    );
-  };
-
-  // Get topics for the current view
-  const getViewTopics = () => {
-    const filtered = getFilteredTopics();
-    
-    if (activeView === 'bookmarks') {
-      return filtered.filter(topic => userBookmarks.includes(topic.id));
-    }
-    
-    if (activeView === 'myTopics') {
-      // In a real app, this would filter by currentUser.id
-      return filtered.filter(topic => topic.author.name === 'HealthEnthusiast');
-    }
-    
-    return filtered;
-  };
-
-  // Sort topics based on selected order
-  const getSortedTopics = () => {
-    const topicsToSort = [...getViewTopics()];
-    
-    // Always show pinned topics first
-    const pinnedTopics = topicsToSort.filter(topic => topic.isPinned);
-    const unpinnedTopics = topicsToSort.filter(topic => !topic.isPinned);
-    
-    // Sort unpinned topics based on sort order
-    switch (sortOrder) {
-      case 'newest':
-        unpinnedTopics.sort((a, b) => new Date(b.date) - new Date(a.date));
-        break;
-      case 'oldest':
-        unpinnedTopics.sort((a, b) => new Date(a.date) - new Date(b.date));
-        break;
-      case 'mostLiked':
-        unpinnedTopics.sort((a, b) => b.likes - a.likes);
-        break;
-      case 'mostViewed':
-        unpinnedTopics.sort((a, b) => b.views - a.views);
-        break;
-      case 'mostReplies':
-        unpinnedTopics.sort((a, b) => b.replies.length - a.replies.length);
-        break;
-      default:
-        break;
-    }
-    
-    return [...pinnedTopics, ...unpinnedTopics];
-  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -323,15 +203,37 @@ function CommunityForum() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  // Extract hashtags from content
+  const extractTags = (content) => {
+    return content.match(/#(\w+)/g)?.map(tag => tag.substring(1)) || [];
+  };
+
   // Toggle bookmark status for a topic
-  const toggleBookmark = (topicId) => {
-    setUserBookmarks(prev => {
-      if (prev.includes(topicId)) {
-        return prev.filter(id => id !== topicId);
+  const toggleBookmarkHandler = async (topicId, e) => {
+    if (e) e.stopPropagation();
+    
+    if (!currentUser) {
+      alert('You must be logged in to bookmark topics');
+      return;
+    }
+
+    try {
+      const { isBookmarked } = await toggleBookmark(topicId);
+      
+      if (isBookmarked) {
+        setUserBookmarks(prev => [...prev, topicId]);
       } else {
-        return [...prev, topicId];
+        setUserBookmarks(prev => prev.filter(id => id !== topicId));
       }
-    });
+      
+      // If in bookmark view and removing a bookmark, refresh the list
+      if (activeView === 'bookmarks' && !isBookmarked) {
+        loadTopics();
+      }
+    } catch (error) {
+      console.error('Failed to toggle bookmark:', error);
+      alert('Failed to update bookmark. Please try again.');
+    }
   };
 
   // Check if a topic is bookmarked
@@ -339,147 +241,257 @@ function CommunityForum() {
     return userBookmarks.includes(topicId);
   };
 
-  // Handle creating a new topic
-  const handleCreateTopic = () => {
+  const handleCreateTopic = async () => {
     if (!newTopicForm.title.trim() || !newTopicForm.content.trim()) {
       alert('Please fill in all fields');
       return;
     }
+  
+    if (!currentUser) {
+      alert('You must be logged in to create a topic');
+      return;
+    }
     
-    const newTopic = {
-      id: topics.length + 1,
-      title: newTopicForm.title,
-      category: newTopicForm.category,
-      author: {
-        id: 101, // In a real app, this would be currentUser.id
-        name: 'HealthEnthusiast', // In a real app, this would be currentUser.name
-        avatar: '👩‍⚕️', // In a real app, this would be currentUser.avatar
-        joinDate: '2023-01-15' // In a real app, this would be currentUser.joinDate
-      },
-      content: newTopicForm.content,
-      date: new Date().toISOString(),
-      replies: [],
-      views: 0,
-      likes: 0,
-      isPinned: false,
-      isLocked: false,
-      tags: newTopicForm.content.match(/#(\w+)/g)?.map(tag => tag.substring(1)) || []
-    };
+    setLoading(true);
+    setError(null);
     
-    setTopics(prev => [newTopic, ...prev]);
-    setNewTopicForm({
-      visible: false,
-      title: '',
-      category: 'general',
-      content: ''
-    });
-    
-    // In a real app, you would make an API call to create the topic
+    try {
+      // Prepare topic data with extracted tags
+      const topicData = {
+        title: newTopicForm.title,
+        content: newTopicForm.content,
+        category: newTopicForm.category,
+        tags: extractTags(newTopicForm.content)
+      };
+      
+      const newTopic = await createTopic(topicData);
+      console.log('Topic created successfully:', newTopic);
+      
+      // Clear form and close it
+      setNewTopicForm({
+        visible: false,
+        title: '',
+        category: 'general',
+        content: ''
+      });
+      
+      // Refresh topics
+      loadTopics();
+    } catch (error) {
+      console.error('Failed to create topic:', error);
+      setError('Failed to create topic: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle submitting a reply
-  const handleSubmitReply = () => {
-    if (!replyContent.trim() || !activeTopic) return;
+  const handleSubmitReply = async () => {
+    if (!replyContent.trim() || !activeTopic || !currentUser) {
+      return;
+    }
     
-    const newReply = {
-      id: activeTopic.replies.length + 1,
-      author: {
-        id: 101, // In a real app, this would be currentUser.id
-        name: 'HealthEnthusiast', // In a real app, this would be currentUser.name
-        avatar: '👩‍⚕️', // In a real app, this would be currentUser.avatar
-        joinDate: '2023-01-15' // In a real app, this would be currentUser.joinDate
-      },
-      content: replyContent,
-      date: new Date().toISOString(),
-      likes: 0
-    };
+    setLoading(true);
+    setError(null);
     
-    setTopics(prev => prev.map(topic => {
-      if (topic.id === activeTopic.id) {
-        return {
-          ...topic,
-          replies: [...topic.replies, newReply]
-        };
-      }
-      return topic;
-    }));
-    
-    setReplyContent('');
-    
-    // In a real app, you would make an API call to submit the reply
+    try {
+      const replyData = {
+        content: replyContent
+      };
+      
+      await createReply(activeTopic._id, replyData);
+      
+      // Clear reply form
+      setReplyContent('');
+      
+      // Reload topic to show new reply
+      await loadTopic(activeTopic._id);
+    } catch (error) {
+      console.error('Failed to submit reply:', error);
+      setError('Failed to submit reply. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle reporting a topic or reply
-  const handleReport = () => {
-    if (!reportReason.trim()) {
+  const handleReport = async () => {
+    if (!reportReason.trim() || !reportItemId || !reportItemType || !currentUser) {
       alert('Please provide a reason for the report');
       return;
     }
     
-    // In a real app, you would make an API call to submit the report
-    alert(`Thank you for your report. Our moderators will review it shortly.`);
+    setLoading(true);
     
-    setShowReportModal(false);
-    setReportReason('');
-    setReportItemId(null);
-    setReportItemType(null);
+    try {
+      await reportContent(reportItemId, reportItemType, reportReason);
+      
+      alert('Thank you for your report. Our moderators will review it shortly.');
+      
+      setShowReportModal(false);
+      setReportReason('');
+      setReportItemId(null);
+      setReportItemType(null);
+    } catch (error) {
+      console.error('Failed to submit report:', error);
+      alert('Failed to submit report. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Open the report modal for a topic or reply
-  const openReportModal = (itemId, type) => {
+  const openReportModal = (itemId, type, e) => {
+    if (e) e.stopPropagation();
+    
+    if (!currentUser) {
+      alert('You must be logged in to report content');
+      return;
+    }
+    
     setReportItemId(itemId);
     setReportItemType(type);
     setShowReportModal(true);
   };
 
-  // Handle like/unlike topic or reply
-  const toggleLike = (itemId, type) => {
-    if (type === 'topic') {
+  // Handle like/unlike topic
+  const handleLikeTopic = async (topicId, e) => {
+    if (e) e.stopPropagation();
+    
+    if (!currentUser) {
+      alert('You must be logged in to like topics');
+      return;
+    }
+    
+    try {
+      const result = await likeTopic(topicId);
+      
+      // Update the topic in state
+      if (activeTopic && activeTopic._id === topicId) {
+        setActiveTopic(prev => ({
+          ...prev,
+          likes: result.likes,
+          isLiked: result.isLiked
+        }));
+      }
+      
+      // Update topic in topics list
       setTopics(prev => prev.map(topic => {
-        if (topic.id === itemId) {
-          // In a real app, you would check if the user has already liked it
-          // Here we're just toggling for simplicity
-          return { ...topic, likes: topic.likes + 1 };
-        }
-        return topic;
-      }));
-    } else if (type === 'reply' && activeTopic) {
-      setTopics(prev => prev.map(topic => {
-        if (topic.id === activeTopic.id) {
+        if (topic._id === topicId) {
           return {
             ...topic,
-            replies: topic.replies.map(reply => {
-              if (reply.id === itemId) {
-                return { ...reply, likes: reply.likes + 1 };
-              }
-              return reply;
-            })
+            likes: result.likes,
+            isLiked: result.isLiked
           };
         }
         return topic;
       }));
+    } catch (error) {
+      console.error('Failed to like topic:', error);
+      alert('Failed to update like. Please try again.');
     }
-    
-    // In a real app, you would make an API call to like/unlike
   };
 
-  // View a topic and increment view count
-  const viewTopic = (topic) => {
-    // Increment view count
-    setTopics(prev => prev.map(t => {
-      if (t.id === topic.id) {
-        return { ...t, views: t.views + 1 };
-      }
-      return t;
-    }));
+  // Handle like/unlike reply
+  const handleLikeReply = async (replyId, e) => {
+    if (e) e.stopPropagation();
     
-    setActiveTopic(topic);
+    if (!currentUser || !activeTopic) {
+      alert('You must be logged in to like replies');
+      return;
+    }
     
-    // In a real app, you would make an API call to increment the view count
+    try {
+      const result = await likeReply(replyId);
+      
+      // Update the reply in the active topic
+      setActiveTopic(prev => ({
+        ...prev,
+        replies: prev.replies.map(reply => {
+          if (reply._id === replyId) {
+            return {
+              ...reply,
+              likes: result.likes,
+              isLiked: result.isLiked
+            };
+          }
+          return reply;
+        })
+      }));
+    } catch (error) {
+      console.error('Failed to like reply:', error);
+      alert('Failed to update like. Please try again.');
+    }
+  };
+
+  // View a topic and load its details
+  const viewTopic = async (topic) => {
+    // Navigate to topic URL (for shareable links)
+    navigate(`/forum/topic/${topic._id}`);
+    
+    // Load full topic with replies
+    await loadTopic(topic._id);
+  };
+
+  // Handle search
+  const handleSearch = (e) => {
+    e.preventDefault();
+    loadTopics();
+  };
+
+  // Generate avatar display (either an image or text)
+  const renderAvatar = (avatarSrc, fallbackText) => {
+    if (avatarSrc && avatarSrc.startsWith('http')) {
+      return (
+        <img 
+          src={avatarSrc} 
+          alt="User Avatar" 
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'cover',
+            borderRadius: '50%'
+          }} 
+        />
+      );
+    } else if (avatarSrc && (avatarSrc.startsWith('/') || avatarSrc === 'man_avatar.jpg' || avatarSrc === 'woman_avatar.jpg')) {
+      // Local image path
+      return (
+        <img 
+          src={avatarSrc} 
+          alt="User Avatar" 
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'cover',
+            borderRadius: '50%'
+          }} 
+        />
+      );
+    } else {
+      // Fallback to text
+      return fallbackText || '👤';
+    }
   };
 
   return (
     <div className={`community-forum ${darkMode ? 'dark-mode' : ''}`}>
+      {/* Error message */}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          <button onClick={() => setError(null)}>Dismiss</button>
+        </div>
+      )}
+      
+      {/* Loading indicator */}
+      {loading && (
+        <div className="loading-indicator">
+          <div className="spinner"></div>
+          <p>Loading...</p>
+        </div>
+      )}
+      
       {/* Report Modal */}
       {showReportModal && (
         <div className="modal-overlay">
@@ -518,19 +530,25 @@ function CommunityForum() {
       
       {/* Forum Actions */}
       <div className="forum-actions">
-        <div className="search-bar">
+        <form className="search-bar" onSubmit={handleSearch}>
           <input
             type="text"
             placeholder="Search topics..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="search-button">Search</button>
-        </div>
+          <button type="submit" className="search-button">Search</button>
+        </form>
         
         <button 
           className="new-topic-button"
-          onClick={() => setNewTopicForm({ ...newTopicForm, visible: true })}
+          onClick={() => {
+            if (!currentUser) {
+              alert('You must be logged in to create a topic');
+              return;
+            }
+            setNewTopicForm({ ...newTopicForm, visible: true });
+          }}
         >
           New Topic
         </button>
@@ -543,19 +561,39 @@ function CommunityForum() {
           <div className="view-selector">
             <button 
               className={activeView === 'forum' ? 'active' : ''}
-              onClick={() => setActiveView('forum')}
+              onClick={() => {
+                setActiveView('forum');
+                setActiveTopic(null);
+                navigate('/forum');
+              }}
             >
               All Discussions
             </button>
             <button 
               className={activeView === 'bookmarks' ? 'active' : ''}
-              onClick={() => setActiveView('bookmarks')}
+              onClick={() => {
+                if (!currentUser) {
+                  alert('You must be logged in to view bookmarks');
+                  return;
+                }
+                setActiveView('bookmarks');
+                setActiveTopic(null);
+                navigate('/forum/bookmarks');
+              }}
             >
-              My Bookmarks
+              My Bookmarks {userBookmarks.length > 0 && `(${userBookmarks.length})`}
             </button>
             <button 
               className={activeView === 'myTopics' ? 'active' : ''}
-              onClick={() => setActiveView('myTopics')}
+              onClick={() => {
+                if (!currentUser) {
+                  alert('You must be logged in to view your topics');
+                  return;
+                }
+                setActiveView('myTopics');
+                setActiveTopic(null);
+                navigate('/forum/my-topics');
+              }}
             >
               My Topics
             </button>
@@ -568,7 +606,15 @@ function CommunityForum() {
                 <button
                   key={category.id}
                   className={activeCategory === category.id ? 'active' : ''}
-                  onClick={() => setActiveCategory(category.id)}
+                  onClick={() => {
+                    setActiveCategory(category.id);
+                    setActiveTopic(null);
+                    if (category.id === 'all') {
+                      navigate('/forum');
+                    } else {
+                      navigate(`/forum/category/${category.id}`);
+                    }
+                  }}
                 >
                   {category.name}
                 </button>
@@ -580,21 +626,19 @@ function CommunityForum() {
             <h3>Forum Statistics</h3>
             <div className="stat-item">
               <span className="stat-label">Topics:</span>
-              <span className="stat-value">{topics.length}</span>
+              <span className="stat-value">{forumStats.topicsCount}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Posts:</span>
-              <span className="stat-value">
-                {topics.reduce((total, topic) => total + topic.replies.length + 1, 0)}
-              </span>
+              <span className="stat-value">{forumStats.postsCount}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Members:</span>
-              <span className="stat-value">152</span>
+              <span className="stat-value">{forumStats.membersCount || '—'}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Newest Member:</span>
-              <span className="stat-value">WellnessWarrior</span>
+              <span className="stat-value">{forumStats.newestMember || '—'}</span>
             </div>
           </div>
           
@@ -607,7 +651,7 @@ function CommunityForum() {
               <li>Report inappropriate content</li>
               <li>Stay on topic</li>
             </ul>
-            <a href="#" className="guidelines-link">Read Full Guidelines</a>
+            <a href="/guidelines" className="guidelines-link">Read Full Guidelines</a>
           </div>
         </div>
         
@@ -660,8 +704,9 @@ function CommunityForum() {
                 <button
                   className="submit-button"
                   onClick={handleCreateTopic}
+                  disabled={loading}
                 >
-                  Create Topic
+                  {loading ? 'Creating...' : 'Create Topic'}
                 </button>
               </div>
             </div>
@@ -670,22 +715,35 @@ function CommunityForum() {
               <div className="topic-header">
                 <button 
                   className="back-button"
-                  onClick={() => setActiveTopic(null)}
+                  onClick={() => {
+                    setActiveTopic(null);
+                    
+                    // Navigate back based on the current view
+                    if (activeView === 'bookmarks') {
+                      navigate('/forum/bookmarks');
+                    } else if (activeView === 'myTopics') {
+                      navigate('/forum/my-topics');
+                    } else if (activeCategory !== 'all') {
+                      navigate(`/forum/category/${activeCategory}`);
+                    } else {
+                      navigate('/forum');
+                    }
+                  }}
                 >
                   ← Back to Topics
                 </button>
                 
                 <div className="topic-actions">
                   <button 
-                    className={`bookmark-button ${isBookmarked(activeTopic.id) ? 'active' : ''}`}
-                    onClick={() => toggleBookmark(activeTopic.id)}
+                    className={`bookmark-button ${isBookmarked(activeTopic._id) ? 'active' : ''}`}
+                    onClick={(e) => toggleBookmarkHandler(activeTopic._id, e)}
                   >
-                    {isBookmarked(activeTopic.id) ? 'Bookmarked ★' : 'Bookmark ☆'}
+                    {isBookmarked(activeTopic._id) ? 'Bookmarked ★' : 'Bookmark ☆'}
                   </button>
                   
                   <button 
                     className="report-button"
-                    onClick={() => openReportModal(activeTopic.id, 'topic')}
+                    onClick={(e) => openReportModal(activeTopic._id, 'topic', e)}
                   >
                     Report
                   </button>
@@ -697,23 +755,28 @@ function CommunityForum() {
                   <h2>{activeTopic.title}</h2>
                   <div className="topic-meta">
                     <span className="topic-category">
-                      {categories.find(cat => cat.id === activeTopic.category)?.name}
+                      {categories.find(cat => cat.id === activeTopic.category)?.name || 'General'}
                     </span>
-                    <span className="topic-date">{formatDate(activeTopic.date)}</span>
+                    <span className="topic-date">{formatDate(activeTopic.createdAt)}</span>
                   </div>
                 </div>
                 
                 <div className="post-container">
                   <div className="post-author">
-                    <div className="author-avatar">{activeTopic.author.avatar}</div>
-                    <div className="author-name">{activeTopic.author.name}</div>
-                    <div className="author-joined">Joined: {new Date(activeTopic.author.joinDate).toLocaleDateString()}</div>
+                    <div className="author-avatar">
+                      {renderAvatar(activeTopic.author?.avatarUrl, activeTopic.author?.username?.charAt(0) || '👤')}
+                    </div>
+                    <div className="author-name">{activeTopic.author?.username || 'User'}</div>
+                    <div className="author-joined">Joined: {activeTopic.author?.joinDate 
+                      ? new Date(activeTopic.author.joinDate).toLocaleDateString() 
+                      : 'Unknown'}
+                    </div>
                   </div>
                   
                   <div className="post-content">
                     <p>{activeTopic.content}</p>
                     
-                    {activeTopic.tags.length > 0 && (
+                    {activeTopic.tags && activeTopic.tags.length > 0 && (
                       <div className="topic-tags">
                         {activeTopic.tags.map(tag => (
                           <span key={tag} className="topic-tag">#{tag}</span>
@@ -723,72 +786,89 @@ function CommunityForum() {
                     
                     <div className="post-footer">
                       <button 
-                        className="like-button"
-                        onClick={() => toggleLike(activeTopic.id, 'topic')}
+                        className={`like-button ${activeTopic.isLiked ? 'active' : ''}`}
+                        onClick={(e) => handleLikeTopic(activeTopic._id, e)}
                       >
-                        Like ({activeTopic.likes})
+                        Like ({activeTopic.likes || 0})
                       </button>
-                      <span className="post-views">{activeTopic.views} views</span>
+                      <span className="post-views">{activeTopic.views || 0} views</span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="replies-section">
-                  <h3>Replies ({activeTopic.replies.length})</h3>
+                  <h3>Replies ({activeTopic.replies?.length || 0})</h3>
                   
-                  {activeTopic.replies.map(reply => (
-                    <div className="reply-container" key={reply.id}>
-                      <div className="post-author">
-                        <div className="author-avatar">{reply.author.avatar}</div>
-                        <div className="author-name">{reply.author.name}</div>
-                        <div className="author-joined">Joined: {new Date(reply.author.joinDate).toLocaleDateString()}</div>
-                      </div>
-                      
-                      <div className="post-content">
-                        <p>{reply.content}</p>
-                        
-                        <div className="post-footer">
-                          <div className="post-actions">
-                            <button 
-                              className="like-button"
-                              onClick={() => toggleLike(reply.id, 'reply')}
-                            >
-                              Like ({reply.likes})
-                            </button>
-                            <button 
-                              className="report-button small"
-                              onClick={() => openReportModal(reply.id, 'reply')}
-                            >
-                              Report
-                            </button>
+                  {activeTopic.replies?.length > 0 ? (
+                    activeTopic.replies.map(reply => (
+                      <div className="reply-container" key={reply._id}>
+                        <div className="post-author">
+                          <div className="author-avatar">
+                            {renderAvatar(reply.author?.avatarUrl, reply.author?.username?.charAt(0) || '👤')}
                           </div>
-                          <span className="post-date">{formatDate(reply.date)}</span>
+                          <div className="author-name">{reply.author?.username || 'User'}</div>
+                          <div className="author-joined">Joined: {reply.author?.joinDate 
+                            ? new Date(reply.author.joinDate).toLocaleDateString() 
+                            : 'Unknown'}
+                          </div>
+                        </div>
+                        
+                        <div className="post-content">
+                          <p>{reply.content}</p>
+                          
+                          <div className="post-footer">
+                            <div className="post-actions">
+                              <button 
+                                className={`like-button ${reply.isLiked ? 'active' : ''}`}
+                                onClick={(e) => handleLikeReply(reply._id, e)}
+                              >
+                                Like ({reply.likes || 0})
+                              </button>
+                              <button 
+                                className="report-button small"
+                                onClick={(e) => openReportModal(reply._id, 'reply', e)}
+                              >
+                                Report
+                              </button>
+                            </div>
+                            <span className="post-date">{formatDate(reply.createdAt)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  
-                  {/* Reply Form */}
-                  {!activeTopic.isLocked && (
-                    <div className="reply-form">
-                      <h4>Post a Reply</h4>
-                      <textarea
-                        value={replyContent}
-                        onChange={(e) => setReplyContent(e.target.value)}
-                        placeholder="Share your thoughts or experiences..."
-                        rows={4}
-                      />
-                      <button 
-                        className="submit-button"
-                        onClick={handleSubmitReply}
-                        disabled={!replyContent.trim()}
-                      >
-                        Post Reply
-                      </button>
+                    ))
+                  ) : (
+                    <div className="no-replies">
+                      <p>No replies yet. Be the first to reply!</p>
                     </div>
                   )}
                   
-                  {activeTopic.isLocked && (
+                  {/* Reply Form */}
+                  {!activeTopic.isLocked ? (
+                    <div className="reply-form">
+                      <h4>Post a Reply</h4>
+                      {currentUser ? (
+                        <>
+                          <textarea
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            placeholder="Share your thoughts or experiences..."
+                            rows={4}
+                          />
+                          <button 
+                            className="submit-button"
+                            onClick={handleSubmitReply}
+                            disabled={!replyContent.trim() || loading}
+                          >
+                            {loading ? 'Posting...' : 'Post Reply'}
+                          </button>
+                        </>
+                      ) : (
+                        <div className="login-prompt">
+                          <p>You must be logged in to reply. <a href="/login">Log in</a> or <a href="/signup">sign up</a> to join the conversation.</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
                     <div className="locked-notice">
                       <p>This topic has been locked. New replies are not allowed.</p>
                     </div>
@@ -820,11 +900,11 @@ function CommunityForum() {
                 </div>
               </div>
               
-              {getSortedTopics().length > 0 ? (
+              {topics.length > 0 ? (
                 <div className="topics-table">
-                  {getSortedTopics().map(topic => (
+                  {topics.map(topic => (
                     <div 
-                      key={topic.id} 
+                      key={topic._id} 
                       className={`topic-row ${topic.isPinned ? 'pinned' : ''}`}
                       onClick={() => viewTopic(topic)}
                     >
@@ -837,15 +917,15 @@ function CommunityForum() {
                         <h3 className="topic-title">{topic.title}</h3>
                         <div className="topic-meta">
                           <span className="topic-category">
-                            {categories.find(cat => cat.id === topic.category)?.name}
+                            {categories.find(cat => cat.id === topic.category)?.name || 'General'}
                           </span>
                           <span className="topic-author">
-                            {topic.author.avatar} {topic.author.name}
+                            {renderAvatar(topic.author?.avatarUrl, topic.author?.username?.charAt(0) || '👤')} {topic.author?.username || 'User'}
                           </span>
-                          <span className="topic-date">{formatDate(topic.date)}</span>
+                          <span className="topic-date">{formatDate(topic.createdAt)}</span>
                         </div>
                         
-                        {topic.tags.length > 0 && (
+                        {topic.tags?.length > 0 && (
                           <div className="topic-tags-preview">
                             {topic.tags.slice(0, 3).map(tag => (
                               <span key={tag} className="topic-tag small">#{tag}</span>
@@ -857,26 +937,26 @@ function CommunityForum() {
                       
                       <div className="topic-stats">
                         <div className="stat-box replies">
-                          <span className="stat-value">{topic.replies.length}</span>
+                          <span className="stat-value">{topic.replyCount || 0}</span>
                           <span className="stat-label">Replies</span>
                         </div>
                         <div className="stat-box views">
-                          <span className="stat-value">{topic.views}</span>
+                          <span className="stat-value">{topic.views || 0}</span>
                           <span className="stat-label">Views</span>
                         </div>
                         <div className="stat-box likes">
-                          <span className="stat-value">{topic.likes}</span>
+                          <span className="stat-value">{topic.likes || 0}</span>
                           <span className="stat-label">Likes</span>
                         </div>
                       </div>
                       
                       <div className="topic-actions" onClick={(e) => e.stopPropagation()}>
                         <button 
-                          className={`bookmark-button-small ${isBookmarked(topic.id) ? 'active' : ''}`}
-                          onClick={() => toggleBookmark(topic.id)}
-                          title={isBookmarked(topic.id) ? 'Remove Bookmark' : 'Add Bookmark'}
+                          className={`bookmark-button-small ${isBookmarked(topic._id) ? 'active' : ''}`}
+                          onClick={(e) => toggleBookmarkHandler(topic._id, e)}
+                          title={isBookmarked(topic._id) ? 'Remove Bookmark' : 'Add Bookmark'}
                         >
-                          {isBookmarked(topic.id) ? '★' : '☆'}
+                          {isBookmarked(topic._id) ? '★' : '☆'}
                         </button>
                       </div>
                     </div>

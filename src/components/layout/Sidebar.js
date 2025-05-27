@@ -1,15 +1,34 @@
-// src/components/layout/Sidebar.js
-import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+// src/components/layout/Sidebar.js - REPLACE YOUR EXISTING SIDEBAR WITH THIS
+
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useSidebar } from '../../contexts/SidebarContext'; // Import the new context
+import { auth } from '../Auth/firebase';
+import { signOut } from 'firebase/auth';
 import '../../styles/Sidebar.css';
 
 const Sidebar = () => {
   const { darkMode, toggleDarkMode } = useTheme();
-  const { currentUser, logout } = useAuth();
+  const { isExpanded, toggleSidebar } = useSidebar(); // Use the context
   const location = useLocation();
-  const [expanded, setExpanded] = useState(true);
+  const navigate = useNavigate();
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userInitial, setUserInitial] = useState('U');
+  
+  // Get current user info when component mounts
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user) {
+      const displayName = user.displayName || 'User';
+      setUserName(displayName);
+      setUserEmail(user.email || 'user@example.com');
+      setUserInitial(displayName.charAt(0).toUpperCase());
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
   
   // Define feature categories
   const mainFeatures = [
@@ -34,10 +53,6 @@ const Sidebar = () => {
     { path: 'challenges', label: 'Daily Challenges', icon: '🏆' }
   ];
 
-  const toggleSidebar = () => {
-    setExpanded(!expanded);
-  };
-
   const isActive = (path) => {
     if (path === '') {
       return location.pathname === '/dashboard' || location.pathname === '/dashboard/';
@@ -45,33 +60,44 @@ const Sidebar = () => {
     return location.pathname.includes(`/dashboard/${path}`);
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      window.localStorage.removeItem('firebase:authUser');
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert('Failed to log out. Please try again.');
+    }
+  };
+
   return (
-    <div className={`sidebar ${darkMode ? 'dark' : ''} ${expanded ? 'expanded' : 'collapsed'}`}>
+    <div className={`sidebar ${darkMode ? 'dark' : ''} ${isExpanded ? 'expanded' : 'collapsed'}`}>
       <div className="sidebar-header">
         <div className="app-logo">
           <span className="logo-icon">❤️</span>
-          {expanded && <h1>My Well Being</h1>}
+          {isExpanded && <h1>My Well Being</h1>}
         </div>
         <button className="toggle-button" onClick={toggleSidebar}>
-          {expanded ? '◀' : '▶'}
+          {isExpanded ? '◀' : '▶'}
         </button>
       </div>
       
-      {expanded && (
+      {isExpanded && (
         <div className="user-profile">
           <div className="avatar">
-            {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+            {userInitial}
           </div>
           <div className="user-info">
-            <h3>{currentUser?.name || 'User'}</h3>
-            <p>{currentUser?.email || 'user@example.com'}</p>
+            <h3>{userName}</h3>
+            <p>{userEmail}</p>
           </div>
         </div>
       )}
       
       <div className="sidebar-content">
         <div className="menu-category">
-          {expanded && <h4>Main Features</h4>}
+          {isExpanded && <h4>Main Features</h4>}
           <div className="menu-items">
             {mainFeatures.map((item) => (
               <NavLink
@@ -81,14 +107,14 @@ const Sidebar = () => {
                 title={item.label}
               >
                 <div className="menu-icon">{item.icon}</div>
-                {expanded && <span>{item.label}</span>}
+                {isExpanded && <span>{item.label}</span>}
               </NavLink>
             ))}
           </div>
         </div>
         
         <div className="menu-category">
-          {expanded && <h4>Medical</h4>}
+          {isExpanded && <h4>Medical</h4>}
           <div className="menu-items">
             {medicalFeatures.map((item) => (
               <NavLink
@@ -98,14 +124,14 @@ const Sidebar = () => {
                 title={item.label}
               >
                 <div className="menu-icon">{item.icon}</div>
-                {expanded && <span>{item.label}</span>}
+                {isExpanded && <span>{item.label}</span>}
               </NavLink>
             ))}
           </div>
         </div>
         
         <div className="menu-category">
-          {expanded && <h4>Wellness</h4>}
+          {isExpanded && <h4>Wellness</h4>}
           <div className="menu-items">
             {wellnessFeatures.map((item) => (
               <NavLink
@@ -115,7 +141,7 @@ const Sidebar = () => {
                 title={item.label}
               >
                 <div className="menu-icon">{item.icon}</div>
-                {expanded && <span>{item.label}</span>}
+                {isExpanded && <span>{item.label}</span>}
               </NavLink>
             ))}
           </div>
@@ -131,16 +157,16 @@ const Sidebar = () => {
           <div className="menu-icon">
             {darkMode ? '☀️' : '🌙'}
           </div>
-          {expanded && <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
+          {isExpanded && <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
         </button>
         
         <button 
           className="logout-button" 
-          onClick={logout}
+          onClick={handleLogout}
           title="Logout"
         >
           <div className="menu-icon">🚪</div>
-          {expanded && <span>Logout</span>}
+          {isExpanded && <span>Logout</span>}
         </button>
       </div>
     </div>

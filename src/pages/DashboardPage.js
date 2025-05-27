@@ -1,4 +1,5 @@
-// src/pages/DashboardPage.js
+// src/pages/DashboardPage.js - REPLACE YOUR EXISTING DASHBOARDPAGE WITH THIS
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
@@ -17,20 +18,44 @@ import CommunityForum from '../components/features/forum/CommunityForum';
 import SleepTracker from '../components/features/sleep/SleepTracker';
 import DailyChallenges from '../components/features/challenges/DailyChallenges';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSidebar } from '../contexts/SidebarContext'; // Import sidebar context
 import '../styles/Dashboard.css';
 
 function DashboardPage() {
   const { darkMode } = useTheme();
+  const { sidebarWidth } = useSidebar(); // Get the dynamic sidebar width
 
   return (
     <div className={`dashboard-page ${darkMode ? 'dark' : ''}`}>
       {/* Sidebar */}
       <Sidebar />
       
-      {/* Main content */}
-      <div className="dashboard-content">
+      {/* Main content - dynamically adjusts to sidebar width */}
+      <div 
+        className="dashboard-content" 
+        style={{ 
+          marginLeft: `${sidebarWidth}px`, // Dynamic margin based on sidebar state
+          width: `calc(100% - ${sidebarWidth}px)`, // Dynamic width
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'margin-left 0.3s ease, width 0.3s ease' // Smooth transition
+        }}
+      >
+        {/* Navbar */}
         <Navbar />
-        <div className="content-wrapper">
+        
+        {/* Content wrapper */}
+        <div 
+          className="content-wrapper" 
+          style={{
+            flex: 1,
+            padding: '20px',
+            width: '100%',
+            boxSizing: 'border-box',
+            overflow: 'auto' // Allow scrolling if needed
+          }}
+        >
           <Routes>
             <Route path="/" element={<DashboardHome />} />
             <Route path="health-tracker" element={<HealthTracker />} />

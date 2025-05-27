@@ -1,0 +1,562 @@
+.consultation-manager {
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.manager-header h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.5rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #1f2937;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  border-left: 4px solid #ef4444;
+  color: #b91c1c;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.consultation-details {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.consultation-details h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row span:first-child {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.confirmed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.completed {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.status-badge.cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.in_progress {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.documents-section {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.documents-section h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.documents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.document-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #eff6ff;
+  color: #1e40af;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.document-link:hover {
+  background-color: #dbeafe;
+}
+
+.reschedule-section {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.reschedule-section h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #4b5563;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.reschedule-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.reschedule-button:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.reschedule-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.start-consultation-section {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.start-consultation-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #059669;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.start-consultation-button:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+.start-consultation-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.toast-message {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  animation: slideUp 0.3s ease;
+}
+
+.toast-message.success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.toast-message.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, 100%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+/* Dark mode styles */
+.dark .consultation-manager {
+  background-color: #1f2937;
+}
+
+.dark .manager-header h2 {
+  color: #f3f4f6;
+}
+
+.dark .close-button {
+  color: #9ca3af;
+}
+
+.dark .close-button:hover {
+  color: #f3f4f6;
+}
+
+.dark .consultation-details,
+.dark .documents-section,
+.dark .reschedule-section {
+  background-color: #111827;
+}
+
+.dark .consultation-details h3,
+.dark .documents-section h3,
+.dark .reschedule-section h3 {
+  color: #f3f4f6;
+}
+
+.dark .detail-row {
+  border-bottom-color: #374151;
+}
+
+.dark .detail-row span:first-child {
+  color: #9ca3af;
+}
+
+.dark .document-link {
+  background-color: #1e40af;
+  color: #dbeafe;
+}
+
+.dark .document-link:hover {
+  background-color: #1e3a8a;
+}
+
+.dark .form-group label {
+  color: #9ca3af;
+}
+
+.dark .form-group input,
+.dark .form-group textarea {
+  background-color: #111827;
+  border-color: #374151;
+  color: #f3f4f6;
+}
+
+.dark .form-group input:focus,
+.dark .form-group textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.dark .reschedule-button:disabled,
+.dark .start-consultation-button:disabled {
+  background-color: #4b5563;
+}
+
+.dark .toast-message.success {
+  background-color: #065f46;
+  color: #d1fae5;
+}
+
+.dark .toast-message.error {
+  background-color: #991b1b;
+  color: #fee2e2;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .consultation-manager {
+    margin: 10px;
+    padding: 15px;
+    max-height: 85vh;
+  }
+
+  .manager-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    font-size: 16px; /* Prevent zoom on mobile */
+  }
+
+  .reschedule-button,
+  .start-consultation-button {
+    padding: 10px;
+    font-size: 0.875rem;
+  }
+}
+
+/* Patient Details Panel */
+.patient-details-panel {
+  background-color: #f8fafc;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .patient-details-panel {
+  background-color: #1e293b;
+}
+
+.patient-details-panel h3 {
+  color: #1e293b;
+  font-size: 1.25rem;
+  margin-bottom: 16px;
+}
+
+.dark .patient-details-panel h3 {
+  color: #f1f5f9;
+}
+
+.patient-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-row .label {
+  min-width: 140px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dark .info-row .label {
+  color: #94a3b8;
+}
+
+.info-row .value {
+  color: #1e293b;
+  flex: 1;
+}
+
+.dark .info-row .value {
+  color: #e2e8f0;
+}
+
+.documents-section {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.dark .documents-section {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+.documents-section h4 {
+  color: #475569;
+  font-size: 1rem;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.dark .documents-section h4 {
+  color: #cbd5e1;
+}
+
+.documents-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.document-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.dark .document-item {
+  background-color: #334155;
+  border-color: #475569;
+}
+
+.document-item:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dark .document-item:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.doc-name {
+  color: #1e293b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.dark .doc-name {
+  color: #f1f5f9;
+}
+
+.doc-type {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.dark .doc-type {
+  color: #94a3b8;
+}
+
+.doc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.view-doc-btn {
+  padding: 6px 12px;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.view-doc-btn:hover {
+  background-color: #2563eb;
+}
+
+.dark .view-doc-btn {
+  background-color: #60a5fa;
+}
+
+.dark .view-doc-btn:hover {
+  background-color: #3b82f6;
+}
+
+/* Add a document icon */
+.view-doc-btn::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .document-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .doc-actions {
+    width: 100%;
+  }
+
+  .view-doc-btn {
+    width: 100%;
+    justify-content: center;
+  }
+} 

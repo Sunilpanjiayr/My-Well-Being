@@ -1,0 +1,195 @@
+.reschedule-request {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.reschedule-request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.reschedule-request-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1a1a1a;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 5px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  border-left: 4px solid #ef4444;
+  color: #b91c1c;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.request-details {
+  background-color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.request-message {
+  margin: 0 0 16px 0;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.time-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.detail-row span:first-child {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.current-time {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.proposed-time {
+  color: #059669;
+  font-weight: 500;
+}
+
+.arrow {
+  text-align: center;
+  color: #6b7280;
+  font-size: 1.25rem;
+  margin: 4px 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.action-buttons button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accept-button {
+  background-color: #059669;
+  color: white;
+}
+
+.accept-button:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+.reject-button {
+  background-color: #ef4444;
+  color: white;
+}
+
+.reject-button:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.action-buttons button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Dark mode styles */
+.dark .reschedule-request {
+  background-color: #1f2937;
+}
+
+.dark .reschedule-request-header {
+  border-bottom-color: #374151;
+}
+
+.dark .reschedule-request-header h3 {
+  color: #f3f4f6;
+}
+
+.dark .request-details {
+  background-color: #111827;
+}
+
+.dark .request-message {
+  color: #e5e7eb;
+}
+
+.dark .detail-row span:first-child {
+  color: #9ca3af;
+}
+
+.dark .current-time {
+  color: #d1d5db;
+}
+
+.dark .proposed-time {
+  color: #34d399;
+}
+
+.dark .arrow {
+  color: #9ca3af;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .reschedule-request {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons button {
+    width: 100%;
+  }
+} 

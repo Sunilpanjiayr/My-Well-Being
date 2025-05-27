@@ -1,14 +1,49 @@
 // src/components/features/dashboard/DashboardHome.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../../contexts/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../Auth/firebase';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext';
 import Chatbot from '../chatbot/Chatbot'; // Import the Chatbot component
 import '../../../styles/DashboardHome.css';
 
 function DashboardHome() {
-  const { currentUser } = useAuth();
+  const [userName, setUserName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const { darkMode } = useTheme();
+
+  useEffect(() => {
+    // Get current user's display name if available
+    const user = auth.currentUser;
+    if (user) {
+      // Use displayName (username) first, then fall back to email or phone
+      setUserName(user.displayName || user.email || user.phoneNumber || 'User');
+    } else {
+      // If no user is logged in, redirect to login
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      await signOut(auth);
+      // Force clear any cached auth tokens
+      // This ensures the user will need to login again even if token is cached
+      window.localStorage.removeItem('firebase:authUser');
+      
+      // When successfully logged out, navigate to home page
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert('Failed to log out. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   
   // Dashboard widgets for all 11 features
   const widgets = [
@@ -112,13 +147,40 @@ function DashboardHome() {
 
   return (
     <div className={`dashboard-home ${darkMode ? 'dark' : ''}`}>
-      <div className="dashboard-welcome">
-        <h1>Welcome back, {currentUser?.name || 'User'}</h1>
+      <header className="dashboard-welcome">
+        <h1>Welcome to Your Health Dashboard</h1>
         <p>
-          Track your health metrics, set reminders, and achieve your wellness goals.
+          Track your health metrics, set reminders and achieve your wellness goals.
         </p>
-      </div>
-      
+        <div className="user-actions">
+          <span className="user-greeting">Hello, {userName}!</span>
+          <button 
+            onClick={handleLogout} 
+            disabled={loading}
+            className="logout-button"
+          >
+            {loading ? (
+              <span className="loading-text">
+                <svg className="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="20" height="20">
+                  <circle className="spinner-track" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="spinner-path" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging out...
+              </span>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logout
+              </>
+            )}
+          </button>
+        </div>
+      </header>
+
       {/* Quick stats */}
       <div className="stats-container">
         <div className="stat-card">

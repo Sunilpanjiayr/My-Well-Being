@@ -7,9 +7,11 @@ import {
   signInWithPhoneNumber,
   PhoneAuthProvider,
   signInWithCredential,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
+  onAuthStateChanged,
+  getAuth
 } from "firebase/auth";
-import { auth, googleProvider } from "../../firebase";
+import { auth, googleProvider } from "./firebase";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
@@ -25,16 +27,427 @@ const Login = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [verificationId, setVerificationId] = useState("");
+  const [initialAuthCheck, setInitialAuthCheck] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    if (auth.currentUser) {
-      navigate("/dashboard", { replace: true });
+  // Styles
+  const styles = {
+    // Container Styles
+    loginContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #ebf4ff, #ffffff, #ebf4ff)',
+      padding: '20px'
+    },
+    loginWrapper: {
+      width: '100%',
+      maxWidth: '480px'
+    },
+    
+    // Header Styles
+    loginHeader: {
+      textAlign: 'center',
+      marginBottom: '2rem'
+    },
+    logoContainer: {
+      display: 'inline-block',
+      padding: '1rem',
+      borderRadius: '50%',
+      backgroundColor: '#3b82f6',
+      marginBottom: '1rem'
+    },
+    logoIcon: {
+      height: '3rem',
+      width: '3rem',
+      color: '#fff'
+    },
+    appTitle: {
+      fontSize: '1.875rem',
+      fontWeight: 'bold',
+      color: '#333',
+      marginBottom: '0.5rem'
+    },
+    appSubtitle: {
+      fontSize: '1.125rem',
+      color: '#6b7280'
+    },
+    
+    // Main login box
+    loginBox: {
+      backgroundColor: '#fff',
+      borderRadius: '1rem',
+      overflow: 'hidden',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+    },
+    welcomeBanner: {
+      background: 'linear-gradient(to right, #4285f4, #34a0ce)',
+      padding: '1.25rem 1.5rem',
+      color: '#fff'
+    },
+    welcomeBannerH2: {
+      fontSize: '1.5rem',
+      fontWeight: 'bold',
+      marginBottom: '0.25rem'
+    },
+    welcomeBannerP: {
+      opacity: '0.9'
+    },
+    loginContent: {
+      padding: '1.5rem'
+    },
+    
+    // Tabs styles
+    loginTabs: {
+      display: 'flex',
+      marginBottom: '1.5rem',
+      borderBottom: '1px solid #e5e7eb'
+    },
+    tabButton: {
+      flex: '1',
+      padding: '0.75rem',
+      fontWeight: '500',
+      textAlign: 'center',
+      background: 'none',
+      border: 'none',
+      outline: 'none',
+      cursor: 'pointer',
+      color: '#6b7280',
+      transition: 'all 0.3s ease',
+      position: 'relative'
+    },
+    tabButtonActive: {
+      color: '#3b82f6',
+      borderBottom: '2px solid #3b82f6'
+    },
+    tabContent: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.5rem'
+    },
+    tabIcon: {
+      height: '1.25rem',
+      width: '1.25rem'
+    },
+    
+    // Error message
+    errorMessage: {
+      marginBottom: '1.5rem',
+      padding: '0.75rem',
+      backgroundColor: '#fee2e2',
+      borderLeft: '4px solid #ef4444',
+      color: '#b91c1c',
+      borderRadius: '0 0.5rem 0.5rem 0',
+      fontSize: '0.875rem'
+    },
+    errorContent: {
+      display: 'flex',
+      alignItems: 'center'
+    },
+    errorIcon: {
+      height: '1.25rem',
+      width: '1.25rem',
+      marginRight: '0.5rem',
+      flexShrink: '0'
+    },
+    
+    // Form elements
+    loginForm: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '1.25rem'
+    },
+    formGroup: {
+      marginBottom: '0'
+    },
+    formLabel: {
+      display: 'block',
+      fontSize: '0.875rem',
+      fontWeight: '500',
+      color: '#333',
+      marginBottom: '0.25rem'
+    },
+    formInput: {
+      width: '100%',
+      padding: '0.75rem 1rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      fontSize: '1rem',
+      transition: 'all 0.3s ease'
+    },
+    formInputFocus: {
+      outline: 'none',
+      borderColor: 'transparent',
+      boxShadow: '0 0 0 2px #3b82f6'
+    },
+    passwordHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      marginBottom: '0.25rem'
+    },
+    forgotPassword: {
+      fontSize: '0.875rem',
+      color: '#3b82f6',
+      textDecoration: 'none'
+    },
+    rememberMe: {
+      display: 'flex',
+      alignItems: 'center'
+    },
+    checkbox: {
+      height: '1rem',
+      width: '1rem',
+      color: '#3b82f6',
+      borderColor: '#e5e7eb',
+      borderRadius: '0.25rem'
+    },
+    checkboxLabel: {
+      marginLeft: '0.5rem',
+      fontSize: '0.875rem',
+      color: '#333'
+    },
+    
+    // Phone input
+    phoneInputContainer: {
+      marginTop: '0.25rem'
+    },
+    phoneContainer: {
+      width: '100%'
+    },
+    phoneInput: {
+      width: '100%',
+      padding: '0.75rem 1rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      fontSize: '1rem',
+      transition: 'all 0.3s ease'
+    },
+    helperText: {
+      marginTop: '0.25rem',
+      fontSize: '0.75rem',
+      color: '#6b7280'
+    },
+    
+    // Buttons
+    submitButton: {
+      width: '100%',
+      padding: '0.75rem 1rem',
+      background: 'linear-gradient(to right, #3b82f6, #1d4ed8)',
+      color: '#fff',
+      fontWeight: '500',
+      border: 'none',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+    },
+    submitButtonHover: {
+      background: 'linear-gradient(to right, #1d4ed8, #3b82f6)'
+    },
+    loadingIndicator: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    spinner: {
+      animation: 'spin 1s linear infinite',
+      height: '1rem',
+      width: '1rem',
+      marginRight: '0.5rem'
+    },
+    spinnerTrack: {
+      opacity: '0.25'
+    },
+    spinnerPath: {
+      opacity: '0.75'
+    },
+    
+    // OTP Verification
+    otpSentMessage: {
+      textAlign: 'center',
+      marginBottom: '1rem'
+    },
+    otpIconContainer: {
+      display: 'inline-block',
+      padding: '0.5rem',
+      borderRadius: '50%',
+      backgroundColor: '#d1fae5',
+      color: '#22c55e',
+      marginBottom: '0.5rem'
+    },
+    otpIcon: {
+      height: '1.5rem',
+      width: '1.5rem'
+    },
+    otpSentText: {
+      fontSize: '0.875rem',
+      fontWeight: '500',
+      color: '#333',
+      marginBottom: '0.25rem'
+    },
+    otpInstruction: {
+      fontSize: '0.75rem',
+      color: '#6b7280'
+    },
+    otpInput: {
+      width: '100%',
+      padding: '0.75rem 1rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      fontSize: '1.25rem',
+      textAlign: 'center',
+      letterSpacing: '0.25rem',
+      transition: 'all 0.3s ease'
+    },
+    changePhoneButton: {
+      width: '100%',
+      textAlign: 'center',
+      color: '#3b82f6',
+      background: 'none',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      fontSize: '0.875rem',
+      cursor: 'pointer'
+    },
+    resendCode: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      fontSize: '0.75rem',
+      color: '#6b7280',
+      marginTop: '0.5rem'
+    },
+    resendButton: {
+      color: '#3b82f6',
+      background: 'none',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '0.75rem'
+    },
+    
+    // Divider
+    divider: {
+      display: 'flex',
+      alignItems: 'center',
+      margin: '1.5rem 0'
+    },
+    dividerLine: {
+      flexGrow: '1',
+      borderTop: '1px solid #e5e7eb'
+    },
+    dividerText: {
+      flexShrink: '0',
+      margin: '0 1rem',
+      fontSize: '0.875rem',
+      color: '#6b7280'
+    },
+    
+    // Google button
+    googleButton: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '0.75rem 1rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      backgroundColor: '#fff',
+      color: '#333',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+      marginBottom: '1rem'
+    },
+    googleButtonHover: {
+      backgroundColor: '#f3f4f6'
+    },
+    googleIcon: {
+      height: '1.25rem',
+      width: '1.25rem',
+      marginRight: '0.5rem'
+    },
+    
+    // Health notice
+    healthNotice: {
+      marginTop: '1.5rem',
+      backgroundColor: '#ebf8ff',
+      borderRadius: '8px',
+      padding: '0.75rem',
+      fontSize: '0.875rem',
+      color: '#2c5282'
+    },
+    noticeContent: {
+      display: 'flex'
+    },
+    noticeIcon: {
+      height: '1.25rem',
+      width: '1.25rem',
+      color: '#3182ce',
+      marginRight: '0.5rem',
+      flexShrink: '0'
+    },
+    
+    // Sign up link
+    signupLink: {
+      marginTop: '1.5rem',
+      textAlign: 'center'
+    },
+    createAccountLink: {
+      fontWeight: '500',
+      color: '#3b82f6',
+      textDecoration: 'none',
+      transition: 'all 0.3s ease'
+    },
+    
+    // Footer
+    footer: {
+      marginTop: '2rem',
+      textAlign: 'center',
+      fontSize: '0.875rem',
+      color: '#6b7280'
+    },
+    footerLinks: {
+      marginTop: '0.5rem',
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '1rem'
+    },
+    footerLink: {
+      color: '#6b7280',
+      textDecoration: 'none',
+      transition: 'all 0.3s ease'
     }
+  };
+
+  useEffect(() => {
+    // Set up auth state listener
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setInitialAuthCheck(true);
+      
+      // Only navigate if user exists and initial check is complete
+      if (user && user.uid) {
+        // Check if token is still valid by making a test call
+        user.getIdToken()
+          .then(() => {
+            // Token is valid, navigate to dashboard
+            const { from } = location.state || { from: { pathname: "/dashboardHome" } };
+            navigate(from, { replace: true });
+          })
+          .catch((error) => {
+            // Token is invalid, clear auth state
+            console.error("Error verifying token:", error);
+            // No need to sign out here as the token is already invalid
+          });
+      }
+    });
     
     // Clean up reCAPTCHA when component unmounts
     return () => {
+      unsubscribe();
       if (window.recaptchaVerifier) {
         try {
           window.recaptchaVerifier.clear();
@@ -44,7 +457,7 @@ const Login = () => {
         }
       }
     };
-  }, [auth.currentUser, navigate]);
+  }, [navigate, location]);
 
   // Email/Password Login
   const handleLogin = async (e) => {
@@ -54,7 +467,7 @@ const Login = () => {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      const { from } = location.state || { from: { pathname: "/dashboard" } };
+      const { from } = location.state || { from: { pathname: "/dashboardHome" } };
       navigate(from, { replace: true });
     } catch (error) {
       console.error("Error logging in:", error.message);
@@ -70,82 +483,91 @@ const Login = () => {
     setErrorMessage("");
     
     try {
-      await signInWithPopup(auth, googleProvider);
-      const { from } = location.state || { from: { pathname: "/dashboard" } };
+      // Configure popup settings
+      const auth = getAuth();
+      auth.settings.appVerificationDisabledForTesting = true; // For development only
+      
+      // Try to sign in with popup
+      const result = await signInWithPopup(auth, googleProvider).catch((error) => {
+        if (error.code === 'auth/popup-closed-by-user') {
+          throw new Error('Sign-in popup was closed. Please try again.');
+        }
+        if (error.code === 'auth/popup-blocked') {
+          throw new Error('Popup was blocked by your browser. Please enable popups for this site and try again.');
+        }
+        throw error;
+      });
+
+      const { from } = location.state || { from: { pathname: "/dashboardHome" } };
       navigate(from, { replace: true });
     } catch (error) {
-      console.error("Error signing in with Google:", error.message);
-      setErrorMessage("Failed to sign in with Google. Please try again.");
+      console.error("Error signing in with Google:", error);
+      setErrorMessage(error.message || "Failed to sign in with Google. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
 
-  // Check if phone number is registered - Updated implementation
-const checkPhoneNumberExists = async (phoneNum) => {
-  try {
-    console.log("Checking if phone number exists:", phoneNum);
-    
-    // For development & testing: Always allow specific test numbers
-    if (process.env.NODE_ENV === 'development' || 
-        phoneNum.includes("+1 123") || 
-        phoneNum.includes("123-456") || 
-        phoneNum.includes("+91 123") ||
-        phoneNum.includes("12345")) {
-      console.log("DEV MODE: Allowing test phone number");
-      return true;
-    }
-    
-    // In a real implementation, you would have a more robust check against your database
-    // This is a simplified approach for demonstration
-    
+  // Check if phone number is registered
+  const checkPhoneNumberExists = async (phoneNum) => {
     try {
-      // Option 1: Try fetchSignInMethodsForEmail with formatted phone
-      const formattedPhoneAsEmail = `${phoneNum.replace(/[+\s\(\)-]/g, '')}@phone.com`;
-      console.log("Checking with formatted email:", formattedPhoneAsEmail);
-      const signInMethods = await fetchSignInMethodsForEmail(auth, formattedPhoneAsEmail);
+      console.log("Checking if phone number exists:", phoneNum);
       
-      if (signInMethods && signInMethods.length > 0) {
+      // For development & testing: Always allow specific test numbers
+      if (process.env.NODE_ENV === 'development' || 
+          phoneNum.includes("+1 123") || 
+          phoneNum.includes("123-456") || 
+          phoneNum.includes("+91 123") ||
+          phoneNum.includes("12345")) {
+        console.log("DEV MODE: Allowing test phone number");
         return true;
       }
-    } catch (e) {
-      console.log("Error checking via email format:", e);
-      // Continue to fallback
+      
+      try {
+        // Option 1: Try fetchSignInMethodsForEmail with formatted phone
+        const formattedPhoneAsEmail = `${phoneNum.replace(/[+\s\(\)-]/g, '')}@phone.com`;
+        console.log("Checking with formatted email:", formattedPhoneAsEmail);
+        const signInMethods = await fetchSignInMethodsForEmail(auth, formattedPhoneAsEmail);
+        
+        if (signInMethods && signInMethods.length > 0) {
+          return true;
+        }
+      } catch (e) {
+        console.log("Error checking via email format:", e);
+        // Continue to fallback
+      }
+      
+      const existingUsers = JSON.parse(localStorage.getItem("registeredPhones") || "[]");
+      const normalizedPhone = phoneNum.replace(/\s+/g, "");
+      
+      if (existingUsers.some(phone => {
+        const normalizedStoredPhone = phone.replace(/\s+/g, "");
+        return normalizedStoredPhone.includes(normalizedPhone) || 
+              normalizedPhone.includes(normalizedStoredPhone);
+      })) {
+        console.log("Found in local storage registered phones");
+        return true;
+      }
+      
+      // For testing: Saving this number as registered after first attempt
+      if (phoneNum.includes("123") || phoneNum.includes("456")) {
+        console.log("Test number - allowing and saving to local storage");
+        existingUsers.push(phoneNum);
+        localStorage.setItem("registeredPhones", JSON.stringify(existingUsers));
+        return true;
+      }
+      
+      console.log("Phone number not found in any verification method");
+      return false;
+    } catch (error) {
+      console.error("Error checking phone number:", error);
+      // In development, allow the flow to continue even if there's an error
+      if (process.env.NODE_ENV === 'development') {
+        return true;
+      }
+      return false;
     }
-    
-    // For demo purposes: If we've registered before with this number, consider it valid
-    // In a real app, you would check against your user database
-    const existingUsers = JSON.parse(localStorage.getItem("registeredPhones") || "[]");
-    const normalizedPhone = phoneNum.replace(/\s+/g, "");
-    
-    if (existingUsers.some(phone => {
-      const normalizedStoredPhone = phone.replace(/\s+/g, "");
-      return normalizedStoredPhone.includes(normalizedPhone) || 
-             normalizedPhone.includes(normalizedStoredPhone);
-    })) {
-      console.log("Found in local storage registered phones");
-      return true;
-    }
-    
-    // For testing: Save this number as registered after first attempt
-    // This is just for demo purposes - in a real app you'd check your database
-    if (phoneNum.includes("123") || phoneNum.includes("456")) {
-      console.log("Test number - allowing and saving to local storage");
-      existingUsers.push(phoneNum);
-      localStorage.setItem("registeredPhones", JSON.stringify(existingUsers));
-      return true;
-    }
-    
-    console.log("Phone number not found in any verification method");
-    return false;
-  } catch (error) {
-    console.error("Error checking phone number:", error);
-    // In development, allow the flow to continue even if there's an error
-    if (process.env.NODE_ENV === 'development') {
-      return true;
-    }
-    return false;
-  }
-};
+  };
 
   // Phone Number Login - Send OTP
   const handlePhoneLogin = async (e) => {
@@ -269,7 +691,7 @@ const checkPhoneNumberExists = async (phoneNum) => {
       console.log("Phone authentication successful:", result.user.uid);
       
       // Redirect to dashboard
-      const { from } = location.state || { from: { pathname: "/dashboard" } };
+      const { from } = location.state || { from: { pathname: "/dashboardHome" } };
       navigate(from, { replace: true });
       
     } catch (error) {
@@ -280,7 +702,7 @@ const checkPhoneNumberExists = async (phoneNum) => {
           (phoneNumber.includes("+1 12345") || phoneNumber.includes("+91 12345")) && 
           otp === "123456") {
         console.log("DEV MODE: Allowing test verification code");
-        const { from } = location.state || { from: { pathname: "/dashboard" } };
+        const { from } = location.state || { from: { pathname: "/dashboardHome" } };
         navigate(from, { replace: true });
         return;
       }
@@ -307,36 +729,49 @@ const checkPhoneNumberExists = async (phoneNum) => {
     setErrorMessage("");
   };
 
+  // If still performing initial auth check, show loading indicator
+  if (!initialAuthCheck) {
+    return (
+      <div style={styles.loginContainer}>
+        <div style={{textAlign: 'center', padding: '2rem'}}>
+          <div style={{display: 'inline-block', marginBottom: '1rem'}}>
+            <svg style={{animation: 'spin 1s linear infinite', height: '3rem', width: '3rem', color: '#3b82f6'}} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle style={{opacity: '0.25'}} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path style={{opacity: '0.75'}} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <p>Checking authentication status...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-50">
-      <div className="w-full max-w-md">
+    <div style={styles.loginContainer}>
+      <div style={styles.loginWrapper}>
         {/* Medical Logo and Header */}
-        <div className="text-center mb-8">
-          <div className="inline-block p-3 rounded-full bg-blue-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div style={styles.loginHeader}>
+          <div style={styles.logoContainer}>
+            <svg style={styles.logoIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">Health & Wellness Hub</h1>
-          <p className="text-gray-600 mt-2 text-lg">Your trusted healthcare partner</p>
+          <h1 style={styles.appTitle}>Health & Wellness Hub</h1>
+          <p style={styles.appSubtitle}>Your trusted healthcare partner</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div style={styles.loginBox}>
           {/* Welcome Banner */}
-          <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-5 text-white">
-            <h2 className="text-2xl font-bold">Welcome Back</h2>
-            <p className="mt-1 opacity-90">Sign in to access your health dashboard</p>
+          <div style={styles.welcomeBanner}>
+            <h2 style={styles.welcomeBannerH2}>Welcome Back</h2>
+            <p style={styles.welcomeBannerP}>Sign in to access your health dashboard</p>
           </div>
 
-          <div className="p-6">
+          <div style={styles.loginContent}>
             {/* Login Tabs */}
-            <div className="flex mb-6 border-b">
+            <div style={styles.loginTabs}>
               <button 
-                className={`flex-1 py-3 font-medium text-center transition-colors ${
-                  activeTab === 'email' 
-                    ? 'text-blue-600 border-b-2 border-blue-600' 
-                    : 'text-gray-500 hover:text-blue-600'
-                }`}
+                style={{...styles.tabButton, ...(activeTab === 'email' ? styles.tabButtonActive : {})}}
                 onClick={() => {
                   setActiveTab('email');
                   setIsOtpSent(false);
@@ -344,27 +779,23 @@ const checkPhoneNumberExists = async (phoneNum) => {
                 }}
                 disabled={loading || verifying}
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div style={styles.tabContent}>
+                  <svg style={styles.tabIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                   <span>Email</span>
                 </div>
               </button>
               <button 
-                className={`flex-1 py-3 font-medium text-center transition-colors ${
-                  activeTab === 'phone' 
-                    ? 'text-blue-600 border-b-2 border-blue-600' 
-                    : 'text-gray-500 hover:text-blue-600'
-                }`}
+                style={{...styles.tabButton, ...(activeTab === 'phone' ? styles.tabButtonActive : {})}}
                 onClick={() => {
                   setActiveTab('phone');
                   setErrorMessage("");
                 }}
                 disabled={loading || verifying}
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div style={styles.tabContent}>
+                  <svg style={styles.tabIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                   <span>Phone</span>
@@ -374,9 +805,9 @@ const checkPhoneNumberExists = async (phoneNum) => {
 
             {/* Error message */}
             {errorMessage && (
-              <div className="mb-6 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg text-sm">
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div style={styles.errorMessage}>
+                <div style={styles.errorContent}>
+                  <svg style={styles.errorIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   {errorMessage}
@@ -386,9 +817,9 @@ const checkPhoneNumberExists = async (phoneNum) => {
 
             {/* Email/Password Login Form */}
             {activeTab === 'email' && (
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <form onSubmit={handleLogin} style={styles.loginForm}>
+                <div style={styles.formGroup}>
+                  <label htmlFor="email" style={styles.formLabel}>
                     Email Address
                   </label>
                   <input
@@ -398,16 +829,16 @@ const checkPhoneNumberExists = async (phoneNum) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    style={styles.formInput}
                     disabled={loading}
                   />
                 </div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <div style={styles.formGroup}>
+                  <div style={styles.passwordHeader}>
+                    <label htmlFor="password" style={styles.formLabel}>
                       Password
                     </label>
-                    <a href="#" className="text-sm text-blue-600 hover:underline">
+                    <a href="#" style={styles.forgotPassword}>
                       Forgot password?
                     </a>
                   </div>
@@ -418,31 +849,33 @@ const checkPhoneNumberExists = async (phoneNum) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    style={styles.formInput}
                     disabled={loading}
                   />
                 </div>
-                <div className="flex items-center">
+                <div style={styles.rememberMe}>
                   <input
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    style={styles.checkbox}
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor="remember-me" style={styles.checkboxLabel}>
                     Remember me on this device
                   </label>
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70"
+                  style={styles.submitButton}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #3b82f6)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #3b82f6, #1d4ed8)'}
                 >
                   {loading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <span style={styles.loadingIndicator}>
+                      <svg style={styles.spinner} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle style={styles.spinnerTrack} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path style={styles.spinnerPath} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Signing in...
                     </span>
@@ -455,22 +888,24 @@ const checkPhoneNumberExists = async (phoneNum) => {
 
             {/* Phone Login Form */}
             {activeTab === 'phone' && !isOtpSent && (
-              <form onSubmit={handlePhoneLogin} className="space-y-5">
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              <form onSubmit={handlePhoneLogin} style={styles.loginForm}>
+                <div style={styles.formGroup}>
+                  <label htmlFor="phone" style={styles.formLabel}>
                     Phone Number
                   </label>
-                  <div className="mt-1">
+                  <div style={styles.phoneInputContainer}>
                     <PhoneInput
                       country={"us"}
                       value={phoneNumber}
                       onChange={(value) => setPhoneNumber("+" + value)}
-                      inputClass="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                      containerClass="w-full"
+                      inputClass="phone-input"
+                      containerClass="phone-container"
                       disabled={loading}
+                      containerStyle={styles.phoneContainer}
+                      inputStyle={styles.phoneInput}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p style={styles.helperText}>
                     We'll send a verification code to this number
                   </p>
                 </div>
@@ -479,13 +914,15 @@ const checkPhoneNumberExists = async (phoneNum) => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70"
+                  style={styles.submitButton}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #3b82f6)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #3b82f6, #1d4ed8)'}
                 >
                   {loading ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <span style={styles.loadingIndicator}>
+                      <svg style={styles.spinner} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle style={styles.spinnerTrack} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path style={styles.spinnerPath} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Sending code...
                     </span>
@@ -498,19 +935,19 @@ const checkPhoneNumberExists = async (phoneNum) => {
             
             {/* OTP Verification Form (only shown after OTP is sent) */}
             {activeTab === 'phone' && isOtpSent && (
-              <form onSubmit={handleVerifyOtp} className="space-y-5">
-                <div className="text-center mb-2">
-                  <div className="inline-block p-2 rounded-full bg-green-100 text-green-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <form onSubmit={handleVerifyOtp} style={styles.loginForm}>
+                <div style={styles.otpSentMessage}>
+                  <div style={styles.otpIconContainer}>
+                    <svg style={styles.otpIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <p className="mt-2 text-sm font-medium text-gray-700">Code sent successfully!</p>
-                  <p className="text-xs text-gray-500">Please enter the verification code</p>
+                  <p style={styles.otpSentText}>Code sent successfully!</p>
+                  <p style={styles.otpInstruction}>Please enter the verification code</p>
                 </div>
                 
-                <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                <div style={styles.formGroup}>
+                  <label htmlFor="otp" style={styles.formLabel}>
                     Verification Code
                   </label>
                   <input
@@ -522,7 +959,7 @@ const checkPhoneNumberExists = async (phoneNum) => {
                     required
                     maxLength={6}
                     autoComplete="one-time-code"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-center tracking-widest text-lg"
+                    style={styles.otpInput}
                     disabled={verifying}
                   />
                 </div>
@@ -530,13 +967,15 @@ const checkPhoneNumberExists = async (phoneNum) => {
                 <button
                   type="submit"
                   disabled={verifying}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70"
+                  style={styles.submitButton}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #3b82f6)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'linear-gradient(to right, #3b82f6, #1d4ed8)'}
                 >
                   {verifying ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <span style={styles.loadingIndicator}>
+                      <svg style={styles.spinner} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle style={styles.spinnerTrack} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path style={styles.spinnerPath} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Verifying...
                     </span>
@@ -548,17 +987,17 @@ const checkPhoneNumberExists = async (phoneNum) => {
                 <button
                   type="button"
                   onClick={handleChangePhoneNumber}
-                  className="w-full text-blue-600 py-2 px-4 text-sm hover:underline focus:outline-none"
+                  style={styles.changePhoneButton}
                 >
                   Change phone number
                 </button>
                 
-                <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                <div style={styles.resendCode}>
                   <span>Didn't receive the code?</span>
                   <button 
                     type="button"
                     onClick={handlePhoneLogin}
-                    className="text-blue-600 hover:underline focus:outline-none"
+                    style={styles.resendButton}
                     disabled={loading}
                   >
                     Resend Code
@@ -571,19 +1010,21 @@ const checkPhoneNumberExists = async (phoneNum) => {
             {!(activeTab === 'phone' && isOtpSent) && (
               <>
                 {/* Divider */}
-                <div className="flex items-center my-6">
-                  <div className="flex-grow border-t border-gray-300"></div>
-                  <span className="flex-shrink mx-4 text-gray-500 text-sm">or continue with</span>
-                  <div className="flex-grow border-t border-gray-300"></div>
+                <div style={styles.divider}>
+                  <div style={styles.dividerLine}></div>
+                  <span style={styles.dividerText}>or continue with</span>
+                  <div style={styles.dividerLine}></div>
                 </div>
 
                 {/* Social Login */}
                 <button
                   onClick={handleGoogleLogin}
                   disabled={loading}
-                  className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition mb-4 disabled:opacity-70"
+                  style={styles.googleButton}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fff'}
                 >
-                  <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                  <svg style={styles.googleIcon} viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
                     <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
                       <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z"/>
                       <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z"/>
@@ -597,9 +1038,9 @@ const checkPhoneNumberExists = async (phoneNum) => {
             )}
             
             {/* Health Information Notice */}
-            <div className="mt-6 bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
-              <div className="flex">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div style={styles.healthNotice}>
+              <div style={styles.noticeContent}>
+                <svg style={styles.noticeIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p>Your health information is protected by our strict privacy policy and secure encryption.</p>
@@ -607,10 +1048,10 @@ const checkPhoneNumberExists = async (phoneNum) => {
             </div>
 
             {/* Sign-Up Link */}
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
+            <div style={styles.signupLink}>
+              <p>
                 Don't have an account?{" "}
-                <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500 transition">
+                <Link to="/signup" style={styles.createAccountLink}>
                   Create your health profile
                 </Link>
               </p>
@@ -619,14 +1060,14 @@ const checkPhoneNumberExists = async (phoneNum) => {
         </div>
         
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <footer style={styles.footer}>
           <p>© 2025 Health & Wellness Hub. All rights reserved.</p>
-          <div className="mt-2 space-x-4">
-            <a href="#" className="hover:text-blue-600 transition">Privacy Policy</a>
-            <a href="#" className="hover:text-blue-600 transition">Terms of Service</a>
-            <a href="#" className="hover:text-blue-600 transition">Contact Support</a>
+          <div style={styles.footerLinks}>
+            <a href="#" style={styles.footerLink}>Privacy Policy</a>
+            <a href="#" style={styles.footerLink}>Terms of Service</a>
+            <a href="#" style={styles.footerLink}>Contact Support</a>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );

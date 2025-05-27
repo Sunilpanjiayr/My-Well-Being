@@ -1,0 +1,318 @@
+.appointment-notifications {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.notifications-header {
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notifications-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.notifications-header .subtitle {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Dark mode styles */
+.dark .appointment-notifications {
+  background-color: #1f2937;
+}
+
+.dark .notifications-header {
+  border-bottom-color: #374151;
+}
+
+.dark .notifications-header h2 {
+  color: #f3f4f6;
+}
+
+.dark .notifications-header .subtitle {
+  color: #9ca3af;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .appointment-notifications {
+    border-radius: 8px;
+    margin: 16px;
+  }
+
+  .notifications-header {
+    padding: 16px;
+  }
+
+  .notifications-header h2 {
+    font-size: 1.125rem;
+  }
+}
+
+.appointment-notifications h3 {
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
+  font-size: 1.25rem;
+}
+
+.notifications-loading {
+  text-align: center;
+  padding: 24px;
+  color: #6b7280;
+}
+
+.dark .notifications-loading {
+  color: #9ca3af;
+}
+
+.notifications-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.dark .notifications-error {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notification-card {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.dark .notification-card {
+  background-color: #111827;
+  border-color: #374151;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.notification-header h4 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.dark .notification-header h4 {
+  color: #f3f4f6;
+}
+
+.notification-time {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.dark .notification-time {
+  color: #9ca3af;
+}
+
+.notification-card p {
+  margin: 0 0 12px 0;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.time-details {
+  background-color: #f1f5f9;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 12px 0;
+}
+
+.dark .time-details {
+  background-color: #1e293b;
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.time-row:last-child {
+  margin-bottom: 0;
+}
+
+.time-row span:first-child {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dark .time-row span:first-child {
+  color: #94a3b8;
+}
+
+.reschedule-message {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.dark .reschedule-message {
+  border-top-color: #374151;
+}
+
+.reschedule-message p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.dark .reschedule-message p {
+  color: #9ca3af;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.notification-actions button {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accept-button {
+  background-color: #059669;
+  color: white;
+}
+
+.accept-button:hover {
+  background-color: #047857;
+}
+
+.reject-button {
+  background-color: #ef4444;
+  color: white;
+}
+
+.reject-button:hover {
+  background-color: #dc2626;
+}
+
+/* Dark mode styles */
+.dark .appointment-notifications h3 {
+  color: #f3f4f6;
+}
+
+.dark .notification-card {
+  background-color: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.dark .notification-header h4 {
+  color: #f3f4f6;
+}
+
+.dark .notification-card p {
+  color: #e5e7eb;
+}
+
+.dark .time-details {
+  background-color: #111827;
+}
+
+.dark .time-row:first-child {
+  border-bottom-color: #374151;
+}
+
+.dark .time-row span:first-child {
+  color: #9ca3af;
+}
+
+.dark .time-row span:last-child {
+  color: #f3f4f6;
+}
+
+/* Dark mode styles */
+.dark .accept-button {
+  background-color: #065f46;
+}
+
+.dark .accept-button:hover {
+  background-color: #047857;
+}
+
+.dark .reject-button {
+  background-color: #991b1b;
+}
+
+.dark .reject-button:hover {
+  background-color: #7f1d1d;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .notification-card {
+    padding: 12px;
+  }
+
+  .notification-actions {
+    flex-direction: column;
+  }
+
+  .notification-actions button {
+    width: 100%;
+  }
+}
+
+.join-button {
+  background-color: #059669;
+  color: white;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.join-button:hover {
+  background-color: #047857;
+}
+
+.dark .join-button {
+  background-color: #065f46;
+}
+
+.dark .join-button:hover {
+  background-color: #047857;
+} 

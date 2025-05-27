@@ -1,0 +1,288 @@
+.appointment-booking {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.appointment-booking h2 {
+  color: #1a1a1a;
+  margin-bottom: 24px;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  border-left: 4px solid #ef4444;
+  color: #b91c1c;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.loading-spinner {
+  text-align: center;
+  color: #6b7280;
+  padding: 20px;
+}
+
+.notifications-section {
+  margin-bottom: 24px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+}
+
+.notifications-section h3 {
+  color: #1a1a1a;
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+}
+
+.notification-card {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.notification-card p {
+  margin: 0;
+  color: #374151;
+  flex: 1;
+}
+
+.view-request-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.view-request-button:hover {
+  background-color: #2563eb;
+}
+
+.appointments-list {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.appointment-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.appointment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.appointment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.appointment-header h4 {
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.confirmed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.completed {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.status-badge.cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.appointment-details {
+  margin-bottom: 16px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row span:first-child {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.detail-row s {
+  color: #9ca3af;
+}
+
+.detail-row small {
+  color: #059669;
+  font-weight: 500;
+}
+
+.reschedule-status {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e5e7eb;
+  text-align: center;
+}
+
+.pending-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #ede9fe;
+  color: #5b21b6;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+
+/* Dark mode styles */
+.dark .appointment-booking h2 {
+  color: #f3f4f6;
+}
+
+.dark .notifications-section,
+.dark .appointment-card {
+  background-color: #1f2937;
+}
+
+.dark .notification-card {
+  background-color: #111827;
+}
+
+.dark .notification-card p {
+  color: #e5e7eb;
+}
+
+.dark .appointment-header h4 {
+  color: #f3f4f6;
+}
+
+.dark .detail-row {
+  border-bottom-color: #374151;
+}
+
+.dark .detail-row span:first-child {
+  color: #9ca3af;
+}
+
+.dark .detail-row s {
+  color: #6b7280;
+}
+
+.dark .detail-row small {
+  color: #34d399;
+}
+
+.dark .reschedule-status {
+  border-top-color: #374151;
+}
+
+.dark .pending-badge {
+  background-color: rgba(124, 58, 237, 0.2);
+  color: #a78bfa;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .appointment-booking {
+    padding: 16px;
+  }
+
+  .appointments-list {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-request-button {
+    width: 100%;
+  }
+}
+
+.appointment-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.manage-consultation-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.manage-consultation-button:hover {
+  background-color: #059669;
+}
+
+.dark .manage-consultation-button {
+  background-color: #34d399;
+  color: #1a1a1a;
+}
+
+.dark .manage-consultation-button:hover {
+  background-color: #10b981;
+} 
