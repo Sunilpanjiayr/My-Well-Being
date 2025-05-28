@@ -1,4 +1,3 @@
-// server/models/Reply.js
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -14,6 +13,11 @@ const ReplySchema = new Schema({
     required: true,
     index: true
   },
+  parentReplyId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Reply',
+    default: null
+  },
   author: {
     uid: {
       type: String,
@@ -26,6 +30,16 @@ const ReplySchema = new Schema({
     avatarUrl: String,
     joinDate: Date
   },
+  attachments: [{
+    fileName: String,
+    fileUrl: String,
+    fileType: String, // 'image' or 'pdf'
+    fileSize: Number,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   likes: {
     type: Number,
     default: 0
@@ -45,9 +59,9 @@ const ReplySchema = new Schema({
       default: false
     }
   }]
-}, { 
+}, {
   timestamps: true, // Adds createdAt and updatedAt
-  toJSON: { 
+  toJSON: {
     virtuals: true,
     transform: function(doc, ret) {
       ret.id = ret._id;
@@ -58,40 +72,32 @@ const ReplySchema = new Schema({
   }
 });
 
-// Toggle like status for a user
 ReplySchema.methods.toggleLike = function(userId) {
   const index = this.likedBy.indexOf(userId);
-  
+
   if (index === -1) {
-    // User hasn't liked this reply yet, add like
     this.likedBy.push(userId);
     this.likes += 1;
   } else {
-    // User already liked this reply, remove like
     this.likedBy.splice(index, 1);
     this.likes -= 1;
   }
-  
+
   return this.save();
 };
 
-// Check if a user has liked this reply
 ReplySchema.methods.isLikedByUser = function(userId) {
   return this.likedBy.includes(userId);
 };
 
-// Report a reply
 ReplySchema.methods.report = function(userId, reason) {
-  // Check if the user has already reported this reply
   const existingReport = this.reports.find(report => report.userId === userId);
-  
+
   if (existingReport) {
-    // Update the existing report
     existingReport.reason = reason;
     existingReport.createdAt = Date.now();
     existingReport.resolved = false;
   } else {
-    // Add a new report
     this.reports.push({
       userId,
       reason,
@@ -99,7 +105,7 @@ ReplySchema.methods.report = function(userId, reason) {
       resolved: false
     });
   }
-  
+
   return this.save();
 };
 

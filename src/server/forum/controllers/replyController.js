@@ -1,24 +1,20 @@
-// server/controllers/replyController.js
 const Reply = require('../models/Reply');
 const Topic = require('../models/Topic');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 
-// Create a new reply to a topic
 exports.createReply = async (req, res) => {
   try {
     const { topicId } = req.params;
-    const { content } = req.body;
+    const { content, parentReplyId, attachments } = req.body;
     
-    // Validate content
-    if (!content) {
+    if (!content || !content.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Reply content is required'
       });
     }
     
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(topicId)) {
       return res.status(400).json({ 
         success: false, 
@@ -26,7 +22,30 @@ exports.createReply = async (req, res) => {
       });
     }
     
-    // Find the topic
+    if (parentReplyId && !mongoose.Types.ObjectId.isValid(parentReplyId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid parent reply ID' 
+      });
+    }
+    
+    if (parentReplyId) {
+      const parentReply = await Reply.findById(parentReplyId);
+      if (!parentReply) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Parent reply not found' 
+        });
+      }
+      
+      if (parentReply.topicId.toString() !== topicId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Parent reply does not belong to this topic' 
+        });
+      }
+    }
+    
     const topic = await Topic.findById(topicId);
     
     if (!topic) {
@@ -36,7 +55,6 @@ exports.createReply = async (req, res) => {
       });
     }
     
-    // Check if the topic is locked
     if (topic.isLocked) {
       return res.status(403).json({ 
         success: false, 
@@ -44,17 +62,14 @@ exports.createReply = async (req, res) => {
       });
     }
     
-    // Get user data from Firebase Auth
     const userId = req.user.uid;
     const userEmail = req.user.email;
     const displayName = req.user.name || req.userData?.displayName || userEmail.split('@')[0];
     const photoURL = req.user.picture || req.userData?.photoURL;
     
-    // Check if we have a MongoDB User document for this Firebase user
     let userDoc = await User.findOne({ firebaseUid: userId });
     
     if (!userDoc) {
-      // Create a new user document if it doesn't exist
       userDoc = await User.findOrCreateFromFirebase({
         uid: userId,
         email: userEmail,
@@ -63,10 +78,11 @@ exports.createReply = async (req, res) => {
       });
     }
     
-    // Create the new reply
     const newReply = new Reply({
-      content,
+      content: content.trim(),
       topicId,
+      parentReplyId: parentReplyId || null,
+      attachments: attachments || [],
       author: {
         uid: userId,
         username: userDoc.username || displayName,
@@ -77,11 +93,9 @@ exports.createReply = async (req, res) => {
     
     await newReply.save();
     
-    // Increment reply count on the topic
     topic.replyCount += 1;
     await topic.save();
     
-    // Create a notification for the topic author if the reply is from someone else
     if (topic.author.uid !== userId) {
       try {
         const authorDoc = await User.findOne({ firebaseUid: topic.author.uid });
@@ -97,7 +111,27 @@ exports.createReply = async (req, res) => {
         }
       } catch (notifError) {
         console.error('Error creating reply notification:', notifError);
-        // Continue execution even if notification fails
+      }
+    }
+    
+    if (parentReplyId && parentReplyId !== null) {
+      try {
+        const parentReply = await Reply.findById(parentReplyId);
+        if (parentReply && parentReply.author.uid !== userId) {
+          const parentAuthorDoc = await User.findOne({ firebaseUid: parentReply.author.uid });
+          
+          if (parentAuthorDoc) {
+            const replierName = userDoc.username || displayName;
+            await parentAuthorDoc.addNotification(
+              'reply', 
+              `${replierName} replied to your comment in "${topic.title}"`,
+              topic._id,
+              'reply'
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error('Error creating nested reply notification:', notifError);
       }
     }
     
@@ -116,21 +150,18 @@ exports.createReply = async (req, res) => {
   }
 };
 
-// Update a reply
 exports.updateReply = async (req, res) => {
   try {
     const { id } = req.params;
-    const { content } = req.body;
+    const { content, attachments } = req.body;
     
-    // Validate content
-    if (!content) {
+    if (!content || !content.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Reply content is required'
       });
     }
     
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ 
         success: false, 
@@ -138,7 +169,6 @@ exports.updateReply = async (req, res) => {
       });
     }
     
-    // Find the reply
     const reply = await Reply.findById(id);
     
     if (!reply) {
@@ -148,7 +178,6 @@ exports.updateReply = async (req, res) => {
       });
     }
     
-    // Check if the user is the author
     if (reply.author.uid !== req.user.uid) {
       return res.status(403).json({ 
         success: false, 
@@ -156,7 +185,6 @@ exports.updateReply = async (req, res) => {
       });
     }
     
-    // Find the topic to check if it's locked
     const topic = await Topic.findById(reply.topicId);
     
     if (topic && topic.isLocked) {
@@ -166,8 +194,12 @@ exports.updateReply = async (req, res) => {
       });
     }
     
-    // Update the reply
-    reply.content = content;
+    reply.content = content.trim();
+    
+    if (attachments) {
+      reply.attachments = attachments;
+    }
+    
     await reply.save();
     
     return res.status(200).json({
@@ -185,12 +217,10 @@ exports.updateReply = async (req, res) => {
   }
 };
 
-// Delete a reply
 exports.deleteReply = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ 
         success: false, 
@@ -198,7 +228,6 @@ exports.deleteReply = async (req, res) => {
       });
     }
     
-    // Find the reply
     const reply = await Reply.findById(id);
     
     if (!reply) {
@@ -208,7 +237,6 @@ exports.deleteReply = async (req, res) => {
       });
     }
     
-    // Check if the user is the author or an admin
     if (reply.author.uid !== req.user.uid && req.user.role !== 'admin') {
       return res.status(403).json({ 
         success: false, 
@@ -216,14 +244,19 @@ exports.deleteReply = async (req, res) => {
       });
     }
     
-    // Decrement reply count on the topic
+    const childReplies = await Reply.find({ parentReplyId: id });
+    
+    for (const childReply of childReplies) {
+      childReply.parentReplyId = reply.parentReplyId; // Set to the parent of the deleted reply
+      await childReply.save();
+    }
+    
     const topic = await Topic.findById(reply.topicId);
     if (topic) {
       topic.replyCount = Math.max(0, topic.replyCount - 1);
       await topic.save();
     }
     
-    // Delete the reply
     await Reply.findByIdAndDelete(id);
     
     return res.status(200).json({
@@ -240,12 +273,10 @@ exports.deleteReply = async (req, res) => {
   }
 };
 
-// Like or unlike a reply
 exports.likeReply = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ 
         success: false, 
@@ -253,7 +284,6 @@ exports.likeReply = async (req, res) => {
       });
     }
     
-    // Find the reply
     const reply = await Reply.findById(id);
     
     if (!reply) {
@@ -263,13 +293,10 @@ exports.likeReply = async (req, res) => {
       });
     }
     
-    // Toggle like status
     await reply.toggleLike(req.user.uid);
     
-    // Check if the reply is now liked by the user
     const isLiked = reply.isLikedByUser(req.user.uid);
     
-    // If it's a new like (not an unlike), create a notification for the reply author
     if (isLiked && reply.author.uid !== req.user.uid) {
       try {
         const authorDoc = await User.findOne({ firebaseUid: reply.author.uid });
@@ -277,7 +304,6 @@ exports.likeReply = async (req, res) => {
         if (authorDoc) {
           const likerName = req.userData?.displayName || req.user.email.split('@')[0];
           
-          // Get the topic title for context
           const topic = await Topic.findById(reply.topicId);
           const topicTitle = topic ? topic.title : 'a topic';
           
@@ -290,7 +316,6 @@ exports.likeReply = async (req, res) => {
         }
       } catch (notifError) {
         console.error('Error creating like notification:', notifError);
-        // Continue execution even if notification fails
       }
     }
     
@@ -310,13 +335,11 @@ exports.likeReply = async (req, res) => {
   }
 };
 
-// Report a reply
 exports.reportReply = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
     
-    // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ 
         success: false, 
@@ -324,7 +347,6 @@ exports.reportReply = async (req, res) => {
       });
     }
     
-    // Validate reason
     if (!reason) {
       return res.status(400).json({ 
         success: false, 
@@ -332,7 +354,6 @@ exports.reportReply = async (req, res) => {
       });
     }
     
-    // Find the reply
     const reply = await Reply.findById(id);
     
     if (!reply) {
@@ -342,7 +363,6 @@ exports.reportReply = async (req, res) => {
       });
     }
     
-    // Add the report
     await reply.report(req.user.uid, reason);
     
     return res.status(200).json({
