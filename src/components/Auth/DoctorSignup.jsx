@@ -19,6 +19,11 @@ import PhoneInput from 'react-phone-input-2';
 import axios from "axios";
 import 'react-phone-input-2/lib/style.css';
 
+// Add these imports at the top of DoctorSignup.jsx
+import manAvatar from './man_avatar.jpg';
+import womanAvatar from './woman_avatar.jpg';
+
+
 // Initialize Firebase Storage
 const storage = getStorage();
 
@@ -46,7 +51,7 @@ const DoctorSignup = () => {
   // User profile states
   const [gender, setGender] = useState("male");
   const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(require("./man_avatar.jpg"));
+const [avatarPreview, setAvatarPreview] = useState(manAvatar);
 
   // Signup form states
   const [email, setEmail] = useState("");
@@ -73,11 +78,11 @@ const DoctorSignup = () => {
   const [verificationId, setVerificationId] = useState("");
 
   // Update avatar preview when gender changes (if no custom avatar selected)
-  useEffect(() => {
-    if (!avatarFile) {
-      setAvatarPreview(gender === "male" ? require("./man_avatar.jpg") : require("./woman_avatar.jpg"));
-    }
-  }, [gender, avatarFile]);
+useEffect(() => {
+  if (!avatarFile) {
+    setAvatarPreview(gender === "male" ? manAvatar : womanAvatar);
+  }
+}, [gender, avatarFile]);
 
   // Styles - reused from Signup.jsx with some modifications
   const styles = {
@@ -791,32 +796,34 @@ const DoctorSignup = () => {
     setIdFile(null);
   };
 
-  // Upload avatar to Firebase Storage
-  const uploadAvatar = async (userId) => {
-    try {
-      if (!avatarFile) {
-        // Return the URL of the default avatar based on gender
-        return gender === "male" ? "/man_avatar.jpg" : "/woman_avatar.jpg";
-      }
-  
-      // Create a reference to the file in Firebase Storage
-      const storageRef = ref(storage, `doctor_avatars/${userId}`);
-      
-      // Upload the file
-      const snapshot = await uploadBytes(storageRef, avatarFile);
-      
-      // Get the download URL
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      console.log('Avatar uploaded to Firebase Storage:', downloadURL);
-      
-      return downloadURL;
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      // Return default avatar as fallback
-      return gender === "male" ? "/man_avatar.jpg" : "/woman_avatar.jpg";
+// Only update the uploadAvatar function in DoctorSignup.jsx
+// Keep doctor_credentials as is - no changes needed
+
+const uploadAvatar = async (userId) => {
+  try {
+    if (!avatarFile) {
+      // Return the imported avatar based on gender
+      return gender === "male" ? manAvatar : womanAvatar;
     }
-  };
+
+    // Store in avatars/{userId} - same as users (this is fine!)
+    const storageRef = ref(storage, `avatars/${userId}`);
+    
+    // Upload the file
+    const snapshot = await uploadBytes(storageRef, avatarFile);
+    
+    // Get the download URL
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    console.log('Avatar uploaded to Firebase Storage:', downloadURL);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    // Return imported avatar as fallback
+    return gender === "male" ? manAvatar : womanAvatar;
+  }
+};
 
   // Upload credential files to Firebase Storage
   const uploadCredentials = async (userId) => {
@@ -1358,21 +1365,20 @@ const DoctorSignup = () => {
       const storedCertificateFileName = window.sessionStorage.getItem("certificateFileName");
       const storedIdFileName = window.sessionStorage.getItem("idFileName");
       
-      // Upload avatar
       let avatarUrl;
-      if (storedAvatarPreview && storedAvatarPreview.startsWith('data:image')) {
-        // Create a blob from the data URL
-        const response = await fetch(storedAvatarPreview);
-        const blob = await response.blob();
-        
-        // Upload the blob to Firebase Storage
-        const storageRef = ref(storage, `doctor_avatars/${result.user.uid}`);
-        await uploadBytes(storageRef, blob);
-        avatarUrl = await getDownloadURL(storageRef);
-      } else {
-        // Use default avatar based on gender
-        avatarUrl = storedGender === "male" ? "/man_avatar.jpg" : "/woman_avatar.jpg";
-      }
+if (storedAvatarPreview && storedAvatarPreview.startsWith('data:image')) {
+  // Create a blob from the data URL
+  const response = await fetch(storedAvatarPreview);
+  const blob = await response.blob();
+  
+  // Upload to same avatars directory as users - this is fine!
+  const storageRef = ref(storage, `avatars/${result.user.uid}`);
+  await uploadBytes(storageRef, blob);
+  avatarUrl = await getDownloadURL(storageRef);
+} else {
+  // Use imported avatar based on gender
+  avatarUrl = storedGender === "male" ? manAvatar : womanAvatar;
+}
       
       // Upload credential files
       // Note: In a real implementation, you would need to handle the transfer of credential files 

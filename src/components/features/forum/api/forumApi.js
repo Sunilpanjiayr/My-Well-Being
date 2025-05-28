@@ -73,18 +73,27 @@ export const fetchTopics = async (params) => {
 
 export const fetchTopic = async (topicId) => {
   try {
+    console.log('API: Fetching topic', topicId);
     const response = await api.get(`/topics/${topicId}`);
+    console.log('API: Raw response:', response);
+    console.log('API: Response data:', response.data);
     
     // Handle different response structures
-    if (response.data && response.data.topic) {
-      return response.data;
+    if (response.data && response.data.success && response.data.topic) {
+      console.log('API: Using response.data.topic');
+      console.log('API: Topic replies:', response.data.topic.replies);
+      return { topic: response.data.topic };
     } else if (response.data && response.data._id) {
+      console.log('API: Using response.data directly');
+      console.log('API: Topic replies:', response.data.replies);
       return { topic: response.data };
     } else {
-      throw new Error('Invalid topic data received');
+      console.error('API: Invalid topic data structure:', response.data);
+      throw new Error('Invalid topic data received from server');
     }
   } catch (error) {
-    console.error('Error fetching topic:', error);
+    console.error('API: Error fetching topic:', error);
+    console.error('API: Error response:', error.response?.data);
     throw error;
   }
 };
@@ -141,10 +150,16 @@ export const toggleBookmark = async (topicId) => {
 
 export const createReply = async (topicId, replyData) => {
   try {
+    console.log('API: Creating reply for topic:', topicId);
+    console.log('API: Reply data:', replyData);
+    
     const response = await api.post(`/topics/${topicId}/replies`, replyData);
+    
+    console.log('API: Reply creation response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error creating reply:', error);
+    console.error('API: Error creating reply:', error);
+    console.error('API: Error details:', error.response?.data);
     throw error;
   }
 };
@@ -246,10 +261,14 @@ export const uploadFile = async (file, path) => {
 
 export const createReplyWithAttachments = async (topicId, replyData, files) => {
   try {
+    console.log('API: Creating reply with attachments for topic:', topicId);
+    console.log('API: Files to upload:', files.length);
+    
     const attachments = [];
     
     if (files && files.length > 0) {
       for (const file of files) {
+        console.log('API: Uploading file:', file.name);
         const timestamp = Date.now();
         const fileName = `${timestamp}_${file.name}`;
         const filePath = `forum/replies/${topicId}/${fileName}`;
@@ -264,13 +283,18 @@ export const createReplyWithAttachments = async (topicId, replyData, files) => {
       }
     }
 
+    console.log('API: Attachments prepared:', attachments);
+
     const response = await api.post(`/topics/${topicId}/replies`, {
       ...replyData,
       attachments
     });
+    
+    console.log('API: Reply with attachments created:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error creating reply with attachments:', error);
+    console.error('API: Error creating reply with attachments:', error);
+    console.error('API: Error details:', error.response?.data);
     throw error;
   }
 };
