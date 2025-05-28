@@ -341,34 +341,69 @@ const ConsultationRoom = () => {
     }
   };
 
-  // Get user media with proper error handling
-  const getUserMedia = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          width: { ideal: 1280, max: 1280 },
-          height: { ideal: 720, max: 720 }
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true
-        }
-      });
-
-      console.log('✅ Got user media');
-      return stream;
-
-    } catch (error) {
-      console.warn('⚠️ Camera access failed:', error);
-      if (error.name === 'NotAllowedError') {
-        throw new Error('Camera permission denied');
-      } else if (error.name === 'NotFoundError') {
-        throw new Error('No camera found');
-      } else {
-        throw new Error('Camera access failed');
+const getUserMedia = async () => {
+  try {
+    // First, check available devices
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    console.log('🎥 Available devices:', devices.map(d => ({
+      kind: d.kind,
+      label: d.label,
+      deviceId: d.deviceId
+    })));
+    
+    // Check if we have required devices
+    const hasVideo = devices.some(d => d.kind === 'videoinput');
+    const hasAudio = devices.some(d => d.kind === 'audioinput');
+    console.log('📊 Device availability:', { hasVideo, hasAudio });
+    
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        width: { ideal: 1280, max: 1280 },
+        height: { ideal: 720, max: 720 }
+      },
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
       }
+    });
+
+    console.log('✅ Got user media');
+    console.log('🔍 Stream details:', {
+      id: stream.id,
+      active: stream.active,
+      videoTracks: stream.getVideoTracks().length,
+      audioTracks: stream.getAudioTracks().length
+    });
+    
+    // Log track details
+    stream.getTracks().forEach(track => {
+      console.log(`📊 Track: ${track.kind}`, {
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState,
+        label: track.label,
+        settings: track.getSettings ? track.getSettings() : 'N/A'
+      });
+    });
+    
+    return stream;
+
+  } catch (error) {
+    console.error('❌ Camera access failed:', error);
+    if (error.name === 'NotAllowedError') {
+      throw new Error('Camera/microphone permission denied. Please allow access and refresh the page.');
+    } else if (error.name === 'NotFoundError') {
+      throw new Error('No camera or microphone found on this device.');
+    } else if (error.name === 'NotReadableError') {
+      throw new Error('Camera/microphone is being used by another application.');
+    } else if (error.name === 'OverconstrainedError') {
+      throw new Error('Camera constraints not supported by this device.');
+    } else {
+      throw new Error(`Camera access failed: ${error.message}`);
     }
-  };
+  }
+};  
 
   // Setup local video display
   const setupLocalVideo = (stream) => {
@@ -376,173 +411,405 @@ const ConsultationRoom = () => {
       localVideoRef.current.srcObject = stream;
       localVideoRef.current.muted = true;
       console.log('📺 Local video set');
+    }const getUserMedia = async () => {
+  try {
+    // First, check available devices
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    console.log('🎥 Available devices:', devices.map(d => ({
+      kind: d.kind,
+      label: d.label,
+      deviceId: d.deviceId
+    })));
+    
+    // Check if we have required devices
+    const hasVideo = devices.some(d => d.kind === 'videoinput');
+    const hasAudio = devices.some(d => d.kind === 'audioinput');
+    console.log('📊 Device availability:', { hasVideo, hasAudio });
+    
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        width: { ideal: 1280, max: 1280 },
+        height: { ideal: 720, max: 720 }
+      },
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
+
+    console.log('✅ Got user media');
+    console.log('🔍 Stream details:', {
+      id: stream.id,
+      active: stream.active,
+      videoTracks: stream.getVideoTracks().length,
+      audioTracks: stream.getAudioTracks().length
+    });
+    
+    // Log track details
+    stream.getTracks().forEach(track => {
+      console.log(`📊 Track: ${track.kind}`, {
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState,
+        label: track.label,
+        settings: track.getSettings ? track.getSettings() : 'N/A'
+      });
+    });
+    
+    return stream;
+
+  } catch (error) {
+    console.error('❌ Camera access failed:', error);
+    if (error.name === 'NotAllowedError') {
+      throw new Error('Camera/microphone permission denied. Please allow access and refresh the page.');
+    } else if (error.name === 'NotFoundError') {
+      throw new Error('No camera or microphone found on this device.');
+    } else if (error.name === 'NotReadableError') {
+      throw new Error('Camera/microphone is being used by another application.');
+    } else if (error.name === 'OverconstrainedError') {
+      throw new Error('Camera constraints not supported by this device.');
+    } else {
+      throw new Error(`Camera access failed: ${error.message}`);
     }
+  }
+};
+
   };
 
   // Background WebRTC setup (very resilient)
   const setupWebRTCBackground = async (stream) => {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.warn('⚠️ WebRTC setup timeout - continuing with local video only');
-        resolve(); // Don't reject, just continue
-      }, 8000);
+  // Add network connectivity check first
+  console.log('🌐 Checking network connectivity before WebRTC setup...');
+  const networkOk = await checkNetworkConnectivity();
+  if (!networkOk) {
+    console.warn('⚠️ Network connectivity issues detected');
+    setError('Network connectivity issues - video may not work properly');
+  }
 
-      try {
-        console.log('🔌 Setting up WebRTC connections...');
-        
-        // Setup Socket.IO
-        const socket = io('http://localhost:3001', {
-          transports: ['polling', 'websocket'],
-          timeout: 3000,
-          reconnection: false, // Don't auto-reconnect to avoid loops
-          forceNew: true
-        });
-        
-        socketRef.current = socket;
-
-        // Setup PeerJS
-        const peer = new Peer(undefined, {
-          host: 'localhost',
-          port: 3001,
-          path: '/peerjs/myapp',
-          secure: false,
-          config: {
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' }
-            ]
-          },
-          debug: 0
-        });
-        
-        peerRef.current = peer;
-
-        // Connection tracking
-        let socketOk = false;
-        let peerOk = false;
-
-        const checkComplete = () => {
-          if (socketOk && peerOk) {
-            console.log('✅ WebRTC setup complete');
-            clearTimeout(timeout);
-            resolve();
-          }
-        };
-
-        // Socket events
-        socket.on('connect', () => {
-          console.log('✅ Socket connected for video');
-          socketOk = true;
-          checkComplete();
-        });
-
-        socket.on('connect_error', (error) => {
-          console.warn('⚠️ Socket error (continuing):', error.message);
-          clearTimeout(timeout);
-          resolve(); // Continue without socket
-        });
-
-        socket.on('user-connected', (userId) => {
-          console.log('👤 Video user connected:', userId);
-          if (peer.id && peer.id !== userId) {
-            setTimeout(() => makeCall(userId, stream), 1000);
-          }
-        });
-
-        socket.on('user-disconnected', (userId) => {
-          console.log('👤 Video user disconnected:', userId);
-          handleUserDisconnected();
-        });
-
-        // Peer events
-        peer.on('open', (id) => {
-          console.log('🔑 Peer ID for video:', id);
-          if (socketOk) {
-            socket.emit('join-room', roomId, id);
-          }
-          peerOk = true;
-          checkComplete();
-        });
-
-        peer.on('call', (call) => {
-          console.log('📞 Incoming video call');
-          call.answer(stream);
-          callRef.current = call;
-
-          call.on('stream', (remoteStream) => {
-            console.log('📹 Received remote video stream');
-            handleRemoteStream(remoteStream);
-          });
-
-          call.on('close', () => {
-            console.log('📞 Video call closed');
-            handleUserDisconnected();
-          });
-
-          call.on('error', (error) => {
-            console.warn('⚠️ Call error:', error);
-          });
-        });
-
-        peer.on('error', (error) => {
-          console.warn('⚠️ Peer error (non-critical):', error);
-          clearTimeout(timeout);
-          resolve(); // Continue without peer
-        });
-
-        peer.on('disconnected', () => {
-          console.log('🔌 Peer disconnected');
-          // Don't try to reconnect to avoid loops
-        });
-
-      } catch (error) {
-        console.warn('⚠️ WebRTC setup error:', error);
-        clearTimeout(timeout);
-        resolve(); // Always resolve to continue
-      }
-    });
-  };
-
-  // Make outgoing call
-  const makeCall = (userId, stream) => {
-    console.log('📞 Making video call to:', userId);
-    
-    if (!peerRef.current || peerRef.current.destroyed) {
-      console.warn('⚠️ Cannot make call - peer not available');
-      return;
-    }
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      console.warn('⚠️ WebRTC setup timeout - continuing with local video only');
+      resolve(); // Don't reject, just continue
+    }, 10000); // Increased timeout
 
     try {
-      const call = peerRef.current.call(userId, stream);
-      callRef.current = call;
+      console.log('🔌 Setting up WebRTC connections...');
+      
+      // Setup Socket.IO with more robust configuration
+      const socket = io('http://localhost:3001', {
+        transports: ['polling', 'websocket'],
+        timeout: 5000, // Increased timeout
+        reconnection: false,
+        forceNew: true,
+        autoConnect: true
+      });
+      
+      socketRef.current = socket;
 
-      call.on('stream', (remoteStream) => {
-        console.log('📹 Received remote stream from call');
-        handleRemoteStream(remoteStream);
+      // Setup PeerJS with more robust configuration
+      const peer = new Peer(undefined, {
+        host: 'localhost',
+        port: 3001,
+        path: '/peerjs/myapp',
+        secure: false,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        },
+        debug: 1 // Enable debug for more logs
+      });
+      
+      peerRef.current = peer;
+
+      // Connection tracking
+      let socketConnected = false;
+      let peerConnected = false;
+
+      const checkIfComplete = () => {
+        console.log('🔍 Connection status:', { socketConnected, peerConnected });
+        if (socketConnected && peerConnected) {
+          console.log('✅ WebRTC setup complete - both socket and peer ready');
+          clearTimeout(timeout);
+          resolve();
+        }
+      };
+
+      // Enhanced Socket events
+      socket.on('connect', () => {
+        console.log('✅ Socket.IO connected successfully');
+        console.log('🔍 Socket details:', {
+          id: socket.id,
+          connected: socket.connected,
+          transport: socket.io.engine.transport.name
+        });
+        socketConnected = true;
+        checkIfComplete();
       });
 
-      call.on('close', () => {
-        console.log('📞 Outgoing call closed');
+      socket.on('connect_error', (error) => {
+        console.error('❌ Socket connection error:', error);
+        setError(`Server connection failed: ${error.message}`);
+        clearTimeout(timeout);
+        resolve(); // Continue without socket
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.warn('⚠️ Socket disconnected:', reason);
+        socketConnected = false;
+      });
+
+      socket.on('user-connected', (userId) => {
+        console.log('👤 User connected to room:', userId);
+        console.log('🔍 Current peer ID:', peer.id);
+        if (peer.id && peer.id !== userId) {
+          console.log('📞 Initiating call to connected user...');
+          setTimeout(() => makeCall(userId, stream), 2000); // Increased delay
+        }
+      });
+
+      socket.on('user-disconnected', (userId) => {
+        console.log('👋 User disconnected from room:', userId);
         handleUserDisconnected();
       });
 
-      call.on('error', (error) => {
-        console.warn('⚠️ Outgoing call error:', error);
+      // Enhanced Peer events
+      peer.on('open', (id) => {
+        console.log('🔑 Peer connection established with ID:', id);
+        console.log('🔍 Peer details:', {
+          id: peer.id,
+          destroyed: peer.destroyed,
+          disconnected: peer.disconnected
+        });
+        
+        if (socketConnected) {
+          console.log('📡 Joining room via socket...');
+          socket.emit('join-room', roomId, id);
+        }
+        peerConnected = true;
+        checkIfComplete();
       });
+
+        peer.on('call', (call) => {
+  console.log('📞 Incoming video call from:', call.peer);
+  console.log('🔍 Answering with local stream:', {
+    id: stream.id,
+    active: stream.active,
+    videoTracks: stream.getVideoTracks().length,
+    audioTracks: stream.getAudioTracks().length
+  });
+  
+  call.answer(stream);
+  callRef.current = call;
+
+  call.on('stream', (remoteStream) => {
+    console.log('📹 Received remote stream from incoming call');
+    console.log('🔍 Incoming stream details:', {
+      id: remoteStream.id,
+      active: remoteStream.active,
+      videoTracks: remoteStream.getVideoTracks().length,
+      audioTracks: remoteStream.getAudioTracks().length
+    });
+    handleRemoteStream(remoteStream);
+  });
+
+  call.on('close', () => {
+    console.log('📞 Incoming call closed');
+    handleUserDisconnected();
+  });
+
+  call.on('error', (error) => {
+    console.error('❌ Incoming call error:', error);
+    setError(`Incoming call failed: ${error.message}`);
+  });
+});
+
+
+          peer.on('error', (error) => {
+        console.error('❌ Peer connection error:', error);
+        setError(`Peer connection failed: ${error.type} - ${error.message}`);
+        clearTimeout(timeout);
+        resolve(); // Continue without peer
+      });
+
+      peer.on('disconnected', () => {
+        console.warn('⚠️ Peer disconnected from server');
+        peerConnected = false;
+        // Don't try to reconnect automatically
+      });
+
+      peer.on('close', () => {
+        console.log('🔌 Peer connection closed');
+        peerConnected = false;
+      });
+
     } catch (error) {
-      console.warn('⚠️ Failed to make call:', error);
+      console.error('❌ WebRTC setup error:', error);
+      setError(`Setup failed: ${error.message}`);
+      clearTimeout(timeout);
+      resolve(); // Always resolve to continue
     }
-  };
+  });
+};
+
+// 3. REPLACE the makeCall function (around line 470)
+const makeCall = (userId, stream) => {
+  console.log('📞 Making video call to:', userId);
+  console.log('🔍 Local stream for call:', {
+    id: stream.id,
+    active: stream.active,
+    videoTracks: stream.getVideoTracks().length,
+    audioTracks: stream.getAudioTracks().length
+  });
+  
+  if (!peerRef.current || peerRef.current.destroyed) {
+    console.warn('⚠️ Cannot make call - peer not available');
+    return;
+  }
+
+  try {
+    const call = peerRef.current.call(userId, stream);
+    callRef.current = call;
+    
+    console.log('📞 Call initiated successfully, waiting for response...');
+
+    call.on('stream', (remoteStream) => {
+      console.log('📹 Received remote stream from outgoing call');
+      console.log('🔍 Received stream details:', {
+        id: remoteStream.id,
+        active: remoteStream.active,
+        videoTracks: remoteStream.getVideoTracks().length,
+        audioTracks: remoteStream.getAudioTracks().length
+      });
+      handleRemoteStream(remoteStream);
+    });
+
+    call.on('close', () => {
+      console.log('📞 Outgoing call closed');
+      handleUserDisconnected();
+    });
+
+    call.on('error', (error) => {
+      console.error('❌ Outgoing call error:', error);
+      // Try to reconnect or show error to user
+      setError(`Call failed: ${error.message}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to make call:', error);
+    setError(`Failed to connect: ${error.message}`);
+  }
+};
+
 
   // Handle incoming remote stream
-  const handleRemoteStream = (stream) => {
-    console.log('📹 Setting up remote video stream');
-    setRemoteStream(stream);
-    setIsConnected(true);
+ const handleRemoteStream = (stream) => {
+  console.log('📹 Setting up remote video stream');
+  console.log('🔍 Remote stream details:', {
+    id: stream.id,
+    active: stream.active,
+    videoTracks: stream.getVideoTracks().length,
+    audioTracks: stream.getAudioTracks().length
+  });
+  
+  // Check if stream has actual tracks
+  const videoTracks = stream.getVideoTracks();
+  const audioTracks = stream.getAudioTracks();
+  
+  if (videoTracks.length === 0 && audioTracks.length === 0) {
+    console.warn('⚠️ Received empty stream - no video or audio tracks');
+    return;
+  }
+  
+  // Log track details
+  stream.getTracks().forEach(track => {
+    console.log(`📊 Remote track: ${track.kind}`, {
+      enabled: track.enabled,
+      muted: track.muted,
+      readyState: track.readyState,
+      label: track.label
+    });
+  });
+  
+  setRemoteStream(stream);
+  setIsConnected(true);
+  
+  if (remoteVideoRef.current) {
+    remoteVideoRef.current.srcObject = stream;
     
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = stream;
+    // Force video to play and handle autoplay issues
+    const playPromise = remoteVideoRef.current.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn('⚠️ Remote video autoplay blocked:', error);
+        // Try to enable play button or user interaction
+      });
     }
-  };
+  }
+};
+const checkNetworkConnectivity = async () => {
+  try {
+    console.log('🌐 Testing network connectivity...');
+    // Test STUN server connectivity
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
+    
+    return new Promise((resolve) => {
+      let resolved = false;
+      
+      pc.onicecandidate = (event) => {
+        if (event.candidate && !resolved) {
+          console.log('🟢 ICE candidate found:', {
+            type: event.candidate.type,
+            protocol: event.candidate.protocol,
+            address: event.candidate.address
+          });
+          resolved = true;
+          pc.close();
+          resolve(true);
+        }
+      };
+      
+      pc.onicegatheringstatechange = () => {
+        console.log('🔄 ICE gathering state:', pc.iceGatheringState);
+      };
+      
+      // Create a dummy data channel to trigger ICE gathering
+      pc.createDataChannel('test');
+      pc.createOffer().then(offer => {
+        console.log('📝 Created offer for connectivity test');
+        return pc.setLocalDescription(offer);
+      }).catch(error => {
+        console.error('❌ Failed to create offer:', error);
+        if (!resolved) {
+          resolved = true;
+          pc.close();
+          resolve(false);
+        }
+      });
+      
+      // Timeout after 8 seconds
+      setTimeout(() => {
+        if (!resolved) {
+          console.warn('⚠️ Network connectivity check timeout');
+          resolved = true;
+          pc.close();
+          resolve(false);
+        }
+      }, 8000);
+    });
+  } catch (error) {
+    console.error('❌ Network connectivity check failed:', error);
+    return false;
+  }
+};
+
 
   // Handle user disconnection
   const handleUserDisconnected = () => {
@@ -1405,6 +1672,30 @@ const ConsultationRoom = () => {
             >
               📎
             </button>
+
+            {/* Add this button temporarily for testing */}
+<button 
+  onClick={async () => {
+    console.log('🧪 Running manual connectivity test...');
+    const result = await checkNetworkConnectivity();
+    console.log('🧪 Connectivity result:', result);
+    alert(`Network connectivity: ${result ? 'OK' : 'FAILED'}`);
+  }}
+  style={{
+    position: 'fixed',
+    top: '60px',
+    right: '20px',
+    background: '#17a2b8',
+    color: 'white',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    zIndex: 1001
+  }}
+>
+  🧪 Test Network
+</button>
             
             {/* Hidden file input */}
             <input
