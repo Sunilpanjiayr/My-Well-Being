@@ -66,7 +66,19 @@ try {
   console.log('❌ Error checking build folder:', error.message);
 }
 
-// CORS configuration for Railway
+// 1) Health-check endpoint FIRST so it's never shadowed by any middleware
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+  });
+});
+
+// Back-compat for some platforms that probe /healthz
+app.get('/healthz', (req, res) => res.redirect('/health'));
+
+// 2) CORS configuration for Railway
 const corsOptions = {
   origin: [
     "http://localhost:3000",
@@ -146,23 +158,6 @@ app.get('/api/health', (req, res) => {
       exists: fs.existsSync(buildPath),
       path: buildPath
     }
-  });
-});
-
-// Health check endpoint (alternative path)
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    railway: {
-      publicDomain: process.env.RAILWAY_PUBLIC_DOMAIN,
-      serviceName: process.env.RAILWAY_SERVICE_NAME,
-    },
-    server: {
-      uptime: process.uptime(),
-      connections: io ? io.engine.clientsCount : 0,
-    },
   });
 });
 
