@@ -1152,6 +1152,10 @@ const ConsultationRoom = () => {
     }
   }, [remoteStream]);
 
+  // DEBUG: Log localStream and hasVideo on every render
+  console.log('DEBUG localStream:', localStream);
+  console.log('DEBUG hasVideo:', hasVideo);
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -1241,7 +1245,7 @@ const ConsultationRoom = () => {
       )}
 
       {/* Video Section */}
-      {hasVideo && (
+      {localStream && (
         <div style={{ 
           flex: 1, 
           background: '#000', 
@@ -1424,12 +1428,12 @@ const ConsultationRoom = () => {
 
       {/* Chat Section */}
       <div style={{ 
-        width: hasVideo ? '400px' : '100%',
+        width: localStream ? '400px' : '100%',
         display: 'flex', 
         flexDirection: 'column',
         background: 'white',
-        borderLeft: hasVideo ? '1px solid #e0e0e0' : 'none',
-        boxShadow: hasVideo ? '-2px 0 4px rgba(0,0,0,0.1)' : 'none'
+        borderLeft: localStream ? '1px solid #e0e0e0' : 'none',
+        boxShadow: localStream ? '-2px 0 4px rgba(0,0,0,0.1)' : 'none'
       }}>
         {/* Chat Header */}
         <div style={{
@@ -1463,7 +1467,7 @@ const ConsultationRoom = () => {
               )}
             </h3>
             <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-              {hasVideo ? '📹 Video ready' : '💬 Chat ready'} • {status}
+              {localStream ? '📹 Video ready' : '💬 Chat ready'} • {status}
             </div>
             {/* Manual refresh button for debugging */}
             <button 
@@ -1484,7 +1488,7 @@ const ConsultationRoom = () => {
           </div>
 
           {/* End Call Button in Chat Header (for chat-only mode) */}
-          {!hasVideo && (
+          {!localStream && (
             <button 
               onClick={handleEndCall}
               style={{
@@ -1776,7 +1780,7 @@ const ConsultationRoom = () => {
             textAlign: 'center' 
           }}>
             Press Enter to send • Shift+Enter for new line • 📎 to attach files
-            {!hasVideo && !videoSetupAttempted && (
+            {!localStream && !videoSetupAttempted && (
               <span> • <button 
                 onClick={retryVideoSetup}
                 style={{
