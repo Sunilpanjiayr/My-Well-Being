@@ -1135,6 +1135,23 @@ const ConsultationRoom = () => {
     }
   };
 
+  /* ----------------------------------------------------
+   * Sync video elements with latest MediaStreams
+   * -------------------------------------------------- */
+  // Attach local stream to the <video> once we have both
+  useEffect(() => {
+    if (localStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  // Attach remote stream (if any)
+  useEffect(() => {
+    if (remoteStream && remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
   return (
     <div style={{ 
       display: 'flex', 
