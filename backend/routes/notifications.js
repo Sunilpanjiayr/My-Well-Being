@@ -196,7 +196,7 @@ module.exports = router;
 
 // routes/medications.js
 const express = require("express");
-const router = express.Router();
+
 
 // Record medication taken
 router.post("/record-taken", async (req, res) => {
