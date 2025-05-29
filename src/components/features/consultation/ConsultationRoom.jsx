@@ -8,20 +8,38 @@ import {
   where, 
   orderBy, 
   onSnapshot,
-  getDocs,
+  getDocs,  // Added for polling fallback
   serverTimestamp,
   updateDoc,
-  doc,
-  getDoc
+  doc 
 } from 'firebase/firestore';
 
 import { 
   ref, 
   uploadBytes, 
   getDownloadURL 
-} from 'firebase/storage';
+} from 'firebase/storage';//for file-attaching feature
 import { onAuthStateChanged } from 'firebase/auth';
+
+import Peer from 'peerjs';
+import io from 'socket.io-client';
 import './ConsultationRoom.css';
+
+// Server URL configuration for cross-device compatibility
+const getServerUrl = () => {
+  // In production, use your actual server domain
+  // In development, use the local network IP
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://your-domain.com'; // Replace with your actual domain
+  }
+  
+  // For local development, you need to use your machine's IP address
+  // Find your IP with: ipconfig (Windows) or ifconfig (Mac/Linux)
+  const LOCAL_IP = '192.168.1.100'; // REPLACE THIS WITH YOUR ACTUAL LOCAL IP
+  return `http://${LOCAL_IP}:3001`;
+};
+
+const SERVER_URL = getServerUrl();
 
 const ConsultationRoom = () => {
   const { roomId } = useParams();
@@ -33,412 +51,115 @@ const ConsultationRoom = () => {
   const [error, setError] = useState('');
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [hasVideo, setHasVideo] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [videoSetupAttempted, setVideoSetupAttempted] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [jitsiLoaded, setJitsiLoaded] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
-  const [consultationData, setConsultationData] = useState(null);
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  
+
   // Refs
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const jitsiContainerRef = useRef(null);
-  const jitsiApiRef = useRef(null);
+  const peerRef = useRef(null);
+  const socketRef = useRef(null);
+  const callRef = useRef(null);
+  const initialized = useRef(false);
   const cleanupFunctions = useRef([]);
-  const initializationRef = useRef(false);
+  const fileInputRef = useRef(null);
+  
 
   console.log('🎯 Component state:', { 
     roomId, 
     loading, 
     status, 
-    jitsiLoaded,
-    videoReady,
-    messagesCount: messages.length
+    hasVideo, 
+    isConnected,
+    messagesCount: messages.length,
+    videoSetupAttempted,
+    serverUrl: SERVER_URL
   });
 
-  // Main initialization effect
+  // Main initialization effect - CHAT FIRST APPROACH
   useEffect(() => {
-    if (initializationRef.current) return;
-    
-    console.log('🚀 Setting up consultation room...');
-    
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      console.log('🔐 Auth state changed:', { 
-        user: user?.uid, 
-        email: user?.email,
-        roomId
-      });
-
-      if (!roomId || !user?.uid) {
-        console.log('🛑 Missing required data');
-        setError('Missing authentication or room data');
-        setLoading(false);
-        return;
-      }
-
-      if (initializationRef.current) {
-        console.log('🛑 Already initialized, skipping...');
-        return;
-      }
-
-      // Store user info
-      setUserInfo(user);
-      initializationRef.current = true;
-      console.log('🚀 Starting initialization for room:', roomId);
-      initializeConsultation(user);
+  console.log('🚀 Setting up auth state listener...');
+  
+  // Wait for Firebase Auth to be ready
+  const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    console.log('🔐 Auth state changed:', { 
+      user: user?.uid, 
+      email: user?.email,
+      roomId,
+      initialized: initialized.current 
     });
-    
-    return () => {
-      console.log('🧹 Cleaning up consultation...');
-      unsubscribeAuth();
-      cleanupAll();
-    };
-  }, [roomId]);
 
-  // Initialize consultation
-  const initializeConsultation = async (user) => {
-    try {
-      setLoading(true);
-      setStatus('Loading consultation details...');
-      console.log('📝 Step 1: Loading consultation details...');
-
-      // Get consultation data from Firestore
-      const consultationDoc = await getDoc(doc(db, 'consultations', roomId));
-      if (consultationDoc.exists()) {
-        const data = consultationDoc.data();
-        setConsultationData(data);
-        console.log('📄 Consultation data loaded:', data);
-      } else {
-        throw new Error('Consultation not found');
-      }
-
-      setStatus('Setting up chat...');
-      console.log('📝 Step 2: Setting up chat...');
-
-      // Setup chat
-      const chatCleanup = setupChat();
-      if (chatCleanup) {
-        cleanupFunctions.current.push(chatCleanup);
-      }
-      
-      console.log('✅ Chat setup completed');
-      setStatus('Chat ready - Loading video...');
-      setLoading(false);
-      
-      // Setup video with consultation-specific room
-      console.log('📝 Step 3: Setting up consultation video...');
-      setTimeout(() => {
-        setupConsultationVideo(user);
-      }, 500);
-      
-    } catch (error) {
-      console.error('❌ Initialization failed:', error);
-      setError(error.message);  
-      setStatus('Chat ready');
-      setLoading(false);
-    }
-  };
-
-  // Setup video conference with consultation-specific room name
-  const setupConsultationVideo = async (user) => {
-    try {
-      console.log('🌐 Setting up consultation-specific video conference...');
-      setStatus('Loading video conference...');
-
-      if (!jitsiContainerRef.current) {
-        console.error('❌ Container not ready');
-        throw new Error('Video container not ready');
-      }
-
-      // Clear container
-      jitsiContainerRef.current.innerHTML = '';
-
-      // Generate deterministic room name based on consultation data
-      const roomName = generateConsultationRoomName();
-      
-      // Get user display name and role
-      const displayName = getUserDisplayName(user);
-      const userRole = await getUserRole(user.uid);
-      
-      console.log('🎬 Creating consultation room:', { 
-        roomName, 
-        displayName, 
-        userRole,
-        consultationId: roomId 
+    // Only proceed if we have all required data and haven't initialized yet
+    if (!roomId || !user?.uid || initialized.current) {
+      console.log('🛑 Skipping initialization:', { 
+        roomId: !!roomId, 
+        userId: !!user?.uid, 
+        initialized: initialized.current 
       });
-
-      // Create iframe with consultation-specific configuration
-      const iframe = document.createElement('iframe');
-      
-      // Build Jitsi URL with consultation parameters
-      const jitsiUrl = buildJitsiUrl(roomName, displayName, userRole);
-      
-      iframe.src = jitsiUrl;
-      iframe.width = '100%';
-      iframe.height = '100%';
-      iframe.frameBorder = '0';
-      iframe.allow = 'camera; microphone; display-capture; fullscreen; autoplay';
-      iframe.allowFullscreen = true;
-      iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-presentation';
-      
-      // Add iframe to container
-      jitsiContainerRef.current.appendChild(iframe);
-      
-      // Set loaded after delay
-      setTimeout(() => {
-        setJitsiLoaded(true);
-        setVideoReady(true);
-        setStatus('Video conference ready');
-        setError('');
-        sendSystemMessage(`Video conference started for consultation ${roomId}`);
-        console.log('✅ Consultation video conference loaded successfully');
-      }, 3000);
-
-      // Store video room info in consultation document
-      await updateConsultationWithVideoRoom(roomName, userRole);
-      
-    } catch (error) {
-      console.error('❌ Video setup failed:', error);
-      setupFallbackVideo(user);
-    }
-  };
-
-  // Generate deterministic room name for this consultation
-  const generateConsultationRoomName = () => {
-    if (!consultationData) {
-      // Fallback to roomId-based name
-      return `consultation-${roomId}`;
+      return;
     }
 
-    // Create deterministic room name based on consultation data
-    const doctorId = consultationData.doctorId || 'unknown';
-    const patientId = consultationData.patientId || consultationData.userId || 'unknown';
-    const scheduledTime = consultationData.scheduledDateTime || consultationData.createdAt;
-    
-    // Create hash-like string for consistency
-    const hashInput = `${doctorId}-${patientId}-${roomId}`;
-    const roomSuffix = btoa(hashInput).replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
-    
-    return `health-consult-${roomSuffix}`;
-  };
+    console.log('🚀 Starting initialization for room:', roomId);
+    console.log('👤 Current user:', user.uid, user.email);
+    initialized.current = true;
 
-  // Get user display name
-  const getUserDisplayName = (user) => {
-    if (user.displayName && user.displayName.trim()) {
-      return user.displayName.trim();
-    }
-    
-    if (user.email) {
-      return user.email.split('@')[0];
-    }
-    
-    return `User${Math.random().toString(36).substr(2, 4)}`;
-  };
+    const initializeConsultation = async () => {
+      try {
+        setLoading(true);
+        setStatus('Setting up chat...');
+        console.log('📝 Step 1: Setting up chat (priority)...');
 
-  // Determine user role (doctor or patient)
-  const getUserRole = async (userId) => {
-    try {
-      // Check if user is a doctor
-      const doctorDoc = await getDoc(doc(db, 'doctors', userId));
-      if (doctorDoc.exists()) {
-        return 'doctor';
+        // Small delay to ensure Firebase is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 1. Setup chat FIRST (this always works)
+        const chatCleanup = setupChat();
+        if (chatCleanup) {
+          cleanupFunctions.current.push(chatCleanup);
+        }
+        console.log('✅ Chat setup completed - consultation is ready!');
+        
+        // 2. Chat is ready, user can start chatting
+        setStatus('Chat ready - Loading video...');
+        setLoading(false); // IMPORTANT: Allow chat immediately
+        
+        // 3. Try video setup in background (non-blocking)
+        console.log('📝 Step 2: Attempting video setup in background...');
+        setupVideoInBackground();
+        
+      } catch (error) {
+        console.error('❌ Initialization failed:', error);
+        setError(error.message);
+        setStatus('Chat ready');
+        setLoading(false); // Still allow chat even if setup fails
       }
-      
-      // Check if user is a patient/user
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        return 'patient';
-      }
-      
-      return 'participant';
-    } catch (error) {
-      console.error('Error determining user role:', error);
-      return 'participant';
-    }
-  };
-
-  // Build Jitsi URL with specific parameters
-  const buildJitsiUrl = (roomName, displayName, userRole) => {
-    const baseUrl = `https://meet.jit.si/${roomName}`;
-    
-    // Build configuration parameters
-    const config = {
-      // User identification
-      'userInfo.displayName': displayName,
-      
-      // Basic configuration
-      'config.startWithVideoMuted': 'false',
-      'config.startWithAudioMuted': 'false',
-      'config.prejoinPageEnabled': 'false',
-      'config.requireDisplayName': 'false',
-      
-      // Authentication and access
-      'config.enableAuth': 'false',
-      'config.enableGuests': 'true',
-      'config.disableDeepLinking': 'true',
-      
-      // Features
-      'config.enableWelcomePage': 'false',
-      'config.enableClosePage': 'false',
-      'config.analytics.disabled': 'true',
-      
-      // Lobby settings (disabled for healthcare)
-      'config.lobby.enabled': 'false',
-      'config.enableLobbyChat': 'false',
-      
-      // Interface customization
-      'interfaceConfig.SHOW_JITSI_WATERMARK': 'false',
-      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS': 'false',
-      'interfaceConfig.SHOW_BRAND_WATERMARK': 'false',
-      'interfaceConfig.APP_NAME': 'Health Consultation',
-      
-      // Notifications
-      'interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS': 'true',
-      'interfaceConfig.DISABLE_PRESENCE_STATUS': 'true',
     };
 
-    // Add role-specific configurations
-    if (userRole === 'doctor') {
-      config['config.startAudioOnly'] = 'false';
-      config['config.channelLastN'] = '10'; // Doctors can see more participants
-    } else if (userRole === 'patient') {
-      config['config.startAudioOnly'] = 'false';
-    }
-
-    // Convert config to URL parameters
-    const params = new URLSearchParams(config);
-    
-    return `${baseUrl}#${params.toString()}`;
+    // Start initialization immediately
+    initializeConsultation();
+  });
+  
+  // Return cleanup function that includes auth listener cleanup
+  return () => {
+    console.log('🧹 Cleaning up consultation and auth listener...');
+    unsubscribeAuth(); // Clean up auth listener
+    cleanupAll();
   };
+}, [roomId]); // Only depend on roomId, not auth.currentUser
 
-  // Update consultation document with video room information
-  const updateConsultationWithVideoRoom = async (roomName, userRole) => {
-    try {
-      const updateData = {
-        videoRoomName: roomName,
-        videoStatus: 'active',
-        lastVideoActivity: serverTimestamp(),
-      };
-
-      // Add participant info
-      if (!consultationData.participants) {
-        updateData.participants = [];
-      }
-      
-      updateData[`participants.${auth.currentUser.uid}`] = {
-        displayName: getUserDisplayName(auth.currentUser),
-        role: userRole,
-        joinedAt: serverTimestamp()
-      };
-
-      await updateDoc(doc(db, 'consultations', roomId), updateData);
-      console.log('✅ Updated consultation with video room info');
-    } catch (error) {
-      console.error('❌ Failed to update consultation with video info:', error);
-    }
-  };
-
-  // Fallback video setup
-  const setupFallbackVideo = (user) => {
-    try {
-      console.log('🔄 Setting up fallback video...');
-      
-      if (!jitsiContainerRef.current) return;
-
-      const timestamp = Date.now();
-      const fallbackRoomName = `fallback-health-${timestamp}`;
-      
-      // Create simple iframe
-      const iframe = document.createElement('iframe');
-      iframe.src = `https://meet.jit.si/${fallbackRoomName}`;
-      iframe.width = '100%';
-      iframe.height = '100%';
-      iframe.frameBorder = '0';
-      iframe.allow = 'camera; microphone; fullscreen';
-      iframe.allowFullscreen = true;
-      
-      jitsiContainerRef.current.innerHTML = '';
-      jitsiContainerRef.current.appendChild(iframe);
-      
-      setTimeout(() => {
-        setJitsiLoaded(true);
-        setVideoReady(true);
-        setStatus('Video conference ready (fallback mode)');
-        setError('');
-        sendSystemMessage('Video conference ready (using fallback room)');
-      }, 2000);
-      
-    } catch (error) {
-      console.error('❌ Fallback video setup failed:', error);
-      setChatOnlyMode();
-    }
-  };
-
-  // Set chat-only mode
-  const setChatOnlyMode = () => {
-    setJitsiLoaded(false);
-    setVideoReady(false);
-    setStatus('Chat only mode');
-    setError('');
-    sendSystemMessage('Video unavailable - Continuing with chat only');
-    
-    if (jitsiContainerRef.current) {
-      jitsiContainerRef.current.innerHTML = `
-        <div style="
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          height: 100%;
-          background: #f8f9fa;
-          color: #666;
-          text-align: center;
-          padding: 40px;
-        ">
-          <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;">💬</div>
-          <h3 style="margin: 0 0 10px 0; color: #333;">Chat Only Mode</h3>
-          <p style="margin: 0; font-size: 14px;">Video unavailable for this consultation</p>
-          <button 
-            onclick="window.location.reload()" 
-            style="
-              margin-top: 15px; 
-              padding: 8px 16px; 
-              background: #007bff; 
-              color: white; 
-              border: none; 
-              border-radius: 6px; 
-              cursor: pointer;
-            "
-          >
-            Try Video Again
-          </button>
-        </div>
-      `;
-    }
-  };
-
-  // Send system message to chat
-  const sendSystemMessage = async (message) => {
-    try {
-      await addDoc(collection(db, 'consultationMessages'), {
-        consultationId: roomId,
-        text: message,
-        type: 'system',
-        senderId: 'system',
-        senderName: 'System',
-        timestamp: serverTimestamp()
-      });
-    } catch (error) {
-      console.error('❌ Failed to send system message:', error);
-    }
-  };
-
-  // Setup chat functionality
+  // Setup chat functionality (reliable) - FIXED
   const setupChat = () => {
     console.log('💬 Setting up chat...');
     
     try {
+      // Ensure Firebase is properly initialized
       if (!db || !auth.currentUser) {
         console.error('❌ Firebase not ready for chat');
         return null;
@@ -446,32 +167,46 @@ const ConsultationRoom = () => {
 
       console.log('📦 Creating Firestore query for room:', roomId);
       
-      // Load existing messages
+      // First, try to load existing messages immediately
       loadMessagesOnce();
       
-      // Set up real-time listener
+      // Then set up real-time listener
       const messagesQuery = query(
         collection(db, 'consultationMessages'),
         where('consultationId', '==', roomId),
         orderBy('timestamp', 'asc')
       );
 
+      console.log('👂 Setting up real-time listener...');
       const unsubscribe = onSnapshot(
         messagesQuery,
         (snapshot) => {
-          console.log('📨 Firestore snapshot received:', snapshot.size);
+          console.log('📨 Firestore snapshot received:', {
+            size: snapshot.size,
+            empty: snapshot.empty,
+            metadata: snapshot.metadata,
+            hasPendingWrites: snapshot.metadata.hasPendingWrites,
+            fromCache: snapshot.metadata.fromCache
+          });
           
           const newMessages = [];
           snapshot.forEach((doc) => {
             const data = doc.data();
+            console.log('📄 Document data:', { id: doc.id, ...data });
             newMessages.push({ 
               id: doc.id, 
               ...data 
             });
           });
           
-          console.log('💬 Setting messages state:', newMessages.length);
-          setMessages([...newMessages]);
+          console.log('💬 Setting messages state:', newMessages.length, newMessages);
+          
+          // Force state update with timestamp to ensure re-render
+          setMessages(prevMessages => {
+            console.log('🔄 Previous messages:', prevMessages.length);
+            console.log('🔄 New messages:', newMessages.length);
+            return [...newMessages];
+          });
           
           // Auto-scroll to bottom
           setTimeout(() => {
@@ -480,6 +215,8 @@ const ConsultationRoom = () => {
         },
         (error) => {
           console.error('❌ Chat listener error:', error);
+          // Fallback to polling immediately
+          setupChatPolling();
         }
       );
 
@@ -488,6 +225,8 @@ const ConsultationRoom = () => {
       
     } catch (error) {
       console.error('❌ Chat setup failed:', error);
+      // Fallback to polling
+      setupChatPolling();
       return null;
     }
   };
@@ -505,13 +244,15 @@ const ConsultationRoom = () => {
       const snapshot = await getDocs(messagesQuery);
       const newMessages = [];
       snapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log('📄 Initial load document:', { id: doc.id, ...data });
         newMessages.push({ 
           id: doc.id, 
-          ...doc.data() 
+          ...data 
         });
       });
       
-      console.log('📥 Initial messages loaded:', newMessages.length);
+      console.log('📥 Initial messages loaded:', newMessages.length, newMessages);
       setMessages([...newMessages]);
       
     } catch (error) {
@@ -519,16 +260,610 @@ const ConsultationRoom = () => {
     }
   };
 
-  // File upload handling
+  // Fallback chat polling if real-time fails
+  const setupChatPolling = () => {
+    console.log('🔄 Setting up chat polling fallback...');
+    
+    const pollMessages = async () => {
+      try {
+        const messagesQuery = query(
+          collection(db, 'consultationMessages'),
+          where('consultationId', '==', roomId),
+          orderBy('timestamp', 'asc')
+        );
+        
+        const snapshot = await getDocs(messagesQuery);
+        const newMessages = [];
+        snapshot.forEach((doc) => {
+          newMessages.push({ 
+            id: doc.id, 
+            ...doc.data() 
+          });
+        });
+        
+        console.log('📨 Polled messages:', newMessages.length, newMessages);
+        setMessages([...newMessages]); // Force new array
+        
+      } catch (error) {
+        console.warn('⚠️ Message polling error:', error);
+      }
+    };
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollMessages, 2000);
+    pollMessages(); // Initial load
+    
+    return () => clearInterval(interval);
+  };
+
+  // Setup video in background (non-blocking)
+  const setupVideoInBackground = async () => {
+    if (videoSetupAttempted) {
+      console.log('⏭️ Video setup already attempted');
+      return;
+    }
+
+    setVideoSetupAttempted(true);
+    console.log('🎥 Setting up video in background...');
+
+    try {
+      // First check if server is available
+      const serverAvailable = await checkServerQuietly();
+      if (!serverAvailable) {
+        console.log('📝 Server not available - chat only mode');
+        setStatus('Chat ready (Video server offline)');
+        return;
+      }
+
+      // Try to get user media
+      setStatus('Chat ready - Getting camera access...');
+      const stream = await getUserMedia();
+      
+      if (stream) {
+        setLocalStream(stream);
+        setHasVideo(true);
+        setupLocalVideo(stream);
+        
+        // Try WebRTC setup
+        setStatus('Chat ready - Connecting video...');
+        await setupWebRTCBackground(stream);
+        
+        setStatus('Ready - Video & Chat available');
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Video setup failed (non-critical):', error);
+      setStatus('Chat ready (Video unavailable)');
+      // Don't show error to user unless it's critical
+    }
+  };
+
+  // Quiet server check (no user-facing errors) - UPDATED
+  const checkServerQuietly = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      const response = await fetch(`${SERVER_URL}/health`, {
+        method: 'GET',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      return response.ok;
+      
+    } catch (error) {
+      console.log('ℹ️ Server not available:', error.message);
+      return false;
+    }
+  };
+
+  const getUserMedia = async () => {
+    try {
+      // First, check available devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log('🎥 Available devices:', devices.map(d => ({
+        kind: d.kind,
+        label: d.label,
+        deviceId: d.deviceId
+      })));
+      
+      // Check if we have required devices
+      const hasVideo = devices.some(d => d.kind === 'videoinput');
+      const hasAudio = devices.some(d => d.kind === 'audioinput');
+      console.log('📊 Device availability:', { hasVideo, hasAudio });
+      
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          width: { ideal: 1280, max: 1280 },
+          height: { ideal: 720, max: 720 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+
+      console.log('✅ Got user media');
+      console.log('🔍 Stream details:', {
+        id: stream.id,
+        active: stream.active,
+        videoTracks: stream.getVideoTracks().length,
+        audioTracks: stream.getAudioTracks().length
+      });
+      
+      // Log track details
+      stream.getTracks().forEach(track => {
+        console.log(`📊 Track: ${track.kind}`, {
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState,
+          label: track.label,
+          settings: track.getSettings ? track.getSettings() : 'N/A'
+        });
+      });
+      
+      return stream;
+
+    } catch (error) {
+      console.error('❌ Camera access failed:', error);
+      if (error.name === 'NotAllowedError') {
+        throw new Error('Camera/microphone permission denied. Please allow access and refresh the page.');
+      } else if (error.name === 'NotFoundError') {
+        throw new Error('No camera or microphone found on this device.');
+      } else if (error.name === 'NotReadableError') {
+        throw new Error('Camera/microphone is being used by another application.');
+      } else if (error.name === 'OverconstrainedError') {
+        throw new Error('Camera constraints not supported by this device.');
+      } else {
+        throw new Error(`Camera access failed: ${error.message}`);
+      }
+    }
+  };  
+
+  // Setup local video display
+  const setupLocalVideo = (stream) => {
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+      localVideoRef.current.muted = true;
+      console.log('📺 Local video set');
+    }
+  };
+
+  // Background WebRTC setup (very resilient) - UPDATED
+  const setupWebRTCBackground = async (stream) => {
+    console.log('🌐 Checking network connectivity before WebRTC setup...');
+    const networkOk = await checkNetworkConnectivity();
+    if (!networkOk) {
+      console.warn('⚠️ Network connectivity issues detected');
+      setError('Network connectivity issues - video may not work properly');
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ WebRTC setup timeout - continuing with local video only');
+        resolve();
+      }, 15000); // Increased timeout for cross-device
+
+      try {
+        console.log('🔌 Setting up WebRTC connections...');
+        console.log('🌐 Server URL:', SERVER_URL);
+        
+        // Setup Socket.IO with dynamic server URL
+        const socket = io(SERVER_URL, {
+          transports: ['polling', 'websocket'],
+          timeout: 8000,
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 2000,
+          forceNew: true,
+          autoConnect: true
+        });
+        
+        socketRef.current = socket;
+
+        // Setup PeerJS with dynamic server URL and better ICE servers
+        const serverHost = SERVER_URL.replace('http://', '').replace('https://', '').split(':')[0];
+        const serverPort = SERVER_URL.includes(':3001') ? 3001 : (SERVER_URL.includes('https') ? 443 : 80);
+        
+        const peer = new Peer(undefined, {
+          host: serverHost,
+          port: serverPort,
+          path: '/peerjs/myapp',
+          secure: SERVER_URL.includes('https'),
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' },
+              // Add TURN servers for better connectivity (you may need to set these up)
+              // { urls: 'turn:your-turn-server.com:3478', username: 'user', credential: 'pass' }
+            ],
+            iceCandidatePoolSize: 10,
+            iceTransportPolicy: 'all' // Allow both STUN and TURN
+          },
+          debug: 2 // Increased debug level
+        });
+        
+        peerRef.current = peer;
+
+        // Connection tracking
+        let socketConnected = false;
+        let peerConnected = false;
+
+        const checkIfComplete = () => {
+          console.log('🔍 Connection status:', { socketConnected, peerConnected });
+          if (socketConnected && peerConnected) {
+            console.log('✅ WebRTC setup complete - both socket and peer ready');
+            clearTimeout(timeout);
+            resolve();
+          }
+        };
+
+        // Enhanced Socket events with better error handling
+        socket.on('connect', () => {
+          console.log('✅ Socket.IO connected successfully to:', SERVER_URL);
+          console.log('🔍 Socket details:', {
+            id: socket.id,
+            connected: socket.connected,
+            transport: socket.io.engine.transport.name
+          });
+          socketConnected = true;
+          checkIfComplete();
+        });
+
+        socket.on('connect_error', (error) => {
+          console.error('❌ Socket connection error:', error);
+          setError(`Server connection failed: Check if server is running on ${SERVER_URL}`);
+          clearTimeout(timeout);
+          resolve();
+        });
+
+        socket.on('disconnect', (reason) => {
+          console.warn('⚠️ Socket disconnected:', reason);
+          socketConnected = false;
+          if (reason === 'transport close' || reason === 'transport error') {
+            setError('Connection lost - attempting to reconnect...');
+          }
+        });
+
+        socket.on('user-connected', (userId) => {
+          console.log('👤 User connected to room:', userId);
+          console.log('🔍 Current peer ID:', peer.id);
+          if (peer.id && peer.id !== userId) {
+            console.log('📞 Initiating call to connected user...');
+            setTimeout(() => makeCall(userId, stream), 3000); // Increased delay for cross-device
+          }
+        });
+
+        socket.on('user-disconnected', (userId) => {
+          console.log('👋 User disconnected from room:', userId);
+          handleUserDisconnected();
+        });
+
+        // Enhanced Peer events with better logging
+        peer.on('open', (id) => {
+          console.log('🔑 Peer connection established with ID:', id);
+          console.log('🔍 Peer details:', {
+            id: peer.id,
+            destroyed: peer.destroyed,
+            disconnected: peer.disconnected,
+            host: serverHost,
+            port: serverPort
+          });
+          
+          if (socketConnected) {
+            console.log('📡 Joining room via socket...');
+            socket.emit('join-room', roomId, id);
+          }
+          peerConnected = true;
+          checkIfComplete();
+        });
+
+        peer.on('call', (call) => {
+          console.log('📞 Incoming video call from:', call.peer);
+          console.log('🔍 Answering with local stream:', {
+            id: stream.id,
+            active: stream.active,
+            videoTracks: stream.getVideoTracks().length,
+            audioTracks: stream.getAudioTracks().length
+          });
+          
+          call.answer(stream);
+          callRef.current = call;
+
+          call.on('stream', (remoteStream) => {
+            console.log('📹 Received remote stream from incoming call');
+            console.log('🔍 Remote stream details:', {
+              id: remoteStream.id,
+              active: remoteStream.active,
+              videoTracks: remoteStream.getVideoTracks().length,
+              audioTracks: remoteStream.getAudioTracks().length
+            });
+            handleRemoteStream(remoteStream);
+          });
+
+          call.on('close', () => {
+            console.log('📞 Incoming call closed');
+            handleUserDisconnected();
+          });
+
+          call.on('error', (error) => {
+            console.error('❌ Incoming call error:', error);
+            setError(`Incoming call failed: ${error.message}`);
+          });
+        });
+
+        peer.on('error', (error) => {
+          console.error('❌ Peer connection error:', error);
+          let errorMessage = `Peer connection failed: ${error.type}`;
+          
+          if (error.type === 'disconnected') {
+            errorMessage = 'Lost connection to signaling server';
+          } else if (error.type === 'network') {
+            errorMessage = 'Network error - check your internet connection';
+          } else if (error.type === 'server-error') {
+            errorMessage = `Server error - check if server is running on ${SERVER_URL}`;
+          }
+          
+          setError(errorMessage);
+          clearTimeout(timeout);
+          resolve();
+        });
+
+        peer.on('disconnected', () => {
+          console.warn('⚠️ Peer disconnected from server');
+          peerConnected = false;
+          setError('Disconnected from signaling server');
+        });
+
+        peer.on('close', () => {
+          console.log('🔌 Peer connection closed');
+          peerConnected = false;
+        });
+
+      } catch (error) {
+        console.error('❌ WebRTC setup error:', error);
+        setError(`Setup failed: ${error.message}`);
+        clearTimeout(timeout);
+        resolve();
+      }
+    });
+  };
+
+  // ENHANCED makeCall function with better error handling:
+  const makeCall = (userId, stream) => {
+    console.log('📞 Making video call to:', userId);
+    console.log('🔍 Local stream for call:', {
+      id: stream.id,
+      active: stream.active,
+      videoTracks: stream.getVideoTracks().length,
+      audioTracks: stream.getAudioTracks().length
+    });
+    
+    if (!peerRef.current || peerRef.current.destroyed) {
+      console.warn('⚠️ Cannot make call - peer not available');
+      setError('Cannot make call - connection not ready');
+      return;
+    }
+
+    try {
+      const call = peerRef.current.call(userId, stream);
+      callRef.current = call;
+      
+      console.log('📞 Call initiated successfully, waiting for response...');
+
+      // Set a timeout for the call
+      const callTimeout = setTimeout(() => {
+        console.warn('⚠️ Call timeout - no response from remote peer');
+        setError('Call timeout - remote user may not be ready');
+      }, 30000); // 30 second timeout
+
+      call.on('stream', (remoteStream) => {
+        clearTimeout(callTimeout);
+        console.log('📹 Received remote stream from outgoing call');
+        console.log('🔍 Received stream details:', {
+          id: remoteStream.id,
+          active: remoteStream.active,
+          videoTracks: remoteStream.getVideoTracks().length,
+          audioTracks: remoteStream.getAudioTracks().length
+        });
+        handleRemoteStream(remoteStream);
+      });
+
+      call.on('close', () => {
+        clearTimeout(callTimeout);
+        console.log('📞 Outgoing call closed');
+        handleUserDisconnected();
+      });
+
+      call.on('error', (error) => {
+        clearTimeout(callTimeout);
+        console.error('❌ Outgoing call error:', error);
+        setError(`Call failed: ${error.message} - Try refreshing both devices`);
+      });
+    } catch (error) {
+      console.error('❌ Failed to make call:', error);
+      setError(`Failed to connect: ${error.message}`);
+    }
+  };
+
+  // Handle incoming remote stream
+  const handleRemoteStream = (stream) => {
+    console.log('📹 Setting up remote video stream');
+    console.log('🔍 Remote stream details:', {
+      id: stream.id,
+      active: stream.active,
+      videoTracks: stream.getVideoTracks().length,
+      audioTracks: stream.getAudioTracks().length
+    });
+    
+    // Check if stream has actual tracks
+    const videoTracks = stream.getVideoTracks();
+    const audioTracks = stream.getAudioTracks();
+    
+    if (videoTracks.length === 0 && audioTracks.length === 0) {
+      console.warn('⚠️ Received empty stream - no video or audio tracks');
+      return;
+    }
+    
+    // Log track details
+    stream.getTracks().forEach(track => {
+      console.log(`📊 Remote track: ${track.kind}`, {
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState,
+        label: track.label
+      });
+    });
+    
+    setRemoteStream(stream);
+    setIsConnected(true);
+    
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = stream;
+      
+      // Force video to play and handle autoplay issues
+      const playPromise = remoteVideoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn('⚠️ Remote video autoplay blocked:', error);
+          // Try to enable play button or user interaction
+        });
+      }
+    }
+  };
+
+  // IMPROVED checkNetworkConnectivity with better testing:
+  const checkNetworkConnectivity = async () => {
+    try {
+      console.log('🌐 Testing network connectivity...');
+      
+      // Test basic internet connectivity first
+      try {
+        const internetTest = await fetch('https://www.google.com/favicon.ico', {
+          method: 'HEAD',
+          mode: 'no-cors',
+          cache: 'no-cache'
+        });
+        console.log('🌐 Internet connectivity: OK');
+      } catch (error) {
+        console.warn('⚠️ Internet connectivity issues detected');
+        setError('Internet connectivity issues detected');
+        return false;
+      }
+      
+      // Test STUN server connectivity
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ]
+      });
+      
+      return new Promise((resolve) => {
+        let resolved = false;
+        const candidates = [];
+        
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            candidates.push(event.candidate);
+            console.log('🟢 ICE candidate found:', {
+              type: event.candidate.type,
+              protocol: event.candidate.protocol,
+              address: event.candidate.address || 'hidden'
+            });
+            
+            // Check if we have good candidates for cross-device communication
+            const hasHostCandidate = candidates.some(c => c.type === 'host');
+            const hasSrflxCandidate = candidates.some(c => c.type === 'srflx');
+            
+            if ((hasHostCandidate || hasSrflxCandidate) && !resolved) {
+              resolved = true;
+              pc.close();
+              console.log('🟢 Network connectivity test passed');
+              resolve(true);
+            }
+          }
+        };
+        
+        pc.onicegatheringstatechange = () => {
+          console.log('🔄 ICE gathering state:', pc.iceGatheringState);
+          if (pc.iceGatheringState === 'complete' && !resolved) {
+            resolved = true;
+            pc.close();
+            
+            if (candidates.length > 0) {
+              console.log('🟢 ICE gathering complete with candidates');
+              resolve(true);
+            } else {
+              console.warn('⚠️ No ICE candidates found');
+              resolve(false);
+            }
+          }
+        };
+        
+        // Create a dummy data channel to trigger ICE gathering
+        pc.createDataChannel('test');
+        pc.createOffer().then(offer => {
+          console.log('📝 Created offer for connectivity test');
+          return pc.setLocalDescription(offer);
+        }).catch(error => {
+          console.error('❌ Failed to create offer:', error);
+          if (!resolved) {
+            resolved = true;
+            pc.close();
+            resolve(false);
+          }
+        });
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          if (!resolved) {
+            console.warn('⚠️ Network connectivity check timeout');
+            resolved = true;
+            pc.close();
+            resolve(false);
+          }
+        }, 10000);
+      });
+    } catch (error) {
+      console.error('❌ Network connectivity check failed:', error);
+      return false;
+    }
+  };
+
+  // Handle user disconnection
+  const handleUserDisconnected = () => {
+    console.log('👋 Video user disconnected');
+    setIsConnected(false);
+    setRemoteStream(null);
+    
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+    
+    if (callRef.current) {
+      callRef.current.close();
+      callRef.current = null;
+    }
+  };
+
   const handleFileUpload = async (file) => {
     if (!file || !roomId || !auth.currentUser) return;
 
+    // File size check (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       setError('File size must be less than 10MB');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
+    // File type check
     const allowedTypes = [
       'image/jpeg', 'image/png', 'image/gif', 'image/webp',
       'application/pdf', 'text/plain',
@@ -545,14 +880,17 @@ const ConsultationRoom = () => {
     setUploadingFile(true);
 
     try {
+      // Create unique filename
       const timestamp = Date.now();
       const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const fileName = `consultations/${roomId}/${timestamp}_${safeFileName}`;
       
+      // Upload to Firebase Storage
       const storageRef = ref(storage, fileName);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
+      // Save file message to Firestore
       const fileMessage = {
         consultationId: roomId,
         type: 'file',
@@ -566,6 +904,8 @@ const ConsultationRoom = () => {
       };
 
       await addDoc(collection(db, 'consultationMessages'), fileMessage);
+      
+      // Force refresh messages
       setTimeout(() => loadMessagesOnce(), 500);
 
     } catch (error) {
@@ -582,16 +922,17 @@ const ConsultationRoom = () => {
     if (file) {
       handleFileUpload(file);
     }
-    e.target.value = '';
+    e.target.value = ''; // Reset input
   };
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
 
-  // Send chat message
+  // Send chat message - IMPROVED WITH REFRESH
   const sendMessage = async () => {
     if (!newMessage.trim() || !roomId || !auth.currentUser) {
+      console.warn('⚠️ Cannot send message - missing data');
       return;
     }
 
@@ -606,82 +947,170 @@ const ConsultationRoom = () => {
         timestamp: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'consultationMessages'), messageData);
+      console.log('📦 Message data:', messageData);
+      
+      const docRef = await addDoc(collection(db, 'consultationMessages'), messageData);
+      console.log('✅ Message sent with ID:', docRef.id);
+      
       setNewMessage('');
       
+      // FORCE REFRESH: Manually reload messages after sending
       setTimeout(() => {
+        console.log('🔄 Force refreshing messages after send...');
         loadMessagesOnce();
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 500);
+      
+      // Force scroll to bottom after sending
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 600);
       
     } catch (error) {
       console.error('❌ Error sending message:', error);
+      // Show user-friendly error
       setError('Failed to send message. Please try again.');
       setTimeout(() => setError(''), 3000);
     }
   };
 
-  // End consultation
+  // Toggle video
+  const toggleVideo = () => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+      }
+    }
+  };
+
+  // Toggle audio
+  const toggleAudio = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioEnabled(audioTrack.enabled);
+      }
+    }
+  };
+
   const handleEndCall = async () => {
     try {
       console.log('🔚 Ending consultation...');
       
-      // Close Jitsi meeting
-      if (jitsiApiRef.current) {
-        try {
-          jitsiApiRef.current.dispose();
-        } catch (disposeError) {
-          console.warn('⚠️ Error disposing Jitsi:', disposeError);
-        }
-        jitsiApiRef.current = null;
+      // STEP 1: Stop camera and microphone first
+      console.log('📹 Stopping camera and microphone...');
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          console.log(`🛑 Stopping ${track.kind} track`);
+          track.stop(); // This turns off camera/mic
+        });
+        setLocalStream(null);
+        setHasVideo(false);
+        setIsVideoEnabled(false);
+        setIsAudioEnabled(false);
       }
       
-      // Update consultation status
+      // STEP 2: Close video connections
+      if (callRef.current) {
+        callRef.current.close();
+        callRef.current = null;
+      }
+      
+      if (peerRef.current && !peerRef.current.destroyed) {
+        peerRef.current.destroy();
+        peerRef.current = null;
+      }
+      
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      
+      // STEP 3: Update consultation status in database
       console.log('💾 Updating consultation status...');
       const consultationRef = doc(db, 'consultations', roomId);
       await updateDoc(consultationRef, {
         status: 'completed',
         endedAt: serverTimestamp(),
-        lastUpdated: serverTimestamp(),
-        videoStatus: 'ended'
+        lastUpdated: serverTimestamp()
       });
 
-      // Send notification
-      await sendSystemMessage('Consultation has been ended.');
+      // STEP 4: Send notification to patient
+      console.log('📨 Sending end notification...');
+      await addDoc(collection(db, 'notifications'), {
+        userId: '', // Will be filled by the other participant
+        type: 'consultation_ended',
+        title: 'Consultation Ended',
+        message: 'The consultation has been completed.',
+        consultationId: roomId,
+        status: 'unread',
+        createdAt: serverTimestamp()
+      });
 
       console.log('✅ Consultation ended successfully');
-      cleanupAll();
       
-      // Navigate based on user role
-      const userRole = await getUserRole(auth.currentUser.uid);
-      if (userRole === 'doctor') {
-        navigate('/doctorDashboard');
-      } else {
-        navigate('/dashboardHome');
-      }
+      // STEP 5: Final cleanup and navigate back
+      cleanupAll();
+      navigate('/doctorDashboard'); // Go back to doctor dashboard
       
     } catch (error) {
       console.error('❌ Error ending consultation:', error);
+      
+      // STILL STOP CAMERA/MIC even if database update fails
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          console.log(`🛑 Emergency stopping ${track.kind} track`);
+          track.stop();
+        });
+      }
+      
+      // Still navigate back even if database update fails
       cleanupAll();
-      navigate('/dashboardHome'); // Fallback navigation
+      navigate('/doctorDashboard');
     }
   };
 
-  // Cleanup function
+  // Retry video setup
+  const retryVideoSetup = () => {
+    setVideoSetupAttempted(false);
+    setError('');
+    setStatus('Retrying video setup...');
+    setupVideoInBackground();
+  };
+
+  // Comprehensive cleanup function
   const cleanupAll = () => {
     console.log('🧹 Cleaning up all resources...');
     
-    // Dispose Jitsi meeting
-    if (jitsiApiRef.current) {
-      try {
-        jitsiApiRef.current.dispose();
-      } catch (error) {
-        console.warn('⚠️ Error disposing Jitsi:', error);
-      }
-      jitsiApiRef.current = null;
+    // Stop all media tracks
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('🛑 Stopped track:', track.kind);
+      });
+    }
+    
+    // Close call
+    if (callRef.current) {
+      callRef.current.close();
+      callRef.current = null;
+    }
+    
+    // Destroy peer
+    if (peerRef.current && !peerRef.current.destroyed) {
+      peerRef.current.destroy();
+      peerRef.current = null;
+    }
+    
+    // Disconnect socket
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
 
-    // Run cleanup functions
+    // Run all cleanup functions
     cleanupFunctions.current.forEach(cleanup => {
       try {
         if (typeof cleanup === 'function') {
@@ -692,9 +1121,11 @@ const ConsultationRoom = () => {
       }
     });
 
-    setJitsiLoaded(false);
-    setVideoReady(false);
-    initializationRef.current = false;
+    // Reset state
+    setLocalStream(null);
+    setRemoteStream(null);
+    setIsConnected(false);
+    setHasVideo(false);
   };
 
   // Handle Enter key in chat
@@ -710,123 +1141,60 @@ const ConsultationRoom = () => {
       display: 'flex', 
       height: '100vh', 
       fontFamily: 'Arial, sans-serif',
-      background: '#f5f5f5',
-      flexDirection: 'column'
+      background: '#f5f5f5'
     }}>
-      {/* HEADER */}
-      {!headerCollapsed && (
-        <div style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          padding: '8px 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          zIndex: 1000
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ 
-              fontSize: '20px',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span style={{ fontSize: '22px' }}>🏥</span>
-              My Well Being
-            </div>
-            <div style={{ 
-              fontSize: '12px', 
-              opacity: 0.9,
-              background: 'rgba(255,255,255,0.2)',
-              padding: '3px 8px',
-              borderRadius: '10px'
-            }}>
-              Consultation Room {consultationData && `• ${consultationData.type || 'General'}`}
-            </div>
-          </div>
-          <button 
-            onClick={() => setHeaderCollapsed(true)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              borderRadius: '50%',
-              width: '30px',
-              height: '30px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            title="Collapse header"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* COLLAPSED HEADER BUTTON */}
-      {headerCollapsed && (
-        <div style={{
-          position: 'fixed',
-          top: '8px',
-          left: '8px',
-          zIndex: 1001
-        }}>
-          <button 
-            onClick={() => setHeaderCollapsed(false)}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              color: 'white',
-              borderRadius: '6px',
-              padding: '6px 10px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: '500',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-            }}
-          >
-            🏥 Show Header
-          </button>
-        </div>
-      )}
-
-      {/* ERROR BANNER */}
+      {/* Error Banner */}
       {error && (
         <div style={{
           position: 'fixed',
-          top: headerCollapsed ? '0' : '46px',
+          top: 0,
           left: 0,
           right: 0,
-          background: '#ff9800',
+          background: '#ff9800', // Orange instead of red for warnings
           color: 'white',
-          padding: '10px 20px',
+          padding: '12px 20px',
           zIndex: 1000,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           <span>⚠️ {error}</span>
-          <button 
-            onClick={() => setError('')}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: 'white', 
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
-          >
-            ×
-          </button>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {!hasVideo && (
+              <button 
+                onClick={retryVideoSetup}
+                style={{ 
+                  background: 'rgba(255,255,255,0.2)', 
+                  border: '1px solid white', 
+                  color: 'white', 
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px'
+                }}
+              >
+                Retry Video
+              </button>
+            )}
+            <button 
+              onClick={() => setError('')}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'white', 
+                cursor: 'pointer',
+                fontSize: '18px',
+                padding: '0 5px'
+              }}
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 
-      {/* LOADING OVERLAY */}
+      {/* Loading Overlay - Only show for initial chat setup */}
       {loading && (
         <div style={{
           position: 'fixed',
@@ -852,371 +1220,561 @@ const ConsultationRoom = () => {
             marginBottom: '20px'
           }}></div>
           <div style={{ fontSize: '18px', marginBottom: '10px' }}>{status}</div>
-          <div style={{ fontSize: '14px', opacity: 0.8 }}>Setting up consultation...</div>
+          <div style={{ fontSize: '14px', opacity: 0.8 }}>Setting up chat...</div>
         </div>
       )}
 
-      {/* MAIN CONTENT */}
-      <div style={{ 
-        display: 'flex', 
-        flex: 1,
-        height: headerCollapsed ? '100vh' : 'calc(100vh - 46px)'
-      }}>
-        {/* Video Section */}
+      {/* Video Section */}
+      {hasVideo && (
         <div style={{ 
-          flex: jitsiLoaded ? 1 : 0,
-          width: jitsiLoaded ? 'auto' : '0px',
-          background: '#000',
-          minHeight: '100%',
-          position: 'relative',
-          overflow: 'hidden',
-          transition: 'all 0.3s ease'
+          flex: 1, 
+          background: '#000', 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '2px',
+          minHeight: '100vh'
         }}>
-          <div 
-            ref={jitsiContainerRef}
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              minHeight: '100%',
-              display: jitsiLoaded ? 'block' : 'none'
-            }}
-          />
-        </div>
-
-        {/* Chat Section */}
-        <div style={{ 
-          width: jitsiLoaded ? '400px' : '100%',
-          display: 'flex', 
-          flexDirection: 'column',
-          background: 'white',
-          borderLeft: jitsiLoaded ? '1px solid #e0e0e0' : 'none',
-          boxShadow: jitsiLoaded ? '-2px 0 4px rgba(0,0,0,0.1)' : 'none',
-          transition: 'all 0.3s ease'
-        }}>
-          {/* Chat Header */}
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid #e0e0e0',
-            background: '#f8f9fa',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div>
-              <h3 style={{ 
-                margin: 0, 
-                fontSize: '15px',
-                color: '#333',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}>
-                💬 Chat
-                {messages.length > 0 && (
-                  <span style={{
-                    background: '#007bff',
-                    color: 'white',
-                    borderRadius: '10px',
-                    padding: '1px 5px',
-                    fontSize: '10px'
-                  }}>
-                    {messages.length}
-                  </span>
-                )}
-              </h3>
-              <div style={{ fontSize: '10px', color: '#666', marginTop: '1px' }}>
-                {jitsiLoaded ? '🎥 Video active' : '💬 Chat ready'} • {status}
-              </div>
+          {/* Local Video */}
+          <div style={{ position: 'relative', background: '#222' }}>
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover',
+                transform: 'scaleX(-1)' // Mirror effect
+              }}
+            />
+            
+            {/* Local video label */}
+            <div style={{
+              position: 'absolute',
+              bottom: '15px',
+              left: '15px',
+              background: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '500'
+            }}>
+              You {!isVideoEnabled && '(Video Off)'}
             </div>
 
-            {/* End Call Button */}
+            {/* Control buttons */}
+            <div style={{
+              position: 'absolute',
+              bottom: '15px',
+              right: '15px',
+              display: 'flex',
+              gap: '8px'
+            }}>
+              <button 
+                onClick={toggleVideo}
+                style={{
+                  width: '45px',
+                  height: '45px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: isVideoEnabled ? 'rgba(255,255,255,0.2)' : 'rgba(220,53,69,0.8)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                title={isVideoEnabled ? 'Turn off video' : 'Turn on video'}
+              >
+                {isVideoEnabled ? '📹' : '📷'}
+              </button>
+              
+              <button 
+                onClick={toggleAudio}
+                style={{
+                  width: '45px',
+                  height: '45px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: isAudioEnabled ? 'rgba(255,255,255,0.2)' : 'rgba(220,53,69,0.8)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                title={isAudioEnabled ? 'Mute audio' : 'Unmute audio'}
+              >
+                {isAudioEnabled ? '🎤' : '🔇'}
+              </button>
+
+              {/* End Call Button */}
+              <button 
+                onClick={handleEndCall}
+                style={{
+                  width: '45px',
+                  height: '45px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'rgba(220,53,69,0.9)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                title="End consultation"
+              >
+                📞
+              </button>
+            </div>
+
+            {/* Connection status */}
+            <div style={{
+              position: 'absolute',
+              top: '15px',
+              right: '15px',
+              background: isConnected ? 'rgba(40,167,69,0.9)' : 'rgba(255,193,7,0.9)',
+              color: 'white',
+              padding: '6px 12px',
+              borderRadius: '15px',
+              fontSize: '11px',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              {isConnected ? '🟢 Connected' : '🟡 Waiting'}
+            </div>
+          </div>
+
+          {/* Remote Video */}
+          <div style={{ position: 'relative', background: '#333' }}>
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover' 
+              }}
+            />
+            
+            {/* Remote video label */}
+            <div style={{
+              position: 'absolute',
+              bottom: '15px',
+              left: '15px',
+              background: 'rgba(0,0,0,0.7)',
+              color: 'white',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '500'
+            }}>
+              {remoteStream ? 'Other Participant' : 'Waiting...'}
+            </div>
+
+            {/* Waiting message */}
+            {!remoteStream && (
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.7 }}>👤</div>
+                <div style={{ fontSize: '18px', marginBottom: '10px' }}>
+                  Waiting for other participant
+                </div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>
+                  Share this room URL to connect
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Chat Section */}
+      <div style={{ 
+        width: hasVideo ? '400px' : '100%',
+        display: 'flex', 
+        flexDirection: 'column',
+        background: 'white',
+        borderLeft: hasVideo ? '1px solid #e0e0e0' : 'none',
+        boxShadow: hasVideo ? '-2px 0 4px rgba(0,0,0,0.1)' : 'none'
+      }}>
+        {/* Chat Header */}
+        <div style={{
+          padding: '20px',
+          borderBottom: '1px solid #e0e0e0',
+          background: '#f8f9fa',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: '18px', 
+              color: '#333',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              💬 Consultation Chat
+              {messages.length > 0 && (
+                <span style={{
+                  background: '#007bff',
+                  color: 'white',
+                  borderRadius: '12px',
+                  padding: '2px 8px',
+                  fontSize: '12px'
+                }}>
+                  {messages.length}
+                </span>
+              )}
+            </h3>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+              {hasVideo ? '📹 Video ready' : '💬 Chat ready'} • {status}
+            </div>
+            {/* Manual refresh button for debugging */}
+            <button 
+              onClick={loadMessagesOnce}
+              style={{
+                marginTop: '5px',
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                fontSize: '10px',
+                cursor: 'pointer'
+              }}
+            >
+              🔄 Refresh
+            </button>
+          </div>
+
+          {/* End Call Button in Chat Header (for chat-only mode) */}
+          {!hasVideo && (
             <button 
               onClick={handleEndCall}
               style={{
                 background: '#dc3545',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
-                padding: '4px 8px',
+                borderRadius: '8px',
+                padding: '8px 16px',
                 cursor: 'pointer',
-                fontSize: '11px',
+                fontSize: '14px',
                 fontWeight: '500',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '3px'
+                gap: '6px',
+                transition: 'all 0.2s'
               }}
+              title="End consultation"
             >
-              📞 End
+              📞 End Chat
             </button>
-          </div>
+          )}
+        </div>
 
-          {/* Messages Area */}
-          <div style={{ 
-            flex: 1, 
-            padding: '15px',
-            overflowY: 'auto',
-            maxHeight: 'calc(100vh - 120px)'
-          }}>
-            {messages.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                color: '#666', 
-                fontStyle: 'italic',
-                padding: '30px 15px'
-              }}>
-                <div style={{ fontSize: '36px', marginBottom: '10px', opacity: 0.5 }}>💬</div>
-                <div style={{ fontSize: '14px' }}>No messages yet</div>
-                <div style={{ fontSize: '12px', marginTop: '5px' }}>
-                  Start the conversation!
-                </div>
+        {/* Messages Area */}
+        <div style={{ 
+          flex: 1, 
+          padding: '20px', 
+          overflowY: 'auto',
+          maxHeight: 'calc(100vh - 140px)'
+        }}>
+          {messages.length === 0 ? (
+            <div style={{ 
+              textAlign: 'center', 
+              color: '#666', 
+              fontStyle: 'italic',
+              padding: '40px 20px'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '15px', opacity: 0.5 }}>💬</div>
+              <div>No messages yet</div>
+              <div style={{ fontSize: '14px', marginTop: '5px' }}>
+                Start the conversation!
               </div>
-            ) : (
-              messages.map((message, index) => {
-                const isFile = message.type === 'file';
-                const isSystem = message.type === 'system';
-                const isImage = isFile && message.fileType?.startsWith('image/');
-                
-                return (
+            </div>
+          ) : (
+            messages.map((message, index) => {
+              const isFile = message.type === 'file';
+              const isImage = isFile && message.fileType?.startsWith('image/');
+              
+              return (
+                <div
+                  key={message.id || `msg-${index}`}
+                  style={{
+                    marginBottom: '15px',
+                    display: 'flex',
+                    justifyContent: message.senderId === auth.currentUser?.uid ? 'flex-end' : 'flex-start'
+                  }}
+                >
                   <div
-                    key={message.id || `msg-${index}`}
                     style={{
-                      marginBottom: '12px',
-                      display: 'flex',
-                      justifyContent: isSystem ? 'center' : 
-                        (message.senderId === auth.currentUser?.uid ? 'flex-end' : 'flex-start')
+                      maxWidth: '80%',
+                      padding: '12px 16px',
+                      borderRadius: '18px',
+                      background: message.senderId === auth.currentUser?.uid ? '#007bff' : '#f1f3f4',
+                      color: message.senderId === auth.currentUser?.uid ? 'white' : '#333',
+                      wordWrap: 'break-word',
+                      fontSize: '14px',
+                      lineHeight: '1.4',
+                      position: 'relative'
                     }}
                   >
-                    <div
-                      style={{
-                        maxWidth: isSystem ? '90%' : '75%',
-                        padding: isSystem ? '6px 10px' : '10px 14px',
-                        borderRadius: isSystem ? '10px' : '16px',
-                        background: isSystem ? '#e3f2fd' : 
-                          (message.senderId === auth.currentUser?.uid ? '#007bff' : '#f1f3f4'),
-                        color: isSystem ? '#1976d2' : 
-                          (message.senderId === auth.currentUser?.uid ? 'white' : '#333'),
-                        wordWrap: 'break-word',
-                        fontSize: isSystem ? '11px' : '13px',
-                        fontStyle: isSystem ? 'italic' : 'normal',
-                        lineHeight: '1.3',
-                        textAlign: isSystem ? 'center' : 'left'
-                      }}
-                    >
-                      {/* System message */}
-                      {isSystem && <div>🔔 {message.text}</div>}
+                    {/* Regular text message */}
+                    {!isFile && <div>{message.text || 'No text'}</div>}
 
-                      {/* Regular text message */}
-                      {!isFile && !isSystem && <div>{message.text}</div>}
-
-                      {/* File message */}
-                      {isFile && (
-                        <div>
-                          {/* Image preview */}
-                          {isImage && (
-                            <div style={{ marginBottom: '6px' }}>
-                              <img 
-                                src={message.fileUrl}
-                                alt={message.fileName}
-                                style={{
-                                  maxWidth: '180px',
-                                  maxHeight: '180px',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer'
-                                }}
-                                onClick={() => window.open(message.fileUrl, '_blank')}
-                              />
-                            </div>
-                          )}
-                          
-                          {/* File info */}
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '6px',
-                            background: 'rgba(255,255,255,0.1)',
-                            padding: '6px',
-                            borderRadius: '6px',
-                            fontSize: '11px'
-                          }}>
-                            <span style={{ fontSize: '14px' }}>
-                              {isImage ? '🖼️' : 
-                               message.fileType === 'application/pdf' ? '📄' : '📎'}
-                            </span>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '11px' }}>{message.fileName}</div>
-                              <div style={{ opacity: 0.8, fontSize: '10px' }}>
-                                {(message.fileSize / 1024).toFixed(1)} KB
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => window.open(message.fileUrl, '_blank')}
+                    {/* File message */}
+                    {isFile && (
+                      <div>
+                        {/* Image preview */}
+                        {isImage && (
+                          <div style={{ marginBottom: '8px' }}>
+                            <img 
+                              src={message.fileUrl}
+                              alt={message.fileName}
                               style={{
-                                background: 'rgba(255,255,255,0.2)',
-                                border: '1px solid rgba(255,255,255,0.3)',
-                                color: 'inherit',
-                                borderRadius: '3px',
-                                padding: '3px 6px',
-                                fontSize: '10px',
+                                maxWidth: '200px',
+                                maxHeight: '200px',
+                                borderRadius: '8px',
                                 cursor: 'pointer'
                               }}
-                            >
-                              {isImage ? 'View' : 'Download'}
-                            </button>
+                              onClick={() => window.open(message.fileUrl, '_blank')}
+                            />
                           </div>
-                        </div>
-                      )}
-
-                      {/* Timestamp */}
-                      {!isSystem && (
+                        )}
+                        
+                        {/* File info */}
                         <div style={{ 
-                          fontSize: '10px', 
-                          opacity: 0.7, 
-                          marginTop: '4px',
-                          textAlign: 'right'
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px',
+                          background: 'rgba(255,255,255,0.1)',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          fontSize: '12px'
                         }}>
-                          {message.timestamp?.toDate ? 
-                            message.timestamp.toDate().toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) : 
-                            (message.timestamp ? 'Processing...' : 'Sending...')
-                          }
+                          <span style={{ fontSize: '16px' }}>
+                            {isImage ? '🖼️' : 
+                             message.fileType === 'application/pdf' ? '📄' : '📎'}
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 'bold' }}>{message.fileName}</div>
+                            <div style={{ opacity: 0.8 }}>
+                              {(message.fileSize / 1024).toFixed(1)} KB
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => window.open(message.fileUrl, '_blank')}
+                            style={{
+                              background: 'rgba(255,255,255,0.2)',
+                              border: '1px solid rgba(255,255,255,0.3)',
+                              color: 'inherit',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {isImage ? 'View' : 'Download'}
+                          </button>
                         </div>
-                      )}
+                      </div>
+                    )}
+
+                    <div style={{ 
+                      fontSize: '11px', 
+                      opacity: 0.7, 
+                      marginTop: '5px',
+                      textAlign: 'right'
+                    }}>
+                      {message.timestamp?.toDate ? 
+                        message.timestamp.toDate().toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : 
+                        (message.timestamp ? 'Processing...' : 'Sending...')
+                      }
                     </div>
                   </div>
-                );
-              })
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-          {/* Message Input */}
-          <div style={{ 
-            padding: '15px', 
-            borderTop: '1px solid #e0e0e0',
-            background: '#f8f9fa'
-          }}>
-            {/* File upload indicator */}
-            {uploadingFile && (
+        {/* Message Input */}
+        <div style={{ 
+          padding: '20px', 
+          borderTop: '1px solid #e0e0e0',
+          background: '#f8f9fa'
+        }}>
+          {/* File upload indicator */}
+          {uploadingFile && (
+            <div style={{
+              background: '#e3f2fd',
+              color: '#1976d2',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              marginBottom: '10px',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
               <div style={{
-                background: '#e3f2fd',
-                color: '#1976d2',
-                padding: '6px 10px',
-                borderRadius: '6px',
-                marginBottom: '8px',
-                fontSize: '11px',
+                width: '16px',
+                height: '16px',
+                border: '2px solid rgba(25,118,210,0.3)',
+                borderTop: '2px solid #1976d2',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+              Uploading file...
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            {/* File attachment button */}
+            <button 
+              onClick={triggerFileInput}
+              disabled={uploadingFile}
+              style={{
+                padding: '12px',
+                background: uploadingFile ? '#ccc' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                cursor: uploadingFile ? 'not-allowed' : 'pointer',
+                fontSize: '16px',
+                width: '44px',
+                height: '44px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
-              }}>
-                <div style={{
-                  width: '14px',
-                  height: '14px',
-                  border: '2px solid rgba(25,118,210,0.3)',
-                  borderTop: '2px solid #1976d2',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }}></div>
-                Uploading file...
-              </div>
-            )}
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+                flexShrink: 0
+              }}
+              title="Attach file (Images, PDFs, Documents)"
+            >
+              📎
+            </button>
 
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-              {/* File attachment button */}
-              <button 
-                onClick={triggerFileInput}
-                disabled={uploadingFile}
-                style={{
-                  padding: '10px',
-                  background: uploadingFile ? '#ccc' : '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '50%',
-                  cursor: uploadingFile ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  width: '38px',
-                  height: '38px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s',
-                  flexShrink: 0
-                }}
-                title="Attach file (Images, PDFs, Documents)"
-              >
-                📎
-              </button>
-              
-              {/* Hidden file input */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileInputChange}
-                accept="image/*,.pdf,.doc,.docx,.txt"
-                style={{ display: 'none' }}
-              />
-
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message here..."
-                disabled={uploadingFile}
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '18px',
-                  fontSize: '13px',
-                  outline: 'none',
-                  resize: 'none',
-                  minHeight: '18px',
-                  maxHeight: '80px',
-                  fontFamily: 'inherit',
-                  opacity: uploadingFile ? 0.6 : 1
-                }}
-                rows={1}
-              />
-              
-              <button 
-                onClick={sendMessage}
-                disabled={(!newMessage.trim() && !uploadingFile) || uploadingFile}
-                style={{
-                  padding: '10px 16px',
-                  background: (newMessage.trim() && !uploadingFile) ? '#007bff' : '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '18px',
-                  cursor: (newMessage.trim() && !uploadingFile) ? 'pointer' : 'not-allowed',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  transition: 'all 0.2s',
-                  minWidth: '60px'
-                }}
-              >
-                Send
-              </button>
-            </div>
+            {/* Network test button for debugging */}
+            <button 
+              onClick={async () => {
+                console.log('🧪 Running manual connectivity test...');
+                const result = await checkNetworkConnectivity();
+                console.log('🧪 Connectivity result:', result);
+                alert(`Network connectivity: ${result ? 'OK' : 'FAILED'}`);
+              }}
+              style={{
+                position: 'fixed',
+                top: '60px',
+                right: '20px',
+                background: '#17a2b8',
+                color: 'white',
+                border: 'none',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                zIndex: 1001,
+                fontSize: '12px'
+              }}
+            >
+              🧪 Test Network
+            </button>
             
-            <div style={{ 
-              fontSize: '11px', 
-              color: '#666', 
-              marginTop: '6px', 
-              textAlign: 'center' 
-            }}>
-              Press Enter to send • Shift+Enter for new line • 📎 to attach files
-              {!jitsiLoaded && (
-                <div style={{ marginTop: '3px', color: '#007bff' }}>
-                  🎥 Video conference loading...
-                </div>
-              )}
-              {error && (
-                <div style={{ marginTop: '3px', color: '#dc3545', fontSize: '10px' }}>
-                  ⚠️ {error}
-                </div>
-              )}
-            </div>
+            {/* Hidden file input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileInputChange}
+              accept="image/*,.pdf,.doc,.docx,.txt"
+              style={{ display: 'none' }}
+            />
+
+            <textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message here..."
+              disabled={uploadingFile}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                border: '1px solid #ddd',
+                borderRadius: '20px',
+                fontSize: '14px',
+                outline: 'none',
+                resize: 'none',
+                minHeight: '20px',
+                maxHeight: '100px',
+                fontFamily: 'inherit',
+                opacity: uploadingFile ? 0.6 : 1
+              }}
+              rows={1}
+            />
+            <button 
+              onClick={sendMessage}
+              disabled={(!newMessage.trim() && !uploadingFile) || uploadingFile}
+              style={{
+                padding: '12px 20px',
+                background: (newMessage.trim() && !uploadingFile) ? '#007bff' : '#ccc',
+                color: 'white',
+                border: 'none',
+                borderRadius: '20px',
+                cursor: (newMessage.trim() && !uploadingFile) ? 'pointer' : 'not-allowed',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+                minWidth: '70px'
+              }}
+            >
+              Send
+            </button>
+          </div>
+          <div style={{ 
+            fontSize: '12px', 
+            color: '#666', 
+            marginTop: '8px', 
+            textAlign: 'center' 
+          }}>
+            Press Enter to send • Shift+Enter for new line • 📎 to attach files
+            {!hasVideo && !videoSetupAttempted && (
+              <span> • <button 
+                onClick={retryVideoSetup}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#007bff',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontSize: '12px'
+                }}
+              >
+                Enable Video
+              </button></span>
+            )}
           </div>
         </div>
       </div>
@@ -1226,11 +1784,6 @@ const ConsultationRoom = () => {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
-        }
-        
-        /* Smooth transitions */
-        * {
-          transition: all 0.2s ease;
         }
       `}</style>
     </div>

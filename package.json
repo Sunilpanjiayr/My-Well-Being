@@ -1,5 +1,4 @@
-{
-  "name": "health-app",
+ {"name": "health-app",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -24,6 +23,8 @@
     "mongoose": "^8.15.1",
     "morgan": "^1.10.0",
     "multer": "^2.0.0",
+    "peer": "^1.0.2",
+    "peerjs": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
@@ -33,14 +34,20 @@
     "react-router-dom": "^6.30.0",
     "react-scripts": "5.0.1",
     "recharts": "^2.15.2",
-    "web-vitals": "^2.1.4"
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.7.2",
+    "web-vitals": "^2.1.4",
+    "ws": "^8.18.2"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "nodemon server.js",
+    "dev": "concurrently \"npm run server\" \"npm run start\""
   },
+  "proxy": "http://localhost:3001",
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -58,5 +65,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
   }
 }

@@ -31,6 +31,17 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [consultationStatus, setConsultationStatus] = useState(null);
 
+  // Define consultation fees based on type
+  const consultationFees = {
+    video: 500,
+    chat: 300
+  };
+
+  // Get current consultation fee based on selected type
+  const getCurrentFee = () => {
+    return consultationFees[consultationType];
+  };
+
   useEffect(() => {
     if (!doctor || !selectedDate) return;
 
@@ -197,6 +208,7 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         reason: reason,
         status: 'pending',
         documents: documents,
+        consultationFee: getCurrentFee(), // Store the actual fee charged
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       });
@@ -267,7 +279,9 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         <div className="doctor-info">
           <h3>Dr. {doctor.username}</h3>
           <p>{doctor.specialty}</p>
-          <p className="consultation-fee">Consultation fee: ${doctor.consultationFee}</p>
+          <p className="consultation-fee">
+            Consultation fee: Rs.{getCurrentFee()}
+          </p>
         </div>
       </div>
 
@@ -285,13 +299,15 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
             className={`type-button ${consultationType === 'video' ? 'active' : ''}`}
             onClick={() => setConsultationType('video')}
           >
-            Video Call
+            📹 Video Call
+            <span className="type-fee">Rs.500</span>
           </button>
           <button 
             className={`type-button ${consultationType === 'chat' ? 'active' : ''}`}
             onClick={() => setConsultationType('chat')}
           >
-            Chat
+            💬 Chat
+            <span className="type-fee">Rs.300</span>
           </button>
         </div>
       </div>
@@ -311,15 +327,19 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         <div className="form-group">
           <label>Available Time Slots</label>
           <div className="time-slots">
-            {availableTimeSlots.map(time => (
-              <button
-                key={time}
-                className={`time-slot ${selectedTime === time ? 'active' : ''}`}
-                onClick={() => setSelectedTime(time)}
-              >
-                {time}
-              </button>
-            ))}
+            {availableTimeSlots.length === 0 ? (
+              <p className="no-slots-message">No available time slots for this date</p>
+            ) : (
+              availableTimeSlots.map(time => (
+                <button
+                  key={time}
+                  className={`time-slot ${selectedTime === time ? 'active' : ''}`}
+                  onClick={() => setSelectedTime(time)}
+                >
+                  {time}
+                </button>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -336,34 +356,46 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
 
       <div className="form-group">
         <label>Upload Medical Documents (Optional)</label>
-        <input
-          type="file"
-          multiple
-          onChange={handleFileUpload}
-          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-          disabled={loading}
-        />
+        <div className="file-upload">
+          <label htmlFor="file-input" className="upload-button">
+            📎 Choose Files
+          </label>
+          <input
+            id="file-input"
+            type="file"
+            multiple
+            onChange={handleFileUpload}
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            disabled={loading}
+          />
+        </div>
+        
         {uploadProgress > 0 && (
           <div className="upload-progress">
-            <div 
-              className="progress-bar"
-              style={{ width: `${uploadProgress}%` }}
-            />
+            <div className="progress-bar">
+              <div 
+                className="progress-fill"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
           </div>
         )}
+        
         {documents.length > 0 && (
           <div className="uploaded-files">
-            {documents.map((doc, index) => (
-              <div key={index} className="file-item">
-                <span>{doc.name}</span>
-                <button
-                  onClick={() => setDocuments(prev => prev.filter((_, i) => i !== index))}
-                  className="remove-file"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+            <h4>Uploaded Documents:</h4>
+            <ul>
+              {documents.map((doc, index) => (
+                <li key={index}>
+                  <span>📄 {doc.name}</span>
+                  <button
+                    onClick={() => setDocuments(prev => prev.filter((_, i) => i !== index))}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -373,7 +405,7 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         disabled={loading || !selectedDate || !selectedTime || !reason.trim()}
         className="book-button"
       >
-        {loading ? 'Booking...' : 'Book Appointment'}
+        {loading ? 'Booking...' : `Book Appointment - Rs.${getCurrentFee()}`}
       </button>
 
       {consultationStatus && (
@@ -392,4 +424,4 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
   );
 };
 
-export default AppointmentBooking; 
+export default AppointmentBooking;

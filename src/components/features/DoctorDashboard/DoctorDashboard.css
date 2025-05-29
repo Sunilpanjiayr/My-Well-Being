@@ -1,146 +1,188 @@
+/* Doctor Dashboard Styles - Matching Patient Dashboard Dark Theme */
 .doctor-dashboard {
-  padding: 24px;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px;
+  color: #ffffff;
+  transition: all 0.3s ease;
 }
 
-.dark.doctor-dashboard {
-  background-color: #1a1a2e;
-  color: #e2e8f0;
+.doctor-dashboard.dark {
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
 }
 
+/* Header Styles */
 .dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.dashboard-header h1 {
-  font-size: 32px;
+.doctor-dashboard.dark .dashboard-header {
+  background: rgba(45, 55, 72, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.doctor-dashboard.dark .user-avatar {
+  background: linear-gradient(135deg, #4299e1, #667eea);
+}
+
+.user-details h1 {
+  font-size: 28px;
   font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
+  color: #ffffff;
 }
 
-.dark .dashboard-header h1 {
-  color: #f8fafc;
-}
-
-.dashboard-header p {
+.user-details p {
   font-size: 16px;
-  color: #64748b;
   margin: 0;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.dark .dashboard-header p {
-  color: #94a3b8;
+.header-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.theme-toggle,
+.logout-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.theme-toggle {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.logout-btn {
+  background: rgba(239, 68, 68, 0.8);
+  color: #ffffff;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 1);
+  transform: translateY(-2px);
 }
 
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
 }
 
 .stat-card {
-  background-color: #ffffff;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
   padding: 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.dark .stat-card {
-  background-color: #242444;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+.doctor-dashboard.dark .stat-card {
+  background: rgba(45, 55, 72, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.dark .stat-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .stat-icon.today {
-  background-color: #e0f2fe;
-  color: #0284c7;
-}
-
-.dark .stat-icon.today {
-  background-color: #075985;
-  color: #7dd3fc;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
 }
 
 .stat-icon.pending {
-  background-color: #fef3c7;
-  color: #d97706;
-}
-
-.dark .stat-icon.pending {
-  background-color: #92400e;
-  color: #fcd34d;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
 }
 
 .stat-icon.patients {
-  background-color: #dcfce7;
-  color: #16a34a;
+  background: linear-gradient(135deg, #10b981, #059669);
 }
 
-.dark .stat-icon.patients {
-  background-color: #166534;
-  color: #86efac;
-}
-
-.stat-icon.messages {
-  background-color: #ffe4e6;
-  color: #e11d48;
-}
-
-.dark .stat-icon.messages {
-  background-color: #9f1239;
-  color: #fda4af;
-}
-
-.stat-info {
-  flex: 1;
+.stat-icon.active {
+  background: linear-gradient(135deg, #06d6a0, #10b981);
 }
 
 .stat-info h3 {
-  font-size: 14px;
-  font-weight: 500;
-  color: #64748b;
-  margin: 0 0 4px 0;
-}
-
-.dark .stat-info h3 {
-  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 8px 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .stat-number {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 700;
-  color: #1e293b;
+  color: #ffffff;
   margin: 0;
-}
-
-.dark .stat-number {
-  color: #f8fafc;
 }
 
 /* Dashboard Content */
@@ -152,15 +194,17 @@
 
 /* Appointments Section */
 .appointments-section {
-  background-color: #ffffff;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.dark .appointments-section {
-  background-color: #242444;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+.doctor-dashboard.dark .appointments-section {
+  background: rgba(45, 55, 72, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .section-header {
@@ -171,34 +215,21 @@
 }
 
 .section-header h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 24px;
+  font-weight: 700;
   margin: 0;
-}
-
-.dark .section-header h2 {
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 .view-all {
-  color: #0284c7;
+  color: #60a5fa;
   text-decoration: none;
-  font-weight: 500;
-  font-size: 14px;
-  transition: color 0.2s ease;
-}
-
-.dark .view-all {
-  color: #7dd3fc;
+  font-weight: 600;
+  transition: color 0.3s ease;
 }
 
 .view-all:hover {
-  color: #0369a1;
-}
-
-.dark .view-all:hover {
-  color: #38bdf8;
+  color: #3b82f6;
 }
 
 .appointments-list {
@@ -210,47 +241,42 @@
 .no-appointments {
   text-align: center;
   padding: 48px;
-  color: #64748b;
-  background-color: #f8fafc;
-  border-radius: 8px;
-}
-
-.dark .no-appointments {
-  color: #94a3b8;
-  background-color: #1e1e38;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
 }
 
 .appointment-card {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-  transition: transform 0.2s ease;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.dark .appointment-card {
-  background-color: #1e1e38;
+.doctor-dashboard.dark .appointment-card {
+  background: rgba(26, 32, 44, 0.6);
 }
 
 .appointment-card:hover {
-  transform: translateX(4px);
+  transform: translateX(8px);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .appointment-avatar {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   overflow: hidden;
-  background-color: #e2e8f0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.dark .appointment-avatar {
-  background-color: #334155;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .appointment-avatar img {
@@ -262,11 +288,7 @@
 .avatar-placeholder {
   font-size: 20px;
   font-weight: 600;
-  color: #64748b;
-}
-
-.dark .avatar-placeholder {
-  color: #94a3b8;
+  color: #ffffff;
 }
 
 .appointment-info {
@@ -274,219 +296,181 @@
 }
 
 .appointment-info h3 {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
   margin: 0 0 4px 0;
-}
-
-.dark .appointment-info h3 {
-  color: #f8fafc;
+  color: #ffffff;
 }
 
 .appointment-specialty {
   font-size: 14px;
-  color: #64748b;
-  margin: 0 0 8px 0;
-}
-
-.dark .appointment-specialty {
-  color: #94a3b8;
+  margin: 0 0 12px 0;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .appointment-meta {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
   font-size: 14px;
+  margin-bottom: 12px;
 }
 
 .appointment-date,
 .appointment-time {
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 8px;
 }
 
-.dark .appointment-date,
-.dark .appointment-time {
-  color: #94a3b8;
-}
-
-.appointment-type {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 500;
+.appointment-type,
+.appointment-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
 }
 
 .appointment-type.video {
-  background-color: #e0f2fe;
-  color: #0284c7;
-}
-
-.dark .appointment-type.video {
-  background-color: #075985;
-  color: #7dd3fc;
+  background: rgba(59, 130, 246, 0.8);
+  color: #ffffff;
 }
 
 .appointment-type.chat {
-  background-color: #f3e8ff;
-  color: #9333ea;
-}
-
-.dark .appointment-type.chat {
-  background-color: #6b21a8;
-  color: #d8b4fe;
-}
-
-.appointment-status {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 500;
+  background: rgba(147, 51, 234, 0.8);
+  color: #ffffff;
 }
 
 .appointment-status.pending {
-  background-color: #fef3c7;
-  color: #d97706;
-}
-
-.dark .appointment-status.pending {
-  background-color: #92400e;
-  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.8);
+  color: #ffffff;
 }
 
 .appointment-status.in-progress {
-  background-color: #dbeafe;
-  color: #2563eb;
-}
-
-.dark .appointment-status.in-progress {
-  background-color: #1e40af;
-  color: #93c5fd;
+  background: rgba(16, 185, 129, 0.8);
+  color: #ffffff;
 }
 
 .started-at {
-  font-size: 0.875rem;
-  color: #64748b;
-  background-color: #f1f5f9;
-  padding: 2px 8px;
-  border-radius: 4px;
-  white-space: nowrap;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 8px;
 }
 
-.dark .started-at {
-  color: #94a3b8;
-  background-color: #1e293b;
-}
-
-/* Quick Actions */
-.quick-actions {
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.dark .quick-actions {
-  background-color: #242444;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.quick-actions h2 {
-  font-size: 20px;
+.manage-consultation-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 8px;
   font-weight: 600;
-  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.manage-consultation-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.appointment-card[data-status="in-progress"] .manage-consultation-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Health Features Section */
+.health-features {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-dashboard.dark .health-features {
+  background: rgba(45, 55, 72, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.health-features h2 {
+  font-size: 24px;
+  font-weight: 700;
   margin: 0 0 24px 0;
+  color: #ffffff;
 }
 
-.dark .quick-actions h2 {
-  color: #f8fafc;
-}
-
-.actions-grid {
+.features-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
-.action-card {
+.feature-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  text-align: center;
   gap: 12px;
   padding: 24px;
-  background-color: #f8fafc;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
   text-decoration: none;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.dark .action-card {
-  background-color: #1e1e38;
+.doctor-dashboard.dark .feature-card {
+  background: rgba(26, 32, 44, 0.6);
 }
 
-.action-card:hover {
+.feature-card:hover {
   transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-.action-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+.feature-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
-.start-consultation .action-icon {
-  background-color: #e0f2fe;
-  color: #0284c7;
+.feature-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
 }
 
-.dark .start-consultation .action-icon {
-  background-color: #075985;
-  color: #7dd3fc;
-}
-
-.write-prescription .action-icon {
-  background-color: #fef3c7;
-  color: #d97706;
-}
-
-.dark .write-prescription .action-icon {
-  background-color: #92400e;
-  color: #fcd34d;
-}
-
-.update-schedule .action-icon {
-  background-color: #dcfce7;
-  color: #16a34a;
-}
-
-.dark .update-schedule .action-icon {
-  background-color: #166534;
-  color: #86efac;
-}
-
-.view-forum .action-icon {
-  background-color: #f3e8ff;
-  color: #9333ea;
-}
-
-.dark .view-forum .action-icon {
-  background-color: #6b21a8;
-  color: #d8b4fe;
-}
-
-.action-card span {
+.feature-card p {
   font-size: 14px;
-  font-weight: 500;
-  color: #1e293b;
-  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
 }
 
-.dark .action-card span {
-  color: #f8fafc;
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
 /* Loading State */
@@ -495,18 +479,20 @@
   justify-content: center;
   align-items: center;
   min-height: 200px;
-  color: #64748b;
-  font-size: 16px;
-}
-
-.dark .loading-spinner {
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 18px;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
   .dashboard-content {
     grid-template-columns: 1fr;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
   }
 }
 
@@ -519,8 +505,14 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .actions-grid {
-    grid-template-columns: 1fr;
+  .header-controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .theme-toggle,
+  .logout-btn {
+    width: 100%;
   }
 }
 
@@ -530,59 +522,13 @@
   }
 
   .appointment-meta {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .user-info {
+    flex-direction: column;
+    text-align: center;
   }
 }
-
-.manage-consultation-btn {
-  margin-top: 12px;
-  padding: 8px 16px;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.manage-consultation-btn:hover {
-  background-color: #2563eb;
-}
-
-.appointment-card[data-status="in-progress"] .manage-consultation-btn {
-  background-color: #22c55e;
-}
-
-.appointment-card[data-status="in-progress"] .manage-consultation-btn:hover {
-  background-color: #16a34a;
-}
-
-.dark .manage-consultation-btn {
-  background-color: #60a5fa;
-}
-
-.dark .manage-consultation-btn:hover {
-  background-color: #3b82f6;
-}
-
-.dark .appointment-card[data-status="in-progress"] .manage-consultation-btn {
-  background-color: #059669;
-}
-
-.dark .appointment-card[data-status="in-progress"] .manage-consultation-btn:hover {
-  background-color: #047857;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-} 

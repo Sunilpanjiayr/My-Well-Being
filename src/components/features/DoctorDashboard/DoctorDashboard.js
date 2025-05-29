@@ -8,10 +8,11 @@ import {
   onSnapshot,
   serverTimestamp,
   doc,
-  getDoc 
+  getDoc,
 } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './DoctorDashboard.css';
 import DoctorAppointmentList from '../consultation/DoctorAppointmentList';
 import ConsultationManager from '../consultation/ConsultationManager';
@@ -21,14 +22,26 @@ const DoctorDashboard = () => {
     todayAppointments: 0,
     pendingConsultations: 0,
     totalPatients: 0,
-    unreadMessages: 0
+    activeConsultations: 0
   });
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { darkMode } = useTheme();
+  const { darkMode, toggleDarkMode } = useTheme();
   const user = auth.currentUser;
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [showConsultationManager, setShowConsultationManager] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // Clear any local storage if needed
+      localStorage.clear();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -91,11 +104,16 @@ const DoctorDashboard = () => {
             apt.status === 'in-progress'
           ).length;
 
+          // Get unique patient count
+          const uniquePatients = new Set(appointments.map(apt => apt.patientId));
+          const totalPatients = uniquePatients.size;
+
           setStats(prev => ({
             ...prev,
             todayAppointments,
             pendingConsultations: pendingCount,
-            inProgressConsultations: inProgressCount
+            activeConsultations: inProgressCount,
+            totalPatients
           }));
 
           setLoading(false);
@@ -131,49 +149,68 @@ const DoctorDashboard = () => {
 
   return (
     <div className={`doctor-dashboard ${darkMode ? 'dark' : ''}`}>
+      {/* Header with user info and controls */}
       <div className="dashboard-header">
-        <h1>Welcome back, Dr. {user?.displayName || 'Doctor'}</h1>
-        <p>Manage your patients, appointments, and medical services</p>
+        <div className="header-left">
+          <div className="user-info">
+            <div className="user-avatar">
+              {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'D'}
+            </div>
+            <div className="user-details">
+              <h1>Hello, Dr. {user?.displayName || 'Doctor'}!</h1>
+              <p>Track your patients, appointments, and medical services.</p>
+            </div>
+          </div>
+        </div>
+        <div className="header-controls">
+          <button className="theme-toggle" onClick={toggleDarkMode}>
+            {darkMode ? '☀️' : '🌙'} {darkMode ? 'Light Mode' : 'Dark Mode'}
+          </button>
+          <button className="logout-btn" onClick={handleLogout}>
+            🚪 Logout
+          </button>
+        </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon today">
-            <i className="fas fa-calendar-day"></i>
+            📅
           </div>
           <div className="stat-info">
-            <h3>Today's Appointments</h3>
+            <h3>TODAY'S APPOINTMENTS</h3>
             <p className="stat-number">{stats.todayAppointments}</p>
           </div>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon pending">
-            <i className="fas fa-user-clock"></i>
+            ⏳
           </div>
           <div className="stat-info">
-            <h3>Pending Consultations</h3>
+            <h3>PENDING CONSULTATIONS</h3>
             <p className="stat-number">{stats.pendingConsultations}</p>
           </div>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon patients">
-            <i className="fas fa-users"></i>
+            👥
           </div>
           <div className="stat-info">
-            <h3>Total Patients</h3>
+            <h3>TOTAL PATIENTS</h3>
             <p className="stat-number">{stats.totalPatients}</p>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon messages">
-            <i className="fas fa-envelope"></i>
+          <div className="stat-icon active">
+            💚
           </div>
           <div className="stat-info">
-            <h3>Unread Messages</h3>
-            <p className="stat-number">{stats.unreadMessages}</p>
+            <h3>ACTIVE CONSULTATIONS</h3>
+            <p className="stat-number">{stats.activeConsultations}</p>
           </div>
         </div>
       </div>
@@ -241,35 +278,32 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        <div className="quick-actions">
-          <h2>Quick Actions</h2>
-          <div className="actions-grid">
-            <Link to="/doctor/consultations" className="action-card start-consultation">
-              <div className="action-icon">
-                <i className="fas fa-video"></i>
+        {/* Health Features Section */}
+        <div className="health-features">
+          <h2>Medical Tools</h2>
+          <div className="features-grid">
+            <Link to="/doctor/patients" className="feature-card">
+              <div className="feature-icon">
+                📋
               </div>
-              <span>Start Consultation</span>
+              <h3>Patient Records</h3>
+              <p>Manage and view patient medical records</p>
             </Link>
 
-            <Link to="/doctor/prescriptions" className="action-card write-prescription">
-              <div className="action-icon">
-                <i className="fas fa-prescription"></i>
+            <Link to="/doctor/schedule" className="feature-card">
+              <div className="feature-icon">
+                🕒
               </div>
-              <span>Write Prescription</span>
+              <h3>Update Schedule</h3>
+              <p>Manage your availability and time slots</p>
             </Link>
 
-            <Link to="/doctor/schedule" className="action-card update-schedule">
-              <div className="action-icon">
-                <i className="fas fa-clock"></i>
+            <Link to="/doctor/forum" className="feature-card">
+              <div className="feature-icon">
+                💬
               </div>
-              <span>Update Schedule</span>
-            </Link>
-
-            <Link to="/doctor/forum" className="action-card view-forum">
-              <div className="action-icon">
-                <i className="fas fa-comments"></i>
-              </div>
-              <span>View Forum</span>
+              <h3>View Forum</h3>
+              <p>Participate in medical discussions</p>
             </Link>
           </div>
         </div>
@@ -290,4 +324,4 @@ const DoctorDashboard = () => {
   );
 };
 
-export default DoctorDashboard; 
+export default DoctorDashboard;
