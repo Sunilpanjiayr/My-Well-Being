@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["nodejs_18"]
+
+[phases.install]
+cmds = ["npm ci --omit=dev"]
+
+# Build the React frontend so static assets are present in the "build" folder
+[phases.build]
+cmds = ["npm run build"]
+
+[phases.start]
+cmd = "npm start"

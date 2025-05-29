@@ -43,6 +43,32 @@ function DoctorConsultation() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [activeConsultations, setActiveConsultations] = useState({});
+  // New state for consultation type selection in doctor cards
+  const [selectedConsultationTypes, setSelectedConsultationTypes] = useState({});
+
+  // Define consultation fees based on type
+  const consultationFees = {
+    video: 500,
+    chat: 300
+  };
+
+  // Get consultation fee for a specific doctor and type
+  const getConsultationFee = (doctorId, type = 'video') => {
+    return consultationFees[type];
+  };
+
+  // Handle consultation type change for a specific doctor
+  const handleConsultationTypeChange = (doctorId, type) => {
+    setSelectedConsultationTypes(prev => ({
+      ...prev,
+      [doctorId]: type
+    }));
+  };
+
+  // Get selected consultation type for a doctor (default to video)
+  const getSelectedConsultationType = (doctorId) => {
+    return selectedConsultationTypes[doctorId] || 'video';
+  };
 
   // List of medical specialties
   const specialties = [
@@ -452,8 +478,12 @@ function DoctorConsultation() {
             ) : (
             <div className="doctors-list">
               {filteredDoctors.length > 0 ? (
-                filteredDoctors.map(doctor => (
-                    <div key={doctor.id} className="doctor-card" onClick={() => handleDoctorSelect(doctor)}>
+                filteredDoctors.map(doctor => {
+                  const selectedType = getSelectedConsultationType(doctor.id);
+                  const currentFee = getConsultationFee(doctor.id, selectedType);
+                  
+                  return (
+                    <div key={doctor.id} className="doctor-card">
                       <div className="doctor-avatar">
                         {doctor.avatarUrl ? (
                           <img src={doctor.avatarUrl} alt={`Dr. ${doctor.username}`} />
@@ -477,14 +507,44 @@ function DoctorConsultation() {
                             ({doctor.reviews} reviews)
                           </span>
                       </div>
-                      <p className="doctor-fee">Consultation fee: ${doctor.consultationFee}</p>
+                      
+                      {/* Consultation Type Selector */}
+                      <div className="consultation-type-selector">
+                        <div className="type-buttons">
+                          <button 
+                            className={`type-btn ${selectedType === 'video' ? 'active' : ''}`}
+                            onClick={() => handleConsultationTypeChange(doctor.id, 'video')}
+                          >
+                            📹 Video
+                          </button>
+                          <button 
+                            className={`type-btn ${selectedType === 'chat' ? 'active' : ''}`}
+                            onClick={() => handleConsultationTypeChange(doctor.id, 'chat')}
+                          >
+                            💬 Chat
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <p className="doctor-fee">
+                        Consultation fee: Rs.{currentFee}
+                        <span className="fee-type">({selectedType === 'video' ? 'Video Call' : 'Chat'})</span>
+                      </p>
+                      
                         {doctor.about && (
                           <p className="doctor-about">{doctor.about}</p>
                         )}
+                        
+                        <button 
+                          className="book-button"
+                          onClick={() => handleDoctorSelect(doctor)}
+                        >
+                          Book Appointment - Rs.{currentFee}
+                        </button>
                     </div>
-                    <button className="book-button">Book Appointment</button>
                   </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="no-results">
                   <p>No doctors found matching your search criteria</p>
@@ -565,6 +625,10 @@ function DoctorConsultation() {
                           <span>Type:</span>
                           <span>{appointment.type === 'video' ? 'Video Call' : 'Chat'}</span>
                         </div>
+                        <div className="detail-row">
+                          <span>Fee:</span>
+                          <span>Rs.{appointment.consultationFee || (appointment.type === 'video' ? 500 : 300)}</span>
+                        </div>
                       </div>
                       
                       {appointment.status !== 'completed' && activeConsultations[appointment.id] && (
@@ -642,6 +706,10 @@ function DoctorConsultation() {
                           <span>Type:</span>
                           <span>{appointment.type === 'video' ? 'Video Call' : 'Chat'}</span>
                     </div>
+                        <div className="detail-row">
+                          <span>Fee:</span>
+                          <span>Rs.{appointment.consultationFee || (appointment.type === 'video' ? 500 : 300)}</span>
+                        </div>
                   </div>
                   
                     <div className="appointment-actions">

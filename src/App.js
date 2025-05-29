@@ -1,4 +1,4 @@
-// src/App.js - REPLACE YOUR EXISTING APP.JS WITH THIS INTEGRATED VERSION
+// src/App.js - UPDATED WITH FORUM ROUTES
 
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
@@ -16,9 +16,14 @@ import Footer from './components/layout/Footer';
 import ProtectedRoute from '../src/components/common/ProtectedRoute';
 import DoctorProtectedRoute from '../src/components/common/DoctorProtectedRoutes';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { SidebarProvider } from './contexts/SidebarContext'; // Add this import
+import { SidebarProvider } from './contexts/SidebarContext';
 import './App.css';
 import ConsultationRoom from './components/features/consultation/ConsultationRoom';
+
+
+// Import Forum Components
+import CommunityForum from './components/features/forum/CommunityForum';
+import TopicDetailView from './components/features/forum/TopicDetailView';
 
 // Wrapper component to conditionally render Header and Footer
 const AppLayout = () => {
@@ -36,6 +41,14 @@ const AppLayout = () => {
           <Route path="/doctorLogin" element={<DoctorLogin />} />
           <Route path="/doctorSignup" element={<DoctorSignup />} />
           <Route path="/register" element={<Signup />} />
+
+          
+          {/* Forum Routes - Place specific routes before wildcards */}
+          <Route path="/forum/topic/:topicId" element={<TopicDetailView />} />
+          <Route path="/forum/bookmarks" element={<CommunityForum />} />
+          <Route path="/forum/my-topics" element={<CommunityForum />} />
+          <Route path="/forum" element={<CommunityForum />} />
+          
           <Route 
             path="/dashboardHome" 
             element={
@@ -93,7 +106,7 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <SidebarProvider> {/* Add SidebarProvider here */}
+        <SidebarProvider>
           <AppLayout />
         </SidebarProvider>
       </ThemeProvider>
