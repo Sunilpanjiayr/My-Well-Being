@@ -151,7 +151,19 @@ app.get('/api/health', (req, res) => {
 
 // Health check endpoint (alternative path)
 app.get('/health', (req, res) => {
-  res.redirect('/api/health');
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    railway: {
+      publicDomain: process.env.RAILWAY_PUBLIC_DOMAIN,
+      serviceName: process.env.RAILWAY_SERVICE_NAME,
+    },
+    server: {
+      uptime: process.uptime(),
+      connections: io ? io.engine.clientsCount : 0,
+    },
+  });
 });
 
 // API status endpoint

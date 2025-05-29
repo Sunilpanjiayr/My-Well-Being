@@ -4,9 +4,9 @@ nixPkgs = ["nodejs_18"]
 [phases.install]
 cmds = ["npm ci --omit=dev"]
 
-# Skip build phase since this is a server, not a React app
+# Build the React frontend so static assets are present in the "build" folder
 [phases.build]
-cmds = []
+cmds = ["npm run build"]
 
 [phases.start]
 cmd = "npm start"
