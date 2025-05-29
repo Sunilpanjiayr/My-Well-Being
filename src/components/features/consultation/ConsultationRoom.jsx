@@ -27,15 +27,13 @@ import './ConsultationRoom.css';
 
 // Server URL configuration for cross-device compatibility
 const getServerUrl = () => {
-  // In production, use your actual server domain
-  // In development, use the local network IP
   if (process.env.NODE_ENV === 'production') {
-    return 'https://your-domain.com'; // Replace with your actual domain
+    return process.env.REACT_APP_SERVER_URL || 'https://my-wellbeing-new01-production.up.railway.app'; // REMOVED TRAILING SLASH
   }
   
   // For local development, you need to use your machine's IP address
   // Find your IP with: ipconfig (Windows) or ifconfig (Mac/Linux)
-  const LOCAL_IP = '192.168.1.100'; // REPLACE THIS WITH YOUR ACTUAL LOCAL IP
+  const LOCAL_IP = '192.168.9.220'; // REPLACE THIS WITH YOUR ACTUAL LOCAL IP
   return `http://${LOCAL_IP}:3001`;
 };
 
