@@ -28,14 +28,15 @@ import './ConsultationRoom.css';
 // Server URL configuration for cross-device compatibility
 const getServerUrl = () => {
   if (process.env.NODE_ENV === 'production') {
-    return process.env.REACT_APP_SERVER_URL || 'https://my-wellbeing-new01-production.up.railway.app'; // REMOVED TRAILING SLASH
+    // This reads REACT_APP_SERVER_URL from your .env file
+    return process.env.REACT_APP_SERVER_URL || 'https://my-wellbeing-new01-production.up.railway.app';
   }
   
-  // For local development, you need to use your machine's IP address
-  // Find your IP with: ipconfig (Windows) or ifconfig (Mac/Linux)
-  const LOCAL_IP = '192.168.9.220'; // REPLACE THIS WITH YOUR ACTUAL LOCAL IP
+  // Development fallback (for local testing)
+  const LOCAL_IP = '192.168.9.220';
   return `http://${LOCAL_IP}:3001`;
 };
+
 
 const SERVER_URL = getServerUrl();
 
