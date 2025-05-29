@@ -3,13 +3,14 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const { ExpressPeerServer } = require('peer');
-
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 
-// CRITICAL: Define PORT early so it's available everywhere
-const PORT = process.env.PORT || 3001;
+// CRITICAL: Define PORT early - FIXED FOR RAILWAY
+const PORT = process.env.PORT || 8080; // Changed from 3001 to 8080
 
 // Get server URL based on environment
 function getServerUrl() {
@@ -19,7 +20,7 @@ function getServerUrl() {
   }
   
   // Development fallback
-  return 'http://localhost:3001';
+  return `http://localhost:${PORT}`;
 }
 
 const SERVER_URL = getServerUrl();
@@ -29,6 +30,41 @@ console.log('Environment:', process.env.NODE_ENV);
 console.log('Server URL:', SERVER_URL);
 console.log('Railway Domain:', process.env.RAILWAY_PUBLIC_DOMAIN);
 console.log('Port:', PORT);
+console.log('Current working directory:', process.cwd());
+console.log('__dirname:', __dirname);
+
+// DIAGNOSTIC: Check if build folder exists
+const buildPath = path.join(__dirname, 'build');
+console.log('Looking for build folder at:', buildPath);
+
+try {
+  if (fs.existsSync(buildPath)) {
+    console.log('✅ Build folder found!');
+    const buildContents = fs.readdirSync(buildPath);
+    console.log('📁 Build folder contents:', buildContents);
+    
+    // Check for index.html specifically
+    const indexPath = path.join(buildPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      console.log('✅ index.html found in build folder');
+    } else {
+      console.log('❌ index.html NOT found in build folder');
+    }
+  } else {
+    console.log('❌ Build folder NOT found at:', buildPath);
+    
+    // List what IS in the current directory
+    console.log('📁 Current directory contents:');
+    try {
+      const currentDirContents = fs.readdirSync(__dirname);
+      console.log(currentDirContents);
+    } catch (err) {
+      console.log('Error reading current directory:', err.message);
+    }
+  }
+} catch (error) {
+  console.log('❌ Error checking build folder:', error.message);
+}
 
 // CORS configuration for Railway
 const corsOptions = {
@@ -39,10 +75,6 @@ const corsOptions = {
     // Railway domains
     /^https:\/\/.*\.railway\.app$/,
     /^https:\/\/.*\.up\.railway\.app$/,
-    
-    // Add your frontend domains here
-    // "https://your-frontend-domain.vercel.app",
-    // "https://your-frontend-domain.netlify.app",
     
     "https://my-wellbeing-new01-production.up.railway.app",
     
@@ -60,13 +92,21 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.options('*', cors(corsOptions));
 
-const path = require('path');
-app.use(express.static(path.join(__dirname, 'build')));
-
-// For SPA (Single Page App) like React, send index.html for any unmatched route
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+// IMPROVED: Static file serving with better error handling
+if (fs.existsSync(buildPath)) {
+  console.log('🎯 Setting up static file serving from:', buildPath);
+  
+  // Serve static files from build directory
+  app.use(express.static(buildPath, {
+    maxAge: '1d', // Cache for 1 day in production
+    etag: true,
+    lastModified: true
+  }));
+  
+  console.log('✅ Static file middleware configured');
+} else {
+  console.log('⚠️ Skipping static file serving - build folder not found');
+}
 
 // Store active rooms and their participants
 const rooms = new Map();
@@ -74,30 +114,8 @@ const userSocketMap = new Map();
 const socketUserMap = new Map();
 const connectionTimestamps = new Map();
 
-// CRITICAL: Root endpoint - Railway needs this to respond
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Medical Consultation WebRTC Server',
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    server: {
-      url: SERVER_URL,
-      port: PORT,
-      railway: {
-        domain: process.env.RAILWAY_PUBLIC_DOMAIN,
-        service: process.env.RAILWAY_SERVICE_NAME
-      }
-    },
-    endpoints: {
-      health: '/health',
-      peerjs: '/peerjs/myapp'
-    }
-  });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
+// CRITICAL: API endpoints BEFORE catch-all route
+app.get('/api/health', (req, res) => {
   const roomsInfo = Array.from(rooms.entries()).map(([roomId, users]) => ({
     roomId,
     users: Array.from(users),
@@ -123,6 +141,37 @@ app.get('/health', (req, res) => {
     peerServer: {
       path: '/peerjs/myapp',
       status: 'running'
+    },
+    buildFolder: {
+      exists: fs.existsSync(buildPath),
+      path: buildPath
+    }
+  });
+});
+
+// Health check endpoint (alternative path)
+app.get('/health', (req, res) => {
+  res.redirect('/api/health');
+});
+
+// API status endpoint
+app.get('/api/status', (req, res) => {
+  res.json({
+    message: 'Medical Consultation WebRTC Server API',
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    server: {
+      url: SERVER_URL,
+      port: PORT,
+      railway: {
+        domain: process.env.RAILWAY_PUBLIC_DOMAIN,
+        service: process.env.RAILWAY_SERVICE_NAME
+      }
+    },
+    endpoints: {
+      health: '/api/health',
+      peerjs: '/peerjs/myapp'
     }
   });
 });
@@ -301,11 +350,37 @@ function handleUserLeaving(socket, roomId) {
   }
 }
 
-// Error handling - NOW PORT is defined
+// IMPORTANT: Catch-all route for SPA (MUST be LAST)
+app.get('*', (req, res) => {
+  const indexPath = path.join(buildPath, 'index.html');
+  
+  console.log('🔍 Catch-all route hit for:', req.path);
+  console.log('🔍 Looking for index.html at:', indexPath);
+  
+  if (fs.existsSync(indexPath)) {
+    console.log('✅ Serving index.html');
+    res.sendFile(indexPath);
+  } else {
+    console.log('❌ index.html not found, sending API response');
+    res.status(404).json({
+      error: 'Frontend not found',
+      message: 'This appears to be a backend API server. Frontend may need to be built or deployed separately.',
+      availableEndpoints: [
+        '/api/health',
+        '/api/status',
+        '/peerjs/myapp'
+      ],
+      buildPath: buildPath,
+      buildExists: fs.existsSync(buildPath)
+    });
+  }
+});
+
+// Error handling
 server.on('error', (error) => {
   console.error('💥 Server error:', error);
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} already in use`);  // ✅ PORT is now defined
+    console.error(`Port ${PORT} already in use`);
     process.exit(1);
   }
 });
@@ -350,6 +425,7 @@ server.listen(PORT, '0.0.0.0', () => {
   
   if (process.env.RAILWAY_PUBLIC_DOMAIN) {
     console.log(`✅ Railway URL: https://${process.env.RAILWAY_PUBLIC_DOMAIN}`);
+    console.log(`🌐 Try: https://${process.env.RAILWAY_PUBLIC_DOMAIN}/api/health`);
   }
   
   console.log('✅ Ready for video consultations!');

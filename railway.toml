@@ -1,0 +1,11 @@
+[build]
+command = "npm install"
+
+[deploy]
+startCommand = "node server.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on-failure"
+
+[environments.production]
+variables = { NODE_ENV = "production" }
