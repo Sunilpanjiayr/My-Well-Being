@@ -7,6 +7,9 @@ const { ExpressPeerServer } = require('peer');
 const app = express();
 const server = http.createServer(app);
 
+// CRITICAL: Define PORT early so it's available everywhere
+const PORT = process.env.PORT || 3001;
+
 // Get server URL based on environment
 function getServerUrl() {
   if (process.env.NODE_ENV === 'production') {
@@ -24,6 +27,7 @@ console.log('🚀 Starting Medical Consultation Server...');
 console.log('Environment:', process.env.NODE_ENV);
 console.log('Server URL:', SERVER_URL);
 console.log('Railway Domain:', process.env.RAILWAY_PUBLIC_DOMAIN);
+console.log('Port:', PORT);
 
 // CORS configuration for Railway
 const corsOptions = {
@@ -70,6 +74,7 @@ app.get('/', (req, res) => {
     environment: process.env.NODE_ENV,
     server: {
       url: SERVER_URL,
+      port: PORT,
       railway: {
         domain: process.env.RAILWAY_PUBLIC_DOMAIN,
         service: process.env.RAILWAY_SERVICE_NAME
@@ -287,11 +292,11 @@ function handleUserLeaving(socket, roomId) {
   }
 }
 
-// Error handling
+// Error handling - NOW PORT is defined
 server.on('error', (error) => {
   console.error('💥 Server error:', error);
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} already in use`);
+    console.error(`Port ${PORT} already in use`);  // ✅ PORT is now defined
     process.exit(1);
   }
 });
@@ -330,8 +335,6 @@ function gracefulShutdown(signal) {
 }
 
 // Start server - CRITICAL: Use Railway's PORT and bind to 0.0.0.0
-const PORT = process.env.PORT || 3001;
-
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`✅ Environment: ${process.env.NODE_ENV}`);
