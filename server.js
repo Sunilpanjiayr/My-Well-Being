@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const { ExpressPeerServer } = require('peer');
 
+
 const app = express();
 const server = http.createServer(app);
 
@@ -58,6 +59,14 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.options('*', cors(corsOptions));
+
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'build')));
+
+// For SPA (Single Page App) like React, send index.html for any unmatched route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 
 // Store active rooms and their participants
 const rooms = new Map();

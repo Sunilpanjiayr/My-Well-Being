@@ -19,7 +19,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { SidebarProvider } from './contexts/SidebarContext';
 import './App.css';
 import ConsultationRoom from './components/features/consultation/ConsultationRoom';
-import JitsiTest from './components/JitsiTest';
+
 
 // Import Forum Components
 import CommunityForum from './components/features/forum/CommunityForum';
@@ -41,7 +41,7 @@ const AppLayout = () => {
           <Route path="/doctorLogin" element={<DoctorLogin />} />
           <Route path="/doctorSignup" element={<DoctorSignup />} />
           <Route path="/register" element={<Signup />} />
-          <Route path="/test-jitsi" element={<JitsiTest />} />
+
           
           {/* Forum Routes - Place specific routes before wildcards */}
           <Route path="/forum/topic/:topicId" element={<TopicDetailView />} />
