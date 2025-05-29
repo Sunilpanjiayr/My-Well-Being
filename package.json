@@ -41,8 +41,7 @@
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
     "web-vitals": "^2.1.4",
-    "peer": "^1.0.2",
-    "peerjs": "^1.5.4",
+  
     "ws":"^8.18.2"
   },
   "scripts": {
