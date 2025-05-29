@@ -25,158 +25,6 @@ function TopicDetailView() {
   const [reportItemId, setReportItemId] = useState(null);
   const [reportItemType, setReportItemType] = useState(null);
 
-  // Placeholder topics data
-  const placeholderTopicsData = {
-    '1': {
-      _id: '1',
-      title: 'Best Morning Routine for Better Health',
-      content: 'I\'ve been working on optimizing my morning routine and wanted to share what\'s been working for me. Starting with 10 minutes of meditation, followed by a glass of water with lemon, and then 20 minutes of light exercise has completely transformed my energy levels throughout the day.\n\nThe key is consistency - I\'ve been doing this for 3 months now and the difference is incredible. My sleep quality has improved, I feel more focused during the day, and my overall mood is much better.\n\nWhat does your morning routine look like? I\'d love to hear what works for others!',
-      category: 'wellness',
-      author: { 
-        username: 'HealthyLiving2024', 
-        joinDate: '2024-01-15T00:00:00Z',
-        avatar: 'H'
-      },
-      createdAt: '2024-05-25T08:00:00Z',
-      tags: ['morningroutine', 'wellness', 'meditation'],
-      likes: 24,
-      views: 156,
-      isPinned: true,
-      isLocked: false,
-      isLiked: false,
-      replies: [
-        {
-          _id: 'r1',
-          content: 'This is so inspiring! I\'ve been struggling to establish a consistent morning routine. Going to try the meditation first approach - I usually jump straight into checking emails which sets a stressful tone for the day.',
-          author: { username: 'MorningStruggler', joinDate: '2024-03-20T00:00:00Z' },
-          createdAt: '2024-05-25T10:30:00Z',
-          likes: 8,
-          isLiked: false,
-          parentReplyId: null,
-          attachments: []
-        },
-        {
-          _id: 'r2',
-          content: 'The lemon water tip is gold! I\'ve been doing this for years. It really helps with hydration and digestion. Have you tried adding a pinch of sea salt? It helps with electrolyte balance.',
-          author: { username: 'WellnessCoach Sarah', joinDate: '2023-09-10T00:00:00Z' },
-          createdAt: '2024-05-25T12:15:00Z',
-          likes: 12,
-          isLiked: true,
-          parentReplyId: null,
-          attachments: []
-        },
-        {
-          _id: 'r3',
-          content: 'Thanks for the tip! I hadn\'t thought about adding sea salt. Will definitely try that tomorrow morning.',
-          author: { username: 'HealthyLiving2024', joinDate: '2024-01-15T00:00:00Z' },
-          createdAt: '2024-05-25T14:20:00Z',
-          likes: 3,
-          isLiked: false,
-          parentReplyId: 'r2',
-          attachments: []
-        },
-        {
-          _id: 'r4',
-          content: 'What type of light exercise do you do? I\'m thinking of adding some movement to my morning but not sure where to start.',
-          author: { username: 'FitnessNewbie', joinDate: '2024-04-12T00:00:00Z' },
-          createdAt: '2024-05-26T08:45:00Z',
-          likes: 5,
-          isLiked: false,
-          parentReplyId: null,
-          attachments: []
-        },
-        {
-          _id: 'r5',
-          content: 'I usually do a mix of yoga stretches and bodyweight exercises - nothing too intense! Maybe 10 minutes of stretching followed by 10 minutes of light cardio like jumping jacks or mountain climbers. The goal is to wake up the body, not exhaust it.',
-          author: { username: 'HealthyLiving2024', joinDate: '2024-01-15T00:00:00Z' },
-          createdAt: '2024-05-26T09:30:00Z',
-          likes: 7,
-          isLiked: false,
-          parentReplyId: 'r4',
-          attachments: []
-        }
-      ]
-    },
-    '2': {
-      _id: '2',
-      title: 'Struggling with Sleep - Need Advice',
-      content: 'I\'ve been having trouble falling asleep for the past few weeks. I\'ve tried reducing screen time before bed and creating a relaxing environment, but nothing seems to work.\n\nMy mind just races when I hit the pillow. I keep thinking about work, tomorrow\'s tasks, or random things. It\'s so frustrating because I know I need the sleep, but I can\'t seem to turn off my brain.\n\nHas anyone else experienced this? What helped you get back to a normal sleep pattern?',
-      category: 'sleep',
-      author: { 
-        username: 'Sunil7', 
-        joinDate: '2025-04-10T00:00:00Z' 
-      },
-      createdAt: '2025-05-05T22:30:00Z',
-      tags: ['sleep', 'insomnia', 'help'],
-      likes: 15,
-      views: 89,
-      isPinned: false,
-      isLocked: false,
-      isLiked: true,
-      replies: [
-        {
-          _id: 'r6',
-          content: 'I totally understand this! Racing thoughts kept me awake for months. What really helped me was keeping a notebook by my bed to write down anything that came to mind. Once it\'s on paper, my brain seems to let go of it.',
-          author: { username: 'Avi007', joinDate: '2025-02-05T00:00:00Z' },
-          createdAt: '2025-05-27T23:15:00Z',
-          likes: 18,
-          isLiked: true,
-          parentReplyId: null,
-          attachments: []
-        },
-        {
-          _id: 'r7',
-          content: 'Have you tried progressive muscle relaxation? There are some great guided audio sessions on YouTube. Start with your toes and work your way up, tensing and releasing each muscle group.',
-          author: { username: 'RelaxationExpert', joinDate: '2023-11-28T00:00:00Z' },
-          createdAt: '2024-05-28T07:20:00Z',
-          likes: 11,
-          isLiked: false,
-          parentReplyId: null,
-          attachments: []
-        }
-      ]
-    },
-    '3': {
-      _id: '3',
-      title: 'Mediterranean Diet Success Story',
-      content: 'After 6 months on the Mediterranean diet, I\'ve lost 25 pounds and my energy levels are through the roof! My doctor says my cholesterol levels have improved significantly too.\n\nHere\'s what I learned along the way:\n\n1. Meal prep is essential - I spend Sunday afternoons preparing vegetables and proteins for the week\n2. Olive oil really is liquid gold - don\'t skimp on quality\n3. Fish twice a week made a huge difference in how I felt\n4. The hardest part was giving up processed snacks, but fresh fruits and nuts are so much more satisfying\n\nThe best part? I never felt like I was \"dieting\" - the food is delicious and I never felt deprived. This feels sustainable for life!',
-      category: 'success',
-      author: { 
-        username: 'MediterraneanMike', 
-        joinDate: '2023-11-20T00:00:00Z' 
-      },
-      createdAt: '2024-05-26T14:15:00Z',
-      tags: ['mediterraneandiet', 'success', 'nutrition', 'weightloss'],
-      likes: 45,
-      views: 234,
-      isPinned: false,
-      isLocked: false,
-      isLiked: false,
-      replies: [
-        {
-          _id: 'r8',
-          content: 'Congratulations! This is so motivating. Can you share some of your go-to meal prep recipes? I\'m just starting out and could use some inspiration.',
-          author: { username: 'NewToMedDiet', joinDate: '2024-05-15T00:00:00Z' },
-          createdAt: '2024-05-26T16:30:00Z',
-          likes: 12,
-          isLiked: false,
-          parentReplyId: null,
-          attachments: []
-        },
-        {
-          _id: 'r9',
-          content: 'Amazing results! How long did it take before you started seeing changes in your energy levels?',
-          author: { username: 'EnergySeeker', joinDate: '2024-01-08T00:00:00Z' },
-          createdAt: '2024-05-26T18:45:00Z',
-          likes: 8,
-          isLiked: false,
-          parentReplyId: null,
-          attachments: []
-        }
-      ]
-    }
-  };
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(setCurrentUser);
     return () => unsubscribe();
@@ -184,7 +32,7 @@ function TopicDetailView() {
 
   useEffect(() => {
     if (topicId) {
-      console.log('Loading topic:', topicId);
+      console.log('Loading topic:', topicId); // Debug log
       loadTopic();
     }
   }, [topicId]);
@@ -192,21 +40,17 @@ function TopicDetailView() {
   const loadTopic = async () => {
     try {
       setLoading(true);
-      console.log('Fetching topic data...');
+      console.log('Fetching topic data...'); // Debug log
+      const result = await fetchTopic(topicId);
+      console.log('Topic data received:', result); // Debug log
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const topicData = placeholderTopicsData[topicId];
-      
-      if (topicData) {
-        // Increment view count
-        topicData.views += 1;
-        setTopic(topicData);
-        console.log('Topic data loaded:', topicData);
+      if (result && result.topic) {
+        setTopic(result.topic);
+      } else if (result && result._id) {
+        setTopic(result);
       } else {
-        console.error('Topic not found:', topicId);
-        alert('Topic not found');
+        console.error('Invalid topic data structure:', result);
+        alert('Failed to load topic - invalid data structure');
         navigate('/forum');
       }
     } catch (error) {
@@ -225,18 +69,15 @@ function TopicDetailView() {
     }
 
     try {
-      console.log('Liking topic:', topicId);
-      
-      const newIsLiked = !topic.isLiked;
-      const newLikes = newIsLiked ? topic.likes + 1 : topic.likes - 1;
+      console.log('Liking topic:', topicId); // Debug log
+      const result = await likeTopic(topicId);
+      console.log('Like result:', result); // Debug log
       
       setTopic(prev => ({
         ...prev,
-        likes: newLikes,
-        isLiked: newIsLiked
+        likes: result.likes,
+        isLiked: result.isLiked
       }));
-      
-      console.log('Topic liked successfully');
     } catch (error) {
       console.error('Error liking topic:', error);
       alert('Failed to like topic: ' + error.message);
@@ -250,21 +91,18 @@ function TopicDetailView() {
     }
 
     try {
-      console.log('Liking reply:', replyId);
+      console.log('Liking reply:', replyId); // Debug log
+      const result = await likeReply(replyId);
+      console.log('Reply like result:', result); // Debug log
       
       setTopic(prev => ({
         ...prev,
-        replies: prev.replies.map(reply => {
-          if (reply._id === replyId) {
-            const newIsLiked = !reply.isLiked;
-            const newLikes = newIsLiked ? reply.likes + 1 : reply.likes - 1;
-            return { ...reply, likes: newLikes, isLiked: newIsLiked };
-          }
-          return reply;
-        })
+        replies: prev.replies.map(reply => 
+          reply._id === replyId 
+            ? { ...reply, likes: result.likes, isLiked: result.isLiked }
+            : reply
+        )
       }));
-      
-      console.log('Reply liked successfully');
     } catch (error) {
       console.error('Error liking reply:', error);
       alert('Failed to like reply: ' + error.message);
@@ -283,46 +121,38 @@ function TopicDetailView() {
     }
 
     try {
-      console.log('Submitting reply:', { topicId, content: replyContent, parentReplyId: replyingTo });
+      console.log('Submitting reply:', { topicId, content: replyContent, parentReplyId: replyingTo }); // Debug log
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newReply = {
-        _id: 'r' + Date.now(),
+      const replyData = {
         content: replyContent.trim(),
-        author: { 
-          username: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-          joinDate: new Date().toISOString()
-        },
-        createdAt: new Date().toISOString(),
-        likes: 0,
-        isLiked: false,
-        parentReplyId: replyingTo,
-        attachments: replyFiles.map(file => ({
-          fileName: file.name,
-          fileType: file.type.startsWith('image/') ? 'image' : 'pdf',
-          fileUrl: URL.createObjectURL(file) // This is just for demo - in real app this would be uploaded
-        }))
+        parentReplyId: replyingTo
       };
 
-      // Add reply to topic
-      setTopic(prev => ({
-        ...prev,
-        replies: [...prev.replies, newReply]
-      }));
+      let result;
+      if (replyFiles.length > 0) {
+        console.log('Creating reply with attachments'); // Debug log
+        result = await createReplyWithAttachments(topicId, replyData, replyFiles);
+      } else {
+        console.log('Creating reply without attachments'); // Debug log
+        result = await createReply(topicId, replyData);
+      }
+
+      console.log('Reply creation result:', result); // Debug log
 
       // Clear form
       setReplyContent('');
       setReplyFiles([]);
       setReplyingTo(null);
       
-      console.log('Reply created successfully');
-      alert('Reply posted successfully!');
+      // Reload topic to show new reply
+      console.log('Reloading topic after reply submission'); // Debug log
+      await loadTopic();
       
+      alert('Reply posted successfully!'); // Success feedback
     } catch (error) {
       console.error('Error submitting reply:', error);
-      alert('Failed to submit reply: ' + error.message);
+      console.error('Error details:', error.response?.data || error.message); // More detailed error
+      alert('Failed to submit reply: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -344,16 +174,13 @@ function TopicDetailView() {
     }
 
     try {
-      console.log('Submitting report:', { itemId: reportItemId, itemType: reportItemType, reason: reportReason });
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      console.log('Submitting report:', { itemId: reportItemId, itemType: reportItemType, reason: reportReason }); // Debug log
+      await reportContent(reportItemId, reportItemType, reportReason);
       setShowReportModal(false);
       setReportReason('');
       setReportItemId(null);
       setReportItemType(null);
-      alert('Content reported successfully. Thank you for helping keep our community safe.');
+      alert('Content reported successfully');
     } catch (error) {
       console.error('Error reporting content:', error);
       alert('Failed to report content: ' + error.message);
@@ -403,16 +230,16 @@ function TopicDetailView() {
 
   const renderReplies = (replies, parentId = null, depth = 0) => {
     if (!Array.isArray(replies)) {
-      console.log('Replies is not an array:', replies);
+      console.log('Replies is not an array:', replies); // Debug log
       return null;
     }
 
-    console.log('Rendering replies:', replies.length, 'total replies');
+    console.log('Rendering replies:', replies.length, 'total replies'); // Debug log
 
     return replies
       .filter(reply => reply.parentReplyId === parentId)
       .map(reply => (
-        <div key={reply._id} className={`reply-item depth-${Math.min(depth, 3)}`}>
+        <div key={reply._id} className={`reply-item depth-${depth}`}>
           <div className="reply-author">
             <div className="author-avatar">
               {reply.author?.username?.charAt(0) || '👤'}
@@ -477,11 +304,9 @@ function TopicDetailView() {
           </div>
 
           {/* Nested replies */}
-          {depth < 3 && (
-            <div className="nested-replies">
-              {renderReplies(replies, reply._id, depth + 1)}
-            </div>
-          )}
+          <div className="nested-replies">
+            {renderReplies(replies, reply._id, depth + 1)}
+          </div>
         </div>
       ));
   };
@@ -502,8 +327,8 @@ function TopicDetailView() {
     );
   }
 
-  console.log('Rendering topic:', topic);
-  console.log('Topic replies:', topic.replies);
+  console.log('Rendering topic:', topic); // Debug log
+  console.log('Topic replies:', topic.replies); // Debug log
 
   return (
     <div className="topic-detail-container">
@@ -548,9 +373,7 @@ function TopicDetailView() {
         </div>
 
         <div className="topic-text">
-          {topic.content.split('\n').map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
+          <p>{topic.content}</p>
         </div>
 
         {/* Topic Actions */}

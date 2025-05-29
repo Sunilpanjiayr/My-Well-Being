@@ -11,9 +11,9 @@ import {
   onAuthStateChanged,
   updateProfile
 } from "firebase/auth";
-import { db, auth, googleProvider } from "./firebase"; // Make sure db is exported from firebase.js
+import { db, auth, googleProvider } from "./firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import PhoneInput from 'react-phone-input-2';
 import axios from "axios";
@@ -40,7 +40,7 @@ const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [username, setUsername] = useState(""); // New username state
+  const [username, setUsername] = useState("");
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   
@@ -54,6 +54,177 @@ const Signup = () => {
       setAvatarPreview(gender === "male" ? manAvatar : womanAvatar);
     }
   }, [gender, avatarFile]);
+
+  // CONSULTATION SETUP FUNCTIONS
+  
+  // Generate consultation-ready user profile
+  const createConsultationProfile = async (user, userType, additionalData = {}) => {
+    try {
+      const consultationProfile = {
+        uid: user.uid,
+        displayName: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email,
+        photoURL: user.photoURL,
+        userType: userType, // 'patient' or 'doctor'
+        
+        // Consultation-specific settings
+        consultationSettings: {
+          preferredVideoQuality: 'auto',
+          autoJoinVideo: true,
+          autoJoinAudio: true,
+          enableChat: true,
+          enableFileSharing: true,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          language: navigator.language || 'en-US'
+        },
+        
+        // Video conference preferences
+        videoPreferences: {
+          defaultVideoMuted: false,
+          defaultAudioMuted: false,
+          enableScreenShare: userType === 'doctor',
+          enableRecording: userType === 'doctor' && additionalData.isVerified,
+          maxParticipants: userType === 'doctor' ? 10 : 2
+        },
+        
+        // Additional user-specific data
+        ...additionalData,
+        
+        // Timestamps
+        createdAt: new Date().toISOString(),
+        lastConsultationAt: null,
+        consultationCount: 0,
+        
+        // Status
+        isActive: true,
+        consultationStatus: 'available' // available, busy, offline
+      };
+
+      // Save to appropriate collection
+      const collection = userType === 'doctor' ? 'doctors' : 'users';
+      await setDoc(doc(db, collection, user.uid), consultationProfile);
+      
+      // Also save a consultation-ready profile in a unified collection
+      await setDoc(doc(db, 'consultationProfiles', user.uid), {
+        uid: user.uid,
+        displayName: consultationProfile.displayName,
+        userType: userType,
+        consultationSettings: consultationProfile.consultationSettings,
+        videoPreferences: consultationProfile.videoPreferences,
+        isActive: true,
+        lastUpdated: new Date().toISOString()
+      });
+
+      console.log(`✅ Created consultation profile for ${userType}:`, user.uid);
+      return consultationProfile;
+      
+    } catch (error) {
+      console.error('❌ Error creating consultation profile:', error);
+      throw error;
+    }
+  };
+
+  // Generate deterministic consultation room identifier
+  const generateConsultationRoomId = (doctorId, patientId, scheduledTime = null) => {
+    const timestamp = scheduledTime ? new Date(scheduledTime).getTime() : Date.now();
+    const participants = [doctorId, patientId].sort().join('-');
+    const dateStr = new Date(timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    // Create a deterministic but unique room ID
+    const roomData = `${participants}-${dateStr}`;
+    const roomHash = btoa(roomData).replace(/[^a-zA-Z0-9]/g, '').substring(0, 12);
+    
+    return `consult-${roomHash}`;
+  };
+
+  // Create a consultation session
+  const createConsultationSession = async (doctorId, patientId, consultationType = 'general') => {
+    try {
+      const roomId = generateConsultationRoomId(doctorId, patientId);
+      
+      const consultationData = {
+        id: roomId,
+        doctorId: doctorId,
+        patientId: patientId,
+        type: consultationType,
+        status: 'scheduled',
+        
+        // Video conference settings
+        videoRoom: {
+          roomName: `health-${roomId}`,
+          maxParticipants: 2,
+          requireAuth: false, // Keep false for public Jitsi
+          enableRecording: false,
+          enableScreenShare: true,
+          enableChat: true
+        },
+        
+        // Participant info
+        participants: {
+          [doctorId]: {
+            role: 'doctor',
+            status: 'invited',
+            joinedAt: null
+          },
+          [patientId]: {
+            role: 'patient', 
+            status: 'invited',
+            joinedAt: null
+          }
+        },
+        
+        // Timestamps
+        createdAt: serverTimestamp(),
+        scheduledDateTime: serverTimestamp(),
+        startedAt: null,
+        endedAt: null,
+        lastActivity: serverTimestamp(),
+        
+        // Settings
+        settings: {
+          autoEndAfterMinutes: 60, // Auto-end after 1 hour of inactivity
+          allowFileSharing: true,
+          enableChatTranscript: true,
+          notifyOnJoin: true
+        }
+      };
+
+      // Save consultation to Firestore
+      await setDoc(doc(db, 'consultations', roomId), consultationData);
+      
+      console.log('✅ Created consultation session:', roomId);
+      return { roomId, consultationData };
+      
+    } catch (error) {
+      console.error('❌ Error creating consultation session:', error);
+      throw error;
+    }
+  };
+
+  // Update user profile after successful signup
+  const setupUserForConsultations = async (user, userType, userData) => {
+    try {
+      // Create consultation profile
+      await createConsultationProfile(user, userType, userData);
+      
+      // Update user's auth profile with consultation-ready display name
+      const displayName = userData.username || user.displayName || user.email?.split('@')[0];
+      
+      await updateProfile(user, {
+        displayName: displayName,
+        photoURL: user.photoURL || userData.avatarUrl
+      });
+      
+      console.log('✅ User setup completed for consultations');
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Error setting up user for consultations:', error);
+      return false;
+    }
+  };
+
+  // EXISTING FUNCTIONS (unchanged)
 
   // Styles
   const styles = {
@@ -548,7 +719,8 @@ const Signup = () => {
       await setDoc(doc(db, 'usernames', usernameToSave), {
         username: username, // Original case for display
         createdAt: new Date().toISOString(),
-        userId: userId || 'pending'
+        userId: userId || 'pending',
+        userType: 'patient' // Add userType to distinguish between patients and doctors
       });
       
       return true;
@@ -709,7 +881,7 @@ const Signup = () => {
     }
   }, [step]);
 
-  // Email/Password Sign-Up
+  // ENHANCED Email/Password Sign-Up with Consultation Setup
   const handleEmailSignup = async (e) => {
     e.preventDefault();
     
@@ -742,24 +914,26 @@ const Signup = () => {
 
       // Upload avatar and get the URL
       const avatarUrl = await uploadAvatar(user.uid);
-
-      // Update profile with username and avatar
-      await updateProfile(user, {
-        displayName: username,
-        photoURL: avatarUrl
-      });
       
-      // Save username to Firestore and link it to this user
-      await saveUsername(username, user.uid);
-      
-      // Save user details to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      // Prepare user data for consultation setup
+      const userData = {
         username,
         email: user.email,
         gender,
         avatarUrl,
-        createdAt: new Date().toISOString()
-      });
+        // Add consultation-specific data for patients
+        medicalInfo: {
+          hasAllergies: false,
+          currentMedications: [],
+          emergencyContact: null
+        }
+      };
+
+      // Setup user for consultations (this replaces the old profile update)
+      await setupUserForConsultations(user, 'patient', userData);
+      
+      // Save username to Firestore and link it to this user
+      await saveUsername(username, user.uid);
 
       // Send email verification
       await sendEmailVerification(user);
@@ -772,7 +946,7 @@ const Signup = () => {
     }
   };
 
-  // Google Sign-Up
+  // ENHANCED Google Sign-Up with Consultation Setup
   const handleGoogleSignup = async () => {
     // If username is provided, validate it
     if (username) {
@@ -812,31 +986,31 @@ const Signup = () => {
       
       // If username is provided, update the profile and save to Firestore
       if (username && username.length >= 3) {
-        await updateProfile(user, {
-          displayName: username,
-          photoURL: avatarUrl
-        });
-        
+        displayName = username;
         await saveUsername(username, user.uid);
       } else if (!user.displayName) {
         // If user has no display name from Google, use email prefix
         displayName = user.email.split('@')[0];
-        await updateProfile(user, {
-          displayName,
-          photoURL: avatarUrl
-        });
       } else {
         displayName = user.displayName;
       }
       
-      // Save user details to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      // Prepare user data for consultation setup
+      const userData = {
         username: displayName,
         email: user.email,
         gender,
         avatarUrl,
-        createdAt: new Date().toISOString()
-      });
+        // Add consultation-specific data for patients
+        medicalInfo: {
+          hasAllergies: false,
+          currentMedications: [],
+          emergencyContact: null
+        }
+      };
+
+      // Setup user for consultations
+      await setupUserForConsultations(user, 'patient', userData);
       
       navigate("/dashboardHome"); // Redirect to dashboard after successful sign-up
     } catch (error) {
@@ -847,7 +1021,7 @@ const Signup = () => {
     }
   };
 
-  // Phone Number Sign-Up
+  // ENHANCED Phone Number Sign-Up with Consultation Setup
   const handlePhoneSignup = async () => {
     if (!phone) {
       setError("Please enter a phone number");
@@ -972,7 +1146,7 @@ const Signup = () => {
     }
   };
 
-  // Verify OTP
+  // ENHANCED Verify OTP with Consultation Setup
   const handleVerifyOtp = async () => {
     if (!otp) {
       setError("Please enter the OTP code");
@@ -1017,43 +1191,32 @@ const Signup = () => {
       if (storedUsername && result.user) {
         // Check username again before setting
         const exists = await checkUsernameExists(storedUsername);
+        let finalUsername = storedUsername;
+        
         if (exists) {
           // Generate a random suffix for the username
           const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-          const newUsername = `${storedUsername}${randomSuffix}`;
-          
-          await updateProfile(result.user, {
-            displayName: newUsername,
-            photoURL: avatarUrl
-          });
-          await saveUsername(newUsername, result.user.uid);
-          
-          // Save user details to Firestore
-          await setDoc(doc(db, 'users', result.user.uid), {
-            username: newUsername,
-            phone: window.sessionStorage.getItem("phoneNumber"),
-            gender: storedGender,
-            avatarUrl,
-            createdAt: new Date().toISOString()
-          });
-          
-          setError(`Your preferred username was taken. You've been assigned: ${newUsername}`);
-        } else {
-          await updateProfile(result.user, {
-            displayName: storedUsername,
-            photoURL: avatarUrl
-          });
-          await saveUsername(storedUsername, result.user.uid);
-          
-          // Save user details to Firestore
-          await setDoc(doc(db, 'users', result.user.uid), {
-            username: storedUsername,
-            phone: window.sessionStorage.getItem("phoneNumber"),
-            gender: storedGender,
-            avatarUrl,
-            createdAt: new Date().toISOString()
-          });
+          finalUsername = `${storedUsername}${randomSuffix}`;
+          setError(`Your preferred username was taken. You've been assigned: ${finalUsername}`);
         }
+        
+        // Prepare user data for consultation setup
+        const userData = {
+          username: finalUsername,
+          phone: window.sessionStorage.getItem("phoneNumber"),
+          gender: storedGender,
+          avatarUrl,
+          // Add consultation-specific data for patients
+          medicalInfo: {
+            hasAllergies: false,
+            currentMedications: [],
+            emergencyContact: null
+          }
+        };
+
+        // Setup user for consultations
+        await setupUserForConsultations(result.user, 'patient', userData);
+        await saveUsername(finalUsername, result.user.uid);
       }
       
       // Clear the storage items
@@ -1083,16 +1246,28 @@ const Signup = () => {
           if (storedUsername) {
             const exists = await checkUsernameExists(storedUsername);
             if (!exists) {
-              await saveUsername(storedUsername, "dev-user-id");
-              
-              // Save user details to Firestore
-              await setDoc(doc(db, 'users', "dev-user-id"), {
+              const userData = {
                 username: storedUsername,
                 phone: phoneNumber,
                 gender: storedGender,
                 avatarUrl: storedGender === "male" ? manAvatar : womanAvatar,
-                createdAt: new Date().toISOString()
-              });
+                medicalInfo: {
+                  hasAllergies: false,
+                  currentMedications: [],
+                  emergencyContact: null
+                }
+              };
+              
+              // Create a mock user for dev mode
+              const mockUser = {
+                uid: "dev-user-id",
+                displayName: storedUsername,
+                email: null,
+                photoURL: userData.avatarUrl
+              };
+              
+              await setupUserForConsultations(mockUser, 'patient', userData);
+              await saveUsername(storedUsername, "dev-user-id");
             }
           }
           window.sessionStorage.removeItem("verificationId");
@@ -1435,179 +1610,354 @@ const Signup = () => {
           <div style={styles.verificationContent}>
             <div style={styles.verificationIconContainer}>
               <svg style={styles.verificationIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 20 002 2z" />
+
               </svg>
+
             </div>
+
             <h2 style={styles.verificationTitle}>Verify Your Email</h2>
+
             
+
             {error && (
+
               <div style={styles.errorMessage}>
+
                 <div style={styles.errorContent}>
+
                   <svg style={styles.errorIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+
                   </svg>
+
                   {error}
+
                 </div>
+
               </div>
+
             )}
+
             
+
             <p style={styles.verificationMessage}>
+
               A verification email has been sent to your inbox. Please click the link in the email to verify your account.
+
             </p>
+
             
+
             <div style={styles.verificationActions}>
+
               <button
+
                 onClick={handleResendEmail}
+
                 style={{...styles.submitButton, ...styles.emailButton}}
+
                 disabled={loading}
+
               >
+
                 {loading ? (
+
                   <span style={styles.loadingIndicator}>
+
                     <svg style={styles.spinner} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+
                       <circle style={styles.spinnerTrack} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+
                       <path style={styles.spinnerPath} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+
                     </svg>
+
                     Sending...
+
                   </span>
+
                 ) : (
+
                   "Resend Verification Email"
+
                 )}
+
               </button>
+
               <button
+
                 onClick={() => setStep("signup")}
+
                 style={styles.secondaryButton}
+
               >
+
                 Back to Sign Up
+
               </button>
+
             </div>
+
             
+
             <div style={styles.verificationNote}>
+
               <p>
+
                 Note: Check your spam or junk folder if you don't see the verification email in your inbox.
+
               </p>
+
             </div>
+
           </div>
+
         </div>
+
         
+
         {/* Footer */}
+
         <footer style={styles.footer}>
+
           <p>© 2025 Health & Wellness Hub. All rights reserved.</p>
+
         </footer>
+
       </div>
+
     </div>
+
   );
+
+
 
   // Render Phone Verification UI
+
   const renderPhoneVerification = () => (
+
     <div style={styles.verificationContainer}>
+
       <div style={styles.verificationWrapper}>
+
         {/* Logo and Header */}
+
         <div style={styles.verificationHeader}>
+
           <div style={styles.logoContainer}>
+
             <svg style={styles.logoIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+
             </svg>
+
           </div>
+
           <h1 style={styles.appTitle}>Health & Wellness Hub</h1>
+
           <p style={styles.appSubtitle}>Phone Verification</p>
+
         </div>
+
+
 
         <div style={styles.verificationBox}>
+
           <div style={styles.verificationContent}>
+
             <div style={styles.verificationIconContainer}>
+
               <svg style={styles.verificationIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+
               </svg>
+
             </div>
+
             <h2 style={styles.verificationTitle}>Verify Your Phone</h2>
+
             
+
             {error && (
+
               <div style={styles.errorMessage}>
+
                 <div style={styles.errorContent}>
+
                   <svg style={styles.errorIcon} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+
                   </svg>
+
                   {error}
+
                 </div>
+
               </div>
+
             )}
+
             
+
             <p style={styles.verificationMessage}>
+
               Enter the OTP sent to your phone number to complete verification.
+
             </p>
+
             
+
             <div style={styles.formGroup}>
+
               <label htmlFor="otp" style={styles.formLabel}>
+
                 Verification Code
+
               </label>
+
               <input
+
                 id="otp"
+
                 type="text"
+
                 placeholder="Enter 6-digit OTP"
+
                 value={otp}
+
                 onChange={(e) => setOtp(e.target.value)}
+
                 required
+
                 style={styles.otpInput}
+
                 maxLength={6}
+
               />
+
             </div>
+
             
+
             <div style={styles.verificationActions}>
+
               <button
+
                 onClick={handleVerifyOtp}
+
                 style={{...styles.submitButton, ...styles.phoneButton}}
+
                 disabled={loading}
+
               >
+
                 {loading ? (
+
                   <span style={styles.loadingIndicator}>
+
                     <svg style={styles.spinner} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+
                       <circle style={styles.spinnerTrack} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+
                       <path style={styles.spinnerPath} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+
                     </svg>
+
                     Verifying...
+
                   </span>
+
                 ) : (
+
                   "Verify OTP"
+
                 )}
+
               </button>
+
               <button
+
                 onClick={() => setStep("signup")}
+
                 style={styles.secondaryButton}
+
               >
+
                 Back to Sign Up
+
               </button>
+
             </div>
+
             
+
             <div style={styles.verificationNote}>
+
               <p>
+
                 Didn't receive the code? <button onClick={handlePhoneSignup} style={styles.resendButton} disabled={loading}>Resend OTP</button>
+
               </p>
+
             </div>
+
           </div>
+
         </div>
+
         
+
         {/* Footer */}
+
         <footer style={styles.footer}>
+
           <p>© 2025 Health & Wellness Hub. All rights reserved.</p>
+
         </footer>
+
       </div>
+
     </div>
+
   );
 
+
+
   // Render the appropriate step
+
   const renderStep = () => {
+
     switch(step) {
+
       case "verifyEmail":
+
         return renderEmailVerification();
+
       case "verifyPhone":
+
         return renderPhoneVerification();
+
       case "signup":
+
       default:
+
         return renderSignupForm();
+
     }
+
   };
 
+
+
   return renderStep();
+
 };
+
+
 
 export default Signup;
