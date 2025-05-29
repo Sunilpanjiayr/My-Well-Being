@@ -1,1508 +1,1874 @@
-/* src/components/features/medicineReminders/MedicineReminders.css */
+/* ========================================
+   Medicine Reminders - Beautiful CSS
+   ======================================== */
 
+/* ========================================
+   Root Variables & Reset
+   ======================================== */
+:root {
+  --primary-color: #667eea;
+  --primary-light: #764ba2;
+  --secondary-color: #f093fb;
+  --accent-color: #4facfe;
+  --success-color: #00f2fe;
+  --warning-color: #ffecd2;
+  --error-color: #ff6b6b;
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --bg-primary: #f7fafc;
+  --bg-secondary: #edf2f7;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ========================================
+   Main Container
+   ======================================== */
 .medicine-reminders {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    var(--bg-primary) 0%,
+    var(--bg-secondary) 100%
+  );
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ========================================
+   Notification Banner
+   ======================================== */
+.notification-banner {
+  margin-bottom: 30px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  animation: slideInDown 0.6s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
   }
-  
-  .medicine-reminders.dark-mode {
-    background-color: #1a1a1a;
-    color: #f0f0f0;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  /* Header Styles */
-  .medicine-reminder-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
+}
+
+.notification-prompt {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-light) 100%
+  );
+  color: white;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.notification-prompt::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='36' cy='24' r='1'/%3E%3Ccircle cx='46' cy='34' r='1'/%3E%3Ccircle cx='16' cy='14' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.prompt-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.notification-icon {
+  font-size: 28px;
+  animation: bell-ring 3s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+@keyframes bell-ring {
+  0%,
+  50%,
+  100% {
+    transform: rotate(0deg);
   }
-  
-  .dark-mode .medicine-reminder-header {
-    border-bottom-color: #333;
+  10%,
+  30% {
+    transform: rotate(-12deg);
   }
-  
-  .header-content h1 {
-    font-size: 28px;
-    margin: 0;
-    color: #2c3e50;
+  20%,
+  40% {
+    transform: rotate(12deg);
   }
-  
-  .dark-mode .header-content h1 {
-    color: #e0e0e0;
+}
+
+.prompt-text {
+  flex: 1;
+}
+
+.prompt-text strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.prompt-text span {
+  font-size: 14px;
+  opacity: 0.95;
+  line-height: 1.4;
+}
+
+.enable-notifications-btn {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.enable-notifications-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.enable-notifications-btn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.enable-notifications-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.enable-notifications-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.notification-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  position: relative;
+}
+
+.notification-status.enabled {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+}
+
+.notification-status.denied {
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+}
+
+.status-icon {
+  font-size: 20px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
   }
-  
-  .header-content p {
-    font-size: 16px;
-    color: #7f8c8d;
-    margin: 5px 0 0;
+  50% {
+    opacity: 0.7;
   }
-  
-  .dark-mode .header-content p {
-    color: #aaa;
+}
+
+.test-notification-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-left: auto;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.test-notification-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ========================================
+   Header Section
+   ======================================== */
+.medicine-reminder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  padding: 30px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.medicine-reminder-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--primary-color),
+    var(--secondary-color),
+    var(--accent-color)
+  );
+}
+
+.header-content h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.header-content p {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 400;
+}
+
+.add-medication-button {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
+  color: white;
+  border: none;
+  padding: 16px 24px;
+  border-radius: var(--radius-lg);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-md);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-medication-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.add-medication-button:hover::before {
+  left: 100%;
+}
+
+.add-medication-button:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-xl);
+}
+
+.medication-icon {
+  font-size: 20px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
   }
-  
-  .add-medication-button {
-    display: flex;
-    align-items: center;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 16px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  40% {
+    transform: translateY(-8px);
   }
-  
-  .add-medication-button:hover {
-    background-color: #3a7bc8;
+  60% {
+    transform: translateY(-4px);
   }
-  
-  .medication-icon {
-    margin-right: 8px;
-    font-size: 18px;
+}
+
+/* ========================================
+   Tabs Navigation
+   ======================================== */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 30px;
+  background: var(--bg-card);
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.tabs button {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tabs button:hover {
+  color: var(--primary-color);
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.tabs button.active {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
+  color: white;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.tabs button.active::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--primary-color);
+}
+
+/* ========================================
+   Search Section
+   ======================================== */
+.search-filter-section {
+  margin-bottom: 30px;
+}
+
+.search-box {
+  position: relative;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 16px 20px;
+  padding-right: 50px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--text-muted);
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.clear-search:hover {
+  background: var(--error-color);
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* ========================================
+   Medication Cards
+   ======================================== */
+.medications-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.medication-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.medication-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.medication-card:hover::before {
+  transform: scaleX(1);
+}
+
+.medication-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary-color);
+}
+
+.medication-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.medication-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.medication-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.medication-dosage {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.medication-frequency {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.medication-reminders {
+  margin-bottom: 20px;
+}
+
+.reminders-count {
+  font-size: 0.85rem;
+  color: var(--success-color);
+  font-weight: 500;
+  background: rgba(0, 242, 254, 0.1);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+.no-reminders {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.view-details {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 14px;
+}
+
+.view-details:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ========================================
+   Today's Reminders
+   ======================================== */
+.today-reminders-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.today-reminders-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-color), var(--success-color));
+}
+
+.today-reminders-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.today-reminders-card h3::before {
+  content: "📅";
+  font-size: 1.2em;
+}
+
+.today-reminder-item {
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.05),
+    rgba(240, 147, 251, 0.05)
+  );
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.today-reminder-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+}
+
+.today-reminder-item:hover {
+  transform: translateX(8px);
+  box-shadow: var(--shadow-md);
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.1),
+    rgba(240, 147, 251, 0.1)
+  );
+}
+
+.reminder-time-block {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
+  color: white;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 16px;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.reminder-time-block .reminder-time {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.reminder-time-block .reminder-relative-time {
+  font-size: 11px;
+  opacity: 0.9;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reminder-time-block::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -8px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 8px solid var(--primary-color);
+}
+
+.medication-color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.reminder-content {
+  flex: 1;
+}
+
+.reminder-medication-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.reminder-dosage {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.reminder-notes {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.mark-taken-button {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+}
+
+.mark-taken-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+/* ========================================
+   Modals
+   ======================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
   }
-  
-  /* Tabs Styles */
-  .tabs {
-    display: flex;
-    background-color: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  to {
+    opacity: 1;
   }
-  
-  .dark-mode .tabs {
-    background-color: #2a2a2a;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  animation: slideInUp 0.4s ease-out;
+  border: 1px solid var(--border-color);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
   }
-  
-  .tabs button {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 14px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #7f8c8d;
-    cursor: pointer;
-    transition: all 0.2s;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
-  
-  .dark-mode .tabs button {
-    color: #aaa;
+}
+
+.modal-header {
+  padding: 24px 30px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.05),
+    rgba(240, 147, 251, 0.05)
+  );
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.close-button:hover {
+  background: var(--error-color);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* ========================================
+   Forms
+   ======================================== */
+.medication-form,
+.reminder-form {
+  padding: 30px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.day-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.day-option {
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+  min-width: 50px;
+  background: var(--bg-card);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.day-option:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.day-option.selected {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
+  color: white;
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
+}
+
+.day-short {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.day-long {
+  display: none;
+}
+
+.form-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  padding: 24px 30px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.primary-button {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-md);
+}
+
+.primary-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.secondary-button {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
+  padding: 12px 26px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.secondary-button:hover {
+  background: var(--text-secondary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ========================================
+   Toggle Switch
+   ======================================== */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--border-color);
+  transition: var(--transition);
+  border-radius: 28px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background: white;
+  transition: var(--transition);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.3);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-switch.small {
+  width: 40px;
+  height: 22px;
+}
+
+.toggle-switch.small .toggle-slider:before {
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+}
+
+.toggle-switch.small input:checked + .toggle-slider:before {
+  transform: translateX(18px);
+}
+
+/* ========================================
+   Empty States
+   ======================================== */
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 2px dashed var(--border-color);
+  margin: 40px 0;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
   }
-  
-  .tabs button:hover {
-    background-color: #f5f5f5;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .dark-mode .tabs button:hover {
-    background-color: #333;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.7;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
   }
-  
-  .tabs button.active {
-    color: #4a90e2;
-    border-bottom: 3px solid #4a90e2;
-    background-color: rgba(74, 144, 226, 0.05);
+  50% {
+    transform: translateY(-10px);
   }
-  
-  .dark-mode .tabs button.active {
-    background-color: rgba(74, 144, 226, 0.1);
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+/* ========================================
+   Medication Details Page
+   ======================================== */
+.medication-details {
+  animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
   }
-  
-  /* Tab Content */
-  .tab-content {
-    min-height: 500px;
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
-  
-  /* Medications Tab */
-  .medications-tab {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.back-button {
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 14px;
+}
+
+.back-button:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateX(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.delete-button {
+  background: linear-gradient(135deg, var(--error-color), #ff5252);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.delete-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.medication-info {
+  background: var(--bg-card);
+  padding: 30px;
+  border-radius: var(--radius-xl);
+  margin-bottom: 30px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.medication-info::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+}
+
+.medication-info h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-light)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.medication-info p {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.medication-info strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ========================================
+   Reminders Lists
+   ======================================== */
+.medication-reminders-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 30px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-header h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.add-reminder-button {
+  background: linear-gradient(
+    135deg,
+    var(--accent-color),
+    var(--success-color)
+  );
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+}
+
+.add-reminder-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(79, 172, 254, 0.05),
+    rgba(0, 242, 254, 0.05)
+  );
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  border: 1px solid rgba(79, 172, 254, 0.1);
+  transition: var(--transition);
+  position: relative;
+}
+
+.reminder-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    135deg,
+    var(--accent-color),
+    var(--success-color)
+  );
+  border-radius: 0 4px 4px 0;
+}
+
+.reminder-item:hover {
+  transform: translateX(8px);
+  box-shadow: var(--shadow-md);
+  background: linear-gradient(
+    135deg,
+    rgba(79, 172, 254, 0.1),
+    rgba(0, 242, 254, 0.1)
+  );
+}
+
+.reminder-item.disabled {
+  opacity: 0.6;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.reminder-item.disabled::before {
+  background: var(--text-muted);
+}
+
+.reminder-info {
+  flex: 1;
+}
+
+.reminder-time {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+}
+
+.reminder-days {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reminder-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.delete-reminder,
+.delete-reminder-small {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: var(--transition);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-reminder:hover,
+.delete-reminder-small:hover {
+  background: var(--error-color);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* ========================================
+   Actions Bar
+   ======================================== */
+.actions-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 30px;
+}
+
+/* ========================================
+   Medication Groups
+   ======================================== */
+.medication-reminders-group {
+  margin-bottom: 30px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.medication-reminders-group:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.medication-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.medication-color-block {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.medication-group-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reminder-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  transition: var(--transition);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.reminder-list-item:hover {
+  background: rgba(102, 126, 234, 0.05);
+  transform: translateX(4px);
+}
+
+.reminder-list-item.disabled {
+  opacity: 0.6;
+}
+
+/* ========================================
+   No Results & Messages
+   ======================================== */
+.no-results {
+  text-align: center;
+  padding: 40px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 2px dashed var(--border-color);
+  margin: 30px 0;
+}
+
+.no-results p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.no-reminders-message {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.no-reminders-today {
+  text-align: center;
+  padding: 30px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border-color);
+}
+
+/* ========================================
+   Disclaimer
+   ======================================== */
+.medicine-disclaimer {
+  margin-top: 40px;
+  padding: 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 235, 59, 0.1),
+    rgba(255, 193, 7, 0.1)
+  );
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+  border-left: 4px solid #ffc107;
+}
+
+.medicine-disclaimer p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.medicine-disclaimer strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ========================================
+   Dark Mode
+   ======================================== */
+.medicine-reminders.dark-mode {
+  --text-primary: #f7fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #a0aec0;
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-card: #2a2a2a;
+  --border-color: #4a5568;
+}
+
+.medicine-reminders.dark-mode .notification-banner {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.medicine-reminders.dark-mode .form-group input,
+.medicine-reminders.dark-mode .form-group select,
+.medicine-reminders.dark-mode .form-group textarea {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.medicine-reminders.dark-mode .day-option {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.medicine-reminders.dark-mode .search-box input {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+@media (max-width: 1024px) {
+  .medicine-reminders {
+    padding: 15px;
   }
-  
-  .dark-mode .medications-tab {
-    background-color: #2a2a2a;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .search-filter-section {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  
-  .search-box {
-    position: relative;
-    flex: 1;
-    max-width: 400px;
-  }
-  
-  .search-box input {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-  }
-  
-  .dark-mode .search-box input {
-    background-color: #333;
-    border-color: #444;
-    color: #f0f0f0;
-  }
-  
-  .clear-search {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: #7f8c8d;
-    cursor: pointer;
-    font-size: 18px;
-  }
-  
-  /* Medication Cards Grid */
+
   .medications-grid {
-    display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
-    margin-top: 20px;
   }
-  
-  .medication-card {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  
-  .dark-mode .medication-card {
-    background-color: #333;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  }
-  
-  .medication-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-  
-  .dark-mode .medication-card:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  }
-  
-  .medication-card-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .medication-color {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    margin-right: 10px;
-  }
-  
-  .medication-name {
-    font-weight: 600;
-    font-size: 16px;
-    color: #2c3e50;
-    flex: 1;
-  }
-  
-  .dark-mode .medication-name {
-    color: #f0f0f0;
-  }
-  
-  .refill-indicator {
-    background-color: #e74c3c;
-    color: white;
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: 10px;
-  }
-  
-  .medication-dosage {
-    font-size: 14px;
-    color: #7f8c8d;
-    margin-bottom: 5px;
-  }
-  
-  .dark-mode .medication-dosage {
-    color: #aaa;
-  }
-  
-  .medication-frequency {
-    font-size: 13px;
-    color: #7f8c8d;
-    margin-bottom: 10px;
-  }
-  
-  .dark-mode .medication-frequency {
-    color: #aaa;
-  }
-  
-  .medication-reminders {
-    font-size: 13px;
-    color: #7f8c8d;
-    margin-bottom: 15px;
-  }
-  
-  .dark-mode .medication-reminders {
-    color: #aaa;
-  }
-  
-  .reminders-count {
-    color: #27ae60;
-  }
-  
-  .dark-mode .reminders-count {
-    color: #2ecc71;
-  }
-  
-  .no-reminders {
-    color: #e74c3c;
-  }
-  
-  .dark-mode .no-reminders {
-    color: #ff6b6b;
-  }
-  
-  .view-details {
-    width: 100%;
-    background-color: #f5f5f5;
-    border: none;
-    padding: 8px;
-    border-radius: 4px;
-    color: #4a90e2;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .view-details:hover {
-    background-color: #e5e5e5;
-  }
-  
-  .dark-mode .view-details {
-    background-color: #333;
-    color: #5d9cec;
-  }
-  
-  .dark-mode .view-details:hover {
-    background-color: #3a3a3a;
-  }
-  
-  /* Empty State */
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-  }
-  
-  .empty-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-  }
-  
-  .empty-state h3 {
-    color: #2c3e50;
-    margin: 0 0 10px;
-  }
-  
-  .dark-mode .empty-state h3 {
-    color: #f0f0f0;
-  }
-  
-  .empty-state p {
-    color: #7f8c8d;
-    margin: 0 0 20px;
-  }
-  
-  .dark-mode .empty-state p {
-    color: #aaa;
-  }
-  
-  /* Medication Details */
-  .medication-details {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  
-  .dark-mode .medication-details {
-    background-color: #2a2a2a;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .details-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .back-button {
-    background: none;
-    border: none;
-    color: #4a90e2;
-    font-size: 15px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-  }
-  
-  .back-button:hover {
-    text-decoration: underline;
-  }
-  
-  .medication-actions {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .edit-button, .delete-button {
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  
-  .edit-button {
-    background-color: #f5f5f5;
-    border: 1px solid #ddd;
-    color: #333;
-  }
-  
-  .dark-mode .edit-button {
-    background-color: #333;
-    border-color: #444;
-    color: #f0f0f0;
-  }
-  
-  .delete-button {
-    background-color: #e74c3c;
-    border: none;
-    color: white;
-  }
-  
-  .medication-title-section {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .medication-color-indicator {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    margin-right: 15px;
-  }
-  
-  .medication-title-content {
-    flex: 1;
-  }
-  
-  .medication-title-content h2 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 22px;
-  }
-  
-  .dark-mode .medication-title-content h2 {
-    color: #f0f0f0;
-  }
-  
-  .medication-category-tag {
-    display: inline-block;
-    background-color: #f5f5f5;
-    color: #7f8c8d;
-    font-size: 12px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    margin-top: 5px;
-  }
-  
-  .dark-mode .medication-category-tag {
-    background-color: #333;
-    color: #aaa;
-  }
-  
-  .medication-info-card {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-  }
-  
-  .dark-mode .medication-info-card {
-    background-color: #333;
-  }
-  
-  .medication-info-card h3 {
-    margin: 0 0 15px;
-    color: #2c3e50;
-    font-size: 16px;
-  }
-  
-  .dark-mode .medication-info-card h3 {
-    color: #f0f0f0;
-  }
-  
-  .info-row {
-    display: flex;
-    margin-bottom: 10px;
-  }
-  
-  .info-label {
-    width: 120px;
-    color: #7f8c8d;
-    font-size: 14px;
-  }
-  
-  .dark-mode .info-label {
-    color: #aaa;
-  }
-  
-  .info-value {
-    flex: 1;
-    color: #2c3e50;
-    font-size: 14px;
-  }
-  
-  .dark-mode .info-value {
-    color: #f0f0f0;
-  }
-  
-  .refill-needed {
-    color: #e74c3c;
-  }
-  
-  .dark-mode .refill-needed {
-    color: #ff6b6b;
-  }
-  
-  .refill-badge {
-    background-color: #e74c3c;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    margin-left: 10px;
-  }
-  
-  .notes-value {
-    color: #555;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  
-  .dark-mode .notes-value {
-    color: #bbb;
-  }
-  
-  /* Reminders Section */
-  .medication-reminders-section {
-    margin-top: 30px;
-  }
-  
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-  
-  .section-header h3 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 18px;
-  }
-  
-  .dark-mode .section-header h3 {
-    color: #f0f0f0;
-  }
-  
-  .add-reminder-button {
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  
-  .add-reminder-button:hover {
-    background-color: #3a7bc8;
-  }
-  
-  .reminder-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .reminder-item {
-    display: flex;
-    align-items: center;
-    background-color: #f9f9f9;
-    border-radius: 6px;
-    padding: 12px 15px;
-  }
-  
-  .dark-mode .reminder-item {
-    background-color: #333;
-  }
-  
-  .reminder-item.disabled {
-    opacity: 0.6;
-  }
-  
-  .reminder-time {
-    width: 80px;
-    font-weight: 600;
-    color: #2c3e50;
-  }
-  
-  .dark-mode .reminder-time {
-    color: #f0f0f0;
-  }
-  
-  .reminder-info {
-    flex: 1;
-  }
-  
-  .reminder-days {
-    color: #7f8c8d;
-    font-size: 13px;
-  }
-  
-  .dark-mode .reminder-days {
-    color: #aaa;
-  }
-  
-  .reminder-notes {
-    color: #7f8c8d;
-    font-size: 12px;
-    margin-top: 3px;
-    font-style: italic;
-  }
-  
-  .dark-mode .reminder-notes {
-    color: #aaa;
-  }
-  
-  .reminder-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .delete-reminder {
-    background: none;
-    border: none;
-    color: #e74c3c;
-    cursor: pointer;
-    font-size: 16px;
-  }
-  
-  .no-reminders-message {
-    text-align: center;
-    padding: 30px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    color: #7f8c8d;
-  }
-  
-  .dark-mode .no-reminders-message {
-    background-color: #333;
-    color: #aaa;
-  }
-  
-  .no-reminders-message p {
-    margin-bottom: 15px;
-  }
-  
-  /* Reminders Tab */
-  .reminders-tab {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  
-  .dark-mode .reminders-tab {
-    background-color: #2a2a2a;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .actions-bar {
-    margin-bottom: 20px;
-  }
-  
-  .today-reminders-card {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-  }
-  
-  .dark-mode .today-reminders-card {
-    background-color: #333;
-  }
-  
-  .today-reminders-card h3 {
-    margin: 0 0 15px;
-    color: #2c3e50;
-    font-size: 18px;
-  }
-  
-  .dark-mode .today-reminders-card h3 {
-    color: #f0f0f0;
-  }
-  
-  .today-reminders-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .today-reminder-item {
-    display: flex;
-    align-items: center;
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  }
-  
-  .dark-mode .today-reminder-item {
-    background-color: #3a3a3a;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  }
-  
-  .reminder-time-block {
-    width: 80px;
-  }
-  
-  .reminder-time {
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 16px;
-  }
-  
-  .dark-mode .reminder-time {
-    color: #f0f0f0;
-  }
-  
-  .medication-color-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-  }
-  
-  .reminder-content {
-    flex: 1;
-    margin: 0 15px;
-  }
-  
-  .reminder-medication-name {
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 3px;
-  }
-  
-  .dark-mode .reminder-medication-name {
-    color: #f0f0f0;
-  }
-  
-  .reminder-dosage {
-    color: #7f8c8d;
-    font-size: 14px;
-  }
-  
-  .dark-mode .reminder-dosage {
-    color: #aaa;
-  }
-  
-  .reminder-actions {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .mark-taken-button, .skip-button {
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  
-  .mark-taken-button {
-    background-color: #27ae60;
-    border: none;
-    color: white;
-  }
-  
-  .skip-button {
-    background-color: #f5f5f5;
-    border: 1px solid #ddd;
-    color: #333;
-  }
-  
-  .dark-mode .skip-button {
-    background-color: #333;
-    border-color: #444;
-    color: #f0f0f0;
-  }
-  
-  .no-reminders-today {
-    text-align: center;
-    padding: 20px;
-    color: #7f8c8d;
-  }
-  
-  .dark-mode .no-reminders-today {
-    color: #aaa;
-  }
-  
-  .all-reminders-section h3 {
-    margin: 0 0 20px;
-    color: #2c3e50;
-    font-size: 18px;
-  }
-  
-  .dark-mode .all-reminders-section h3 {
-    color: #f0f0f0;
-  }
-  
-  .reminders-by-medication {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .medication-reminders-group {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 15px;
-  }
-  
-  .dark-mode .medication-reminders-group {
-    background-color: #333;
-  }
-  
-  .medication-group-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-  
-  .medication-color-block {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    margin-right: 10px;
-  }
-  
-  .medication-group-name {
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 16px;
-  }
-  
-  .dark-mode .medication-group-name {
-    color: #f0f0f0;
-  }
-  
-  .medication-reminders-items {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .reminder-list-item {
-    display: flex;
-    align-items: center;
-    background-color: #fff;
-    border-radius: 6px;
-    padding: 10px 15px;
-  }
-  
-  .dark-mode .reminder-list-item {
-    background-color: #3a3a3a;
-  }
-  
-  .reminder-list-item.disabled {
-    opacity: 0.6;
-  }
-  
-  .reminder-list-item .reminder-time {
-    width: 80px;
-  }
-  
-  .reminder-list-item .reminder-days {
-    flex: 1;
-  }
-  
-  .delete-reminder-small {
-    background: none;
-    border: none;
-    color: #e74c3c;
-    cursor: pointer;
-    font-size: 14px;
-  }
-  
-  /* Schedule Tab */
-  .schedule-tab {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-  
-  .dark-mode .schedule-tab {
-    background-color: #2a2a2a;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-  
-  .weekly-schedule h3 {
-    margin: 0 0 20px;
-    color: #2c3e50;
-    font-size: 18px;
-  }
-  
-  .dark-mode .weekly-schedule h3 {
-    color: #f0f0f0;
-  }
-  
-  .schedule-grid {
-    width: 100%;
-    overflow-x: auto;
-    margin-bottom: 30px;
-  }
-  
-  .schedule-header {
-    display: flex;
-    border-bottom: 1px solid #f0f0f0;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-  }
-  
-  .dark-mode .schedule-header {
-    border-bottom-color: #444;
-  }
-  
-  .time-column {
-    width: 120px;
-    color: #7f8c8d;
-    font-weight: 600;
-  }
-  
-  .day-column {
-    flex: 1;
-    text-align: center;
-    color: #2c3e50;
-    font-weight: 600;
-  }
-  
-  .dark-mode .day-column {
-    color: #f0f0f0;
-  }
-  
-  .time-slot-row {
-    display: flex;
-    margin-bottom: 15px;
-  }
-  
-  .time-label {
-    width: 120px;
-    color: #7f8c8d;
-    font-size: 14px;
-    padding: 5px 0;
-  }
-  
-  .day-cell {
-    flex: 1;
-    min-height: 60px;
-    padding: 5px;
-  }
-  
-  .schedule-pill {
-    padding: 5px 8px;
-    border-radius: 4px;
-    color: white;
-    font-size: 12px;
-    margin-bottom: 5px;
-  }
-  
-  .pill-time {
-    font-weight: 600;
-  }
-  
-  .pill-med {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .empty-schedule {
-    text-align: center;
-    padding: 40px 20px;
-  }
-  
-  .empty-schedule .empty-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-  }
-  
-  .empty-schedule h3 {
-    margin: 0 0 10px;
-    color: #2c3e50;
-  }
-  
-  .dark-mode .empty-schedule h3 {
-    color: #f0f0f0;
-  }
-  
-  .empty-schedule p {
-    margin: 0 0 20px;
-    color: #7f8c8d;
-  }
-  
-  .dark-mode .empty-schedule p {
-    color: #aaa;
-  }
-  
-  /* Refill Reminders */
-  .refill-reminders-section h3 {
-    margin: 0 0 20px;
-    color: #2c3e50;
-    font-size: 18px;
-  }
-  
-  .dark-mode .refill-reminders-section h3 {
-    color: #f0f0f0;
-  }
-  
-  .refill-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
-  }
-  
-  .refill-card {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 15px;
-  }
-  
-  .dark-mode .refill-card {
-    background-color: #333;
-  }
-  
-  .refill-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .refill-date {
-    color: #7f8c8d;
-    font-size: 14px;
-    margin-bottom: 5px;
-  }
-  
-  .dark-mode .refill-date {
-    color: #aaa;
-  }
-  
-  .days-remaining {
-    font-weight: 600;
-    color: #27ae60;
-    margin-bottom: 5px;
-  }
-  
-  .days-remaining.urgent {
-    color: #e74c3c;
-  }
-  
-  .dark-mode .days-remaining.urgent {
-    color: #ff6b6b;
-  }
-  
-  .quantity-remaining {
-    color: #7f8c8d;
-    font-size: 14px;
-  }
-  
-  .dark-mode .quantity-remaining {
-    color: #aaa;
-  }
-  
-  .no-refills-message {
-    text-align: center;
-    padding: 20px;
-    color: #7f8c8d;
-  }
-  
-  .dark-mode .no-refills-message {
-    color: #aaa;
-  }
-  
-  /* Modal styles */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .modal {
-    background-color: #fff;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 500px;
-    padding: 20px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-  
-  .dark-mode .modal {
-    background-color: #2a2a2a;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-    color: #e0e0e0;
-  }
-  
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .dark-mode .modal-header {
-    border-bottom-color: #444;
-  }
-  
-  .modal-header h2 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 20px;
-  }
-  
-  .dark-mode .modal-header h2 {
-    color: #e0e0e0;
-  }
-  
-  .close-button {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #7f8c8d;
-    cursor: pointer;
-  }
-  
-  .dark-mode .close-button {
-    color: #aaa;
-  }
-  
-  .close-button:hover {
-    color: #333;
-  }
-  
-  .dark-mode .close-button:hover {
-    color: #f0f0f0;
-  }
-  
-  /* Form Styles */
-  .form-section {
-    margin-bottom: 25px;
-  }
-  
-  .form-section h3 {
-    margin: 0 0 15px;
-    color: #2c3e50;
-    font-size: 16px;
-  }
-  
-  .dark-mode .form-section h3 {
-    color: #f0f0f0;
-  }
-  
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 6px;
-    color: #2c3e50;
-    font-weight: 500;
-  }
-  
-  .dark-mode .form-group label {
-    color: #e0e0e0;
-  }
-  
-  .form-row {
-    display: flex;
-    gap: 15px;
-  }
-  
-  .form-row .form-group {
-    flex: 1;
-  }
-  
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
+}
+
+@media (max-width: 768px) {
+  .medicine-reminders {
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    background-color: #fff;
   }
-  
-  .dark-mode .form-group input,
-  .dark-mode .form-group select,
-  .dark-mode .form-group textarea {
-    background-color: #333;
-    border-color: #444;
-    color: #e0e0e0;
-  }
-  
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus {
-    outline: none;
-    border-color: #4a90e2;
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-  }
-  
-  .form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
-  
-  .checkbox-group {
-    display: flex;
-    align-items: center;
-  }
-  
-  .checkbox-group input {
-    width: auto;
-    margin-right: 10px;
-  }
-  
-  /* Day Selector */
-  .day-selector {
-    display: flex;
-    gap: 5px;
-    margin-top: 8px;
-  }
-  
-  .day-option {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 50%;
-    background-color: #f5f5f5;
-    color: #2c3e50;
-    cursor: pointer;
-    font-size: 13px;
-  }
-  
-  .dark-mode .day-option {
-    background-color: #333;
-    color: #e0e0e0;
-  }
-  
-  .day-option.selected {
-    background-color: #4a90e2;
-    color: white;
-  }
-  
-  /* Time Slots */
-  .time-slots {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-  
-  .time-slot {
-    padding: 8px 12px;
-    background-color: #f5f5f5;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #2c3e50;
-    cursor: pointer;
-  }
-  
-  .dark-mode .time-slot {
-    background-color: #333;
-    color: #e0e0e0;
-  }
-  
-  .time-slot.active {
-    background-color: #4a90e2;
-    color: white;
-  }
-  
-  .custom-time-input {
-    margin-top: 10px;
-  }
-  
-  /* Toggle Switch */
-  .toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 24px;
-  }
-  
-  .toggle-switch.small {
-    width: 40px;
-    height: 20px;
-  }
-  
-  .toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 24px;
-  }
-  
-  .dark-mode .toggle-slider {
-    background-color: #555;
-  }
-  
-  .toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-  }
-  
-  .toggle-switch.small .toggle-slider:before {
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-  }
-  
-  input:checked + .toggle-slider {
-    background-color: #4a90e2;
-  }
-  
-  input:focus + .toggle-slider {
-    box-shadow: 0 0 1px #4a90e2;
-  }
-  
-  input:checked + .toggle-slider:before {
-    transform: translateX(26px);
-  }
-  
-  .toggle-switch.small input:checked + .toggle-slider:before {
-    transform: translateX(20px);
-  }
-  
-  /* Form Actions */
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    margin-top: 20px;
-  }
-  
-  /* Button Styles */
-  .primary-button {
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .primary-button:hover {
-    background-color: #3a7bc8;
-  }
-  
-  .secondary-button {
-    background-color: #f5f5f5;
-    color: #333;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .dark-mode .secondary-button {
-    background-color: #333;
-    color: #e0e0e0;
-    border-color: #444;
-  }
-  
-  .secondary-button:hover {
-    background-color: #e5e5e5;
-  }
-  
-  .dark-mode .secondary-button:hover {
-    background-color: #3a3a3a;
-  }
-  
-  /* No Results */
-  .no-results {
+
+  .medicine-reminder-header {
+    flex-direction: column;
     text-align: center;
-    padding: 30px;
-    color: #7f8c8d;
+    gap: 20px;
+    padding: 24px;
   }
-  
-  .dark-mode .no-results {
-    color: #aaa;
+
+  .header-content h1 {
+    font-size: 2rem;
   }
-  
-  .no-results p {
-    margin-bottom: 15px;
+
+  .add-medication-button {
+    padding: 14px 20px;
+    font-size: 14px;
   }
-  
-  /* Disclaimer */
-  .medicine-disclaimer {
-    margin-top: 40px;
+
+  .tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tabs button {
+    padding: 16px;
+    font-size: 16px;
+  }
+
+  .prompt-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .enable-notifications-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+  }
+
+  .today-reminder-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .reminder-time-block::after {
+    display: none;
+  }
+
+  .reminder-actions {
+    justify-content: center;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .day-selector {
+    justify-content: center;
+  }
+
+  .day-option {
+    min-width: 60px;
+    padding: 10px 12px;
+  }
+
+  .day-option .day-short {
+    display: none;
+  }
+
+  .day-option .day-long {
+    display: block;
+    font-size: 12px;
+  }
+
+  .medications-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .details-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .modal-content {
+    margin: 10px;
+    max-height: 95vh;
+  }
+
+  .medication-form,
+  .reminder-form {
     padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: #666;
-    line-height: 1.6;
   }
-  
-  .dark-mode .medicine-disclaimer {
-    background-color: #2d2d2d;
-    color: #aaa;
+
+  .form-actions {
+    flex-direction: column;
+    gap: 12px;
   }
-  
-  .medicine-disclaimer strong {
-    color: #2c3e50;
+
+  .form-actions button {
+    width: 100%;
+    padding: 16px;
   }
-  
-  .dark-mode .medicine-disclaimer strong {
-    color: #f0f0f0;
+}
+
+@media (max-width: 480px) {
+  .medicine-reminder-header {
+    padding: 20px;
   }
-  
-  /* Responsive Adjustments */
-  @media (max-width: 768px) {
-    .medicine-reminder-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 15px;
-    }
-    
-    .add-medication-button {
-      width: 100%;
-      justify-content: center;
-    }
-    
-    .medications-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .form-row {
-      flex-direction: column;
-      gap: 15px;
-    }
-    
-    .today-reminder-item {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    
-    .reminder-time-block {
-      margin-bottom: 10px;
-    }
-    
-    .reminder-content {
-      margin: 10px 0;
-    }
-    
-    .reminder-actions {
-      width: 100%;
-      justify-content: space-between;
-    }
-    
-    .modal {
-      width: 95%;
-      padding: 15px;
-    }
-    
-    .day-option {
-      width: 30px;
-      height: 30px;
-      font-size: 12px;
-    }
-    
-    .time-slots {
-      flex-direction: column;
-    }
-    
-    .time-slot {
-      width: 100%;
-      text-align: center;
-    }
+
+  .header-content h1 {
+    font-size: 1.75rem;
   }
+
+  .header-content p {
+    font-size: 1rem;
+  }
+
+  .today-reminders-card,
+  .medication-reminders-section,
+  .medication-info {
+    padding: 20px;
+  }
+
+  .today-reminders-card h3 {
+    font-size: 1.25rem;
+  }
+
+  .medication-card {
+    padding: 20px;
+  }
+
+  .empty-state {
+    padding: 40px 20px;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+  }
+}
+
+/* ========================================
+   Loading States & Animations
+   ======================================== */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.loading-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-size: 800px 104px;
+}
+
+/* ========================================
+   Accessibility Improvements
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus styles for accessibility */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --text-muted: #000000;
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Print styles */
+@media print {
+  .medicine-reminders {
+    background: white;
+    color: black;
+    box-shadow: none;
+  }
+
+  .notification-banner,
+  .add-medication-button,
+  .tabs,
+  .actions-bar,
+  .modal-overlay {
+    display: none;
+  }
+
+  .medication-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+}
