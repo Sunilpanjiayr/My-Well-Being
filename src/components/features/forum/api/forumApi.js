@@ -55,10 +55,7 @@ api.interceptors.response.use(response => {
 
 export const fetchTopics = async (params) => {
   try {
-    console.log('📋 API: Fetching topics with params:', params);
     const response = await api.get('/topics', { params });
-    
-    console.log('📋 API: Topics response:', response.data);
     
     // Handle different response structures
     if (response.data && response.data.topics) {
@@ -69,164 +66,117 @@ export const fetchTopics = async (params) => {
       return { topics: [], stats: null };
     }
   } catch (error) {
-    console.error('❌ API: Error fetching topics:', error);
+    console.error('Error fetching topics:', error);
     throw error;
   }
 };
 
 export const fetchTopic = async (topicId) => {
   try {
-    console.log('📖 API: Fetching topic:', topicId);
-    
-    if (!topicId || topicId === 'undefined') {
-      throw new Error('Invalid topic ID');
-    }
-    
+    console.log('API: Fetching topic', topicId);
     const response = await api.get(`/topics/${topicId}`);
-    console.log('📖 API: Topic response:', response.data);
+    console.log('API: Raw response:', response);
+    console.log('API: Response data:', response.data);
     
-    // Backend returns topic directly (not wrapped in success object)
-    if (response.data && (response.data.id || response.data._id)) {
-      console.log('✅ API: Topic fetched successfully');
+    // Handle different response structures
+    if (response.data && response.data.success && response.data.topic) {
+      console.log('API: Using response.data.topic');
+      console.log('API: Topic replies:', response.data.topic.replies);
+      return { topic: response.data.topic };
+    } else if (response.data && response.data._id) {
+      console.log('API: Using response.data directly');
+      console.log('API: Topic replies:', response.data.replies);
       return { topic: response.data };
     } else {
-      console.error('❌ API: Invalid topic data structure:', response.data);
+      console.error('API: Invalid topic data structure:', response.data);
       throw new Error('Invalid topic data received from server');
     }
   } catch (error) {
-    console.error('❌ API: Error fetching topic:', error);
+    console.error('API: Error fetching topic:', error);
+    console.error('API: Error response:', error.response?.data);
     throw error;
   }
 };
 
 export const createTopic = async (topicData) => {
   try {
-    console.log('📝 API: Creating topic:', topicData);
     const response = await api.post('/topics', topicData);
-    console.log('📝 API: Topic creation response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error creating topic:', error);
+    console.error('Error creating topic:', error);
     throw error;
   }
 };
 
 export const updateTopic = async (topicId, topicData) => {
   try {
-    console.log('📝 API: Updating topic:', topicId);
-    
-    if (!topicId || topicId === 'undefined') {
-      throw new Error('Invalid topic ID');
-    }
-    
     const response = await api.patch(`/topics/${topicId}`, topicData);
-    console.log('📝 API: Topic update response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error updating topic:', error);
+    console.error('Error updating topic:', error);
     throw error;
   }
 };
 
 export const deleteTopic = async (topicId) => {
   try {
-    console.log('🗑️ API: Deleting topic:', topicId);
-    
-    if (!topicId || topicId === 'undefined') {
-      throw new Error('Invalid topic ID');
-    }
-    
     const response = await api.delete(`/topics/${topicId}`);
-    console.log('🗑️ API: Topic deletion response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error deleting topic:', error);
+    console.error('Error deleting topic:', error);
     throw error;
   }
 };
 
 export const likeTopic = async (topicId) => {
   try {
-    console.log('👍 API: Liking topic:', topicId);
-    
-    if (!topicId || topicId === 'undefined') {
-      throw new Error('Invalid topic ID');
-    }
-    
     const response = await api.post(`/topics/${topicId}/like`);
-    console.log('👍 API: Topic like response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error liking topic:', error);
+    console.error('Error liking topic:', error);
     throw error;
   }
 };
 
 export const toggleBookmark = async (topicId) => {
   try {
-    console.log('🔖 API: Toggling bookmark for topic:', topicId);
-    
-    if (!topicId || topicId === 'undefined') {
-      throw new Error('Invalid topic ID');
-    }
-    
     const response = await api.post(`/topics/${topicId}/bookmark`);
-    console.log('🔖 API: Bookmark toggle response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error toggling bookmark:', error);
+    console.error('Error toggling bookmark:', error);
     throw error;
   }
 };
 
 export const createReply = async (topicId, replyData) => {
   try {
-    console.log('📝 API: Creating reply for topic:', topicId);
-    console.log('📝 API: Reply data:', replyData);
-    
-    if (!topicId || topicId === 'undefined') {
-      throw new Error('Invalid topic ID');
-    }
+    console.log('API: Creating reply for topic:', topicId);
+    console.log('API: Reply data:', replyData);
     
     const response = await api.post(`/topics/${topicId}/replies`, replyData);
     
-    console.log('📝 API: Reply creation response:', response.data);
+    console.log('API: Reply creation response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error creating reply:', error);
-    console.error('❌ API: Error details:', error.response?.data);
+    console.error('API: Error creating reply:', error);
+    console.error('API: Error details:', error.response?.data);
     throw error;
   }
 };
 
-export const likeReply = async (replyId, additionalData = {}) => {
+export const likeReply = async (replyId) => {
   try {
-    console.log('👍 API: Liking reply:', replyId);
-    
-    if (!replyId || replyId === 'undefined') {
-      throw new Error('Invalid reply ID');
-    }
-    
-    // Backend expects topicId in the request body for replies
-    const requestData = {
-      ...additionalData
-    };
-    
-    const response = await api.post(`/replies/${replyId}/like`, requestData);
-    console.log('👍 API: Reply like response:', response.data);
+    const response = await api.post(`/replies/${replyId}/like`);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error liking reply:', error);
+    console.error('Error liking reply:', error);
     throw error;
   }
 };
 
 export const getUserBookmarks = async () => {
   try {
-    console.log('📚 API: Fetching user bookmarks...');
     const response = await api.get(`/users/bookmarks?idsOnly=true`);
-    
-    console.log('📚 API: Bookmarks response:', response.data);
     
     // Handle different response structures
     if (Array.isArray(response.data)) {
@@ -237,17 +187,14 @@ export const getUserBookmarks = async () => {
       return [];
     }
   } catch (error) {
-    console.error('❌ API: Error fetching user bookmarks:', error);
+    console.error('Error fetching user bookmarks:', error);
     return [];
   }
 };
 
 export const getUserTopics = async () => {
   try {
-    console.log('📝 API: Fetching user topics...');
     const response = await api.get(`/users/topics`);
-    
-    console.log('📝 API: User topics response:', response.data);
     
     // Handle different response structures
     if (Array.isArray(response.data)) {
@@ -258,38 +205,24 @@ export const getUserTopics = async () => {
       return [];
     }
   } catch (error) {
-    console.error('❌ API: Error fetching user topics:', error);
+    console.error('Error fetching user topics:', error);
     return [];
   }
 };
 
 export const reportContent = async (itemId, itemType, reason) => {
   try {
-    console.log('🚨 API: Reporting content:', { itemId, itemType, reason });
-    
-    if (!itemId || itemId === 'undefined') {
-      throw new Error('Invalid item ID');
-    }
-    
-    if (!itemType || !reason) {
-      throw new Error('Missing item type or reason');
-    }
-    
     const response = await api.post(`/${itemType}s/${itemId}/report`, { reason });
-    console.log('🚨 API: Report response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error reporting content:', error);
+    console.error('Error reporting content:', error);
     throw error;
   }
 };
 
 export const getForumStats = async () => {
   try {
-    console.log('📊 API: Fetching forum stats...');
     const response = await api.get('/stats');
-    
-    console.log('📊 API: Stats response:', response.data);
     
     if (response.data && response.data.stats) {
       return response.data.stats;
@@ -304,7 +237,7 @@ export const getForumStats = async () => {
       };
     }
   } catch (error) {
-    console.error('❌ API: Error fetching forum statistics:', error);
+    console.error('Error fetching forum statistics:', error);
     return {
       topicsCount: 0,
       postsCount: 0,
@@ -316,32 +249,26 @@ export const getForumStats = async () => {
 
 export const uploadFile = async (file, path) => {
   try {
-    console.log('📎 API: Uploading file:', file.name, 'to path:', path);
     const fileRef = ref(storage, path);
     const snapshot = await uploadBytes(fileRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('📎 API: File uploaded successfully:', downloadURL);
     return downloadURL;
   } catch (error) {
-    console.error('❌ API: Error uploading file:', error);
+    console.error('Error uploading file:', error);
     throw error;
   }
 };
 
 export const createReplyWithAttachments = async (topicId, replyData, files) => {
   try {
-    console.log('📎 API: Creating reply with attachments for topic:', topicId);
-    console.log('📎 API: Files to upload:', files.length);
-    
-    if (!topicId || topicId === 'undefined') {
-      throw new Error('Invalid topic ID');
-    }
+    console.log('API: Creating reply with attachments for topic:', topicId);
+    console.log('API: Files to upload:', files.length);
     
     const attachments = [];
     
     if (files && files.length > 0) {
       for (const file of files) {
-        console.log('📎 API: Uploading file:', file.name);
+        console.log('API: Uploading file:', file.name);
         const timestamp = Date.now();
         const fileName = `${timestamp}_${file.name}`;
         const filePath = `forum/replies/${topicId}/${fileName}`;
@@ -356,35 +283,28 @@ export const createReplyWithAttachments = async (topicId, replyData, files) => {
       }
     }
 
-    console.log('📎 API: Attachments prepared:', attachments);
+    console.log('API: Attachments prepared:', attachments);
 
     const response = await api.post(`/topics/${topicId}/replies`, {
       ...replyData,
       attachments
     });
     
-    console.log('📎 API: Reply with attachments created:', response.data);
+    console.log('API: Reply with attachments created:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error creating reply with attachments:', error);
-    console.error('❌ API: Error details:', error.response?.data);
+    console.error('API: Error creating reply with attachments:', error);
+    console.error('API: Error details:', error.response?.data);
     throw error;
   }
 };
 
 export const updateReplyWithAttachments = async (replyId, replyData, files, existingAttachments = []) => {
   try {
-    console.log('📎 API: Updating reply with attachments:', replyId);
-    
-    if (!replyId || replyId === 'undefined') {
-      throw new Error('Invalid reply ID');
-    }
-    
     const attachments = [...existingAttachments];
     
     if (files && files.length > 0) {
       for (const file of files) {
-        console.log('📎 API: Uploading new file:', file.name);
         const timestamp = Date.now();
         const fileName = `${timestamp}_${file.name}`;
         const filePath = `forum/replies/${replyId}/${fileName}`;
@@ -403,11 +323,9 @@ export const updateReplyWithAttachments = async (replyId, replyData, files, exis
       ...replyData,
       attachments
     });
-    
-    console.log('📎 API: Reply updated with attachments:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ API: Error updating reply with attachments:', error);
+    console.error('Error updating reply with attachments:', error);
     throw error;
   }
 };

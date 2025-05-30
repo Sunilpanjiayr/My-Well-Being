@@ -1,8 +1,7 @@
-// src/forum_backend/forum/routes/topics.js
+// server/routes/topics.js
 const express = require('express');
 const router = express.Router();
 const topicController = require('../controllers/topicController');
-const replyController = require('../controllers/replyController'); // Import reply controller
 const { authenticate, optionalAuth } = require('../middleware/auth');
 
 // Get all topics (optional authentication for personalized results)
@@ -29,7 +28,8 @@ router.post('/:id/bookmark', authenticate, topicController.toggleBookmark);
 // Report a topic (requires authentication)
 router.post('/:id/report', authenticate, topicController.reportTopic);
 
-// Create a reply to a topic (requires authentication) - FIXED TO USE REPLY CONTROLLER
-router.post('/:topicId/replies', authenticate, replyController.createReply);
+// Create a reply to a topic (requires authentication)
+// Note: This could also be in the replies routes, but it's here for logical grouping
+router.post('/:topicId/replies', authenticate, topicController.createReply);
 
 module.exports = router;
