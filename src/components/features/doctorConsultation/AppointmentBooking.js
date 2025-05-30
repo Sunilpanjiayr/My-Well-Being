@@ -130,9 +130,13 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
 
     try {
       const uploadedDocs = [];
+      const timestamp = Date.now();
+      const userId = auth.currentUser?.uid;
+      
       for (const file of files) {
-        // Create a reference to the file in Firebase Storage
-        const storageRef = ref(storage, `consultations/documents/${Date.now()}_${file.name}`);
+        // CONSISTENT STORAGE PATH: Store in consultation-specific folder
+        // This will be created when consultation is booked
+        const storageRef = ref(storage, `consultations/temp-${userId}-${timestamp}/${file.name}`);
         
         // Upload the file
         await uploadBytes(storageRef, file);
@@ -144,7 +148,9 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
           name: file.name,
           url: downloadURL,
           type: file.type,
-          uploadedAt: new Date().toISOString()
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          tempPath: `consultations/temp-${userId}-${timestamp}/${file.name}` // Store temp path for later moving
         });
       }
 
@@ -207,11 +213,48 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         type: consultationType,
         reason: reason,
         status: 'pending',
-        documents: documents,
-        consultationFee: getCurrentFee(), // Store the actual fee charged
+        documents: documents, // Store documents array in Firestore
+        consultationFee: getCurrentFee(),
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       });
+
+      // NOW MOVE FILES TO FINAL LOCATION WITH CONSULTATION ID
+      if (documents.length > 0) {
+        const finalDocuments = [];
+        
+        for (const doc of documents) {
+          try {
+            // If the document has a tempPath, we need to move it
+            if (doc.tempPath) {
+              // For now, we'll keep the existing URL but update the path info
+              // In a real implementation, you might want to copy the file to the new location
+              finalDocuments.push({
+                ...doc,
+                finalPath: `consultations/${consultationRef.id}/documents/${doc.name}`,
+                consultationId: consultationRef.id
+              });
+            } else {
+              finalDocuments.push({
+                ...doc,
+                consultationId: consultationRef.id
+              });
+            }
+          } catch (moveError) {
+            console.error('Error organizing file:', moveError);
+            // Keep original document even if move fails
+            finalDocuments.push({
+              ...doc,
+              consultationId: consultationRef.id
+            });
+          }
+        }
+
+        // Update consultation with final document paths
+        await updateDoc(consultationRef, {
+          documents: finalDocuments
+        });
+      }
 
       // Create a notification for the doctor
       await addDoc(collection(db, 'notifications'), {
@@ -239,6 +282,7 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         });
       }
 
+      console.log('Appointment booked successfully with documents:', finalDocuments);
       onSuccess();
     } catch (error) {
       console.error('Error booking consultation:', error);
@@ -387,7 +431,7 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
             <ul>
               {documents.map((doc, index) => (
                 <li key={index}>
-                  <span>📄 {doc.name}</span>
+                  <span>📄 {doc.name} ({(doc.size / 1024 / 1024).toFixed(2)} MB)</span>
                   <button
                     onClick={() => setDocuments(prev => prev.filter((_, i) => i !== index))}
                   >
