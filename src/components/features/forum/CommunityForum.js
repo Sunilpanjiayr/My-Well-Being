@@ -120,6 +120,7 @@ function CommunityForum() {
       };
       
       const result = await fetchTopics(queryParams);
+      console.log('Fetched topics:', result.topics || result);
       
       if (result && Array.isArray(result.topics)) {
         setTopics(result.topics);
@@ -149,10 +150,15 @@ function CommunityForum() {
     { id: 'questions', name: 'Questions & Help', icon: '❓' }
   ];
   
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    
-    const date = new Date(dateString);
+  const formatDate = (dateValue) => {
+    if (!dateValue) return 'Unknown';
+    let date;
+    if (typeof dateValue === 'object' && dateValue.seconds) {
+      // Firestore Timestamp
+      date = new Date(dateValue.seconds * 1000);
+    } else {
+      date = new Date(dateValue);
+    }
     const now = new Date();
     const diffMs = now - date;
     const diffSec = Math.floor(diffMs / 1000);
@@ -495,69 +501,72 @@ function CommunityForum() {
             
             {topics.length > 0 ? (
               <div className="topics-table">
-                {topics.map(topic => (
-                  <div 
-                    key={topic.id}
-                    className={`topic-row ${topic.isPinned ? 'pinned' : ''}`}
-                    onClick={() => viewTopic(topic)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="topic-icon">
-                      {topic.isPinned && <span className="pinned-icon">📌</span>}
-                      {topic.isLocked && <span className="locked-icon">🔒</span>}
-                    </div>
-                    
-                    <div className="topic-info">
-                      <h3 className="topic-title">{topic.title}</h3>
-                      <div className="topic-meta">
-                        <span className="topic-category">
-                          {categories.find(cat => cat.id === topic.category)?.name || 'General'}
-                        </span>
-                        <span className="topic-author">
-                          {topic.authorSpecialty
-                            ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-                            : <>by {topic.authorName}</>
-                          }
-                        </span>
-                        <span className="topic-date">{formatDate(topic.createdAt)}</span>
+                {topics.map(topic => {
+                  console.log('Rendering topic:', topic);
+                  return (
+                    <div 
+                      key={topic.id}
+                      className={`topic-row ${topic.isPinned ? 'pinned' : ''}`}
+                      onClick={() => viewTopic(topic)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="topic-icon">
+                        {topic.isPinned && <span className="pinned-icon">📌</span>}
+                        {topic.isLocked && <span className="locked-icon">🔒</span>}
                       </div>
                       
-                      {topic.tags && topic.tags.length > 0 && (
-                        <div className="topic-tags-preview">
-                          {topic.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className="topic-tag small">#{tag}</span>
-                          ))}
-                          {topic.tags.length > 3 && <span className="more-tags">+{topic.tags.length - 3}</span>}
+                      <div className="topic-info">
+                        <h3 className="topic-title">{topic.title}</h3>
+                        <div className="topic-meta">
+                          <span className="topic-category">
+                            {categories.find(cat => cat.id === topic.category)?.name || 'General'}
+                          </span>
+                          <span className="topic-author">
+                            {topic.authorSpecialty
+                              ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
+                              : <>by {topic.authorName || 'User'}</>
+                            }
+                          </span>
+                          <span className="topic-date">{formatDate(topic.createdAt)}</span>
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="topic-stats">
-                      <div className="stat-box replies">
-                        <span className="stat-value">{topic.replyCount || 0}</span>
-                        <span className="stat-label">Replies</span>
+                        
+                        {topic.tags && topic.tags.length > 0 && (
+                          <div className="topic-tags-preview">
+                            {topic.tags.slice(0, 3).map(tag => (
+                              <span key={tag} className="topic-tag small">#{tag}</span>
+                            ))}
+                            {topic.tags.length > 3 && <span className="more-tags">+{topic.tags.length - 3}</span>}
+                          </div>
+                        )}
                       </div>
-                      <div className="stat-box views">
-                        <span className="stat-value">{topic.views || 0}</span>
-                        <span className="stat-label">Views</span>
+                      
+                      <div className="topic-stats">
+                        <div className="stat-box replies">
+                          <span className="stat-value">{topic.replyCount || 0}</span>
+                          <span className="stat-label">Replies</span>
+                        </div>
+                        <div className="stat-box views">
+                          <span className="stat-value">{topic.views || 0}</span>
+                          <span className="stat-label">Views</span>
+                        </div>
+                        <div className="stat-box likes">
+                          <span className="stat-value">{topic.likes?.length || 0}</span>
+                          <span className="stat-label">Likes</span>
+                        </div>
                       </div>
-                      <div className="stat-box likes">
-                        <span className="stat-value">{topic.likes?.length || 0}</span>
-                        <span className="stat-label">Likes</span>
+                      
+                      <div className="topic-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className={`bookmark-button-small ${isBookmarked(topic.id) ? 'active' : ''}`}
+                          onClick={(e) => toggleBookmarkHandler(topic.id, e)}
+                          title={isBookmarked(topic.id) ? 'Remove Bookmark' : 'Add Bookmark'}
+                        >
+                          {isBookmarked(topic.id) ? '★' : '☆'}
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="topic-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className={`bookmark-button-small ${isBookmarked(topic.id) ? 'active' : ''}`}
-                        onClick={(e) => toggleBookmarkHandler(topic.id, e)}
-                        title={isBookmarked(topic.id) ? 'Remove Bookmark' : 'Add Bookmark'}
-                      >
-                        {isBookmarked(topic.id) ? '★' : '☆'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="no-topics">
