@@ -150,6 +150,8 @@ const ConsultationManager = ({ consultation, onClose }) => {
     }
   };
 
+  console.log('ConsultationManager documents:', consultation.documents);
+
   return (
     <div className="consultation-manager">
       <div className="manager-header">
