@@ -244,13 +244,13 @@ function TopicDetailView() {
         <div key={reply.id} className={`reply-item depth-${depth}`}>
           <div className="reply-author">
             <div className="author-avatar">
-              {reply.authorName?.charAt(0) || '👤'}
+              {(reply.authorName || reply.author?.username)?.charAt(0) || '👤'}
             </div>
             <div className="author-info">
               <div className="author-name">
-                {reply.authorSpecialty
-                  ? <>Dr. {reply.authorName} <span className="author-specialty">• {reply.authorSpecialty}</span></>
-                  : <>{reply.authorName}</>
+                {(reply.authorSpecialty || reply.author?.specialty)
+                  ? <>Dr. {reply.authorName || reply.author?.username} <span className="author-specialty">• {reply.authorSpecialty || reply.author?.specialty}</span></>
+                  : <>{reply.authorName || reply.author?.username || 'User'}</>
                 }
               </div>
               <div className="reply-date">{formatDate(reply.createdAt)}</div>
@@ -350,9 +350,9 @@ function TopicDetailView() {
         <div className="topic-meta">
           <span className="category">{topic.category}</span>
           <span className="author">
-            {topic.authorSpecialty
-              ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-              : <>by {topic.authorName}</>
+            {(topic.authorSpecialty || topic.author?.specialty)
+              ? <>by Dr. {topic.authorName || topic.author?.username} <span className="author-specialty">• {topic.authorSpecialty || topic.author?.specialty}</span></>
+              : <>by {topic.authorName || topic.author?.username || 'User'}</>
             }
           </span>
           <span className="date">{formatDate(topic.createdAt)}</span>
@@ -372,13 +372,13 @@ function TopicDetailView() {
       <div className="topic-content">
         <div className="topic-author">
           <div className="author-avatar large">
-            {topic.authorName?.charAt(0) || '👤'}
+            {(topic.authorName || topic.author?.username)?.charAt(0) || '👤'}
           </div>
           <div className="author-info">
             <div className="author-name">
-              {topic.authorSpecialty
-                ? <>Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-                : <>{topic.authorName}</>
+              {(topic.authorSpecialty || topic.author?.specialty)
+                ? <>Dr. {topic.authorName || topic.author?.username} <span className="author-specialty">• {topic.authorSpecialty || topic.author?.specialty}</span></>
+                : <>{topic.authorName || topic.author?.username || 'User'}</>
               }
             </div>
             <div className="join-date">
