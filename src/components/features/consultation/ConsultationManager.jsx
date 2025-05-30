@@ -25,118 +25,209 @@ const ConsultationManager = ({ consultation, onClose }) => {
   const [toastMessage, setToastMessage] = useState(null);
   const [patientDetails, setPatientDetails] = useState(null);
   const [allDocuments, setAllDocuments] = useState([]);
+  const [debugInfo, setDebugInfo] = useState({});
 
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    if (!consultation) return;
+    console.log('🔍 ConsultationManager mounted with consultation:', consultation);
+    
+    if (!consultation) {
+      console.log('❌ No consultation provided');
+      return;
+    }
 
     const fetchPatientDetailsAndDocuments = async () => {
+      console.log('🚀 Starting fetchPatientDetailsAndDocuments...');
+      console.log('📋 Consultation object:', JSON.stringify(consultation, null, 2));
+      
       try {
+        // Update debug info
+        setDebugInfo(prev => ({
+          ...prev,
+          consultationId: consultation.id,
+          consultationDocuments: consultation.documents,
+          consultationDocumentsLength: consultation.documents?.length || 0,
+          consultationDocumentsType: typeof consultation.documents,
+          consultationDocumentsIsArray: Array.isArray(consultation.documents)
+        }));
+
         // Fetch patient details
+        console.log('👤 Fetching patient details for:', consultation.patientId);
         const patientRef = doc(db, 'users', consultation.patientId);
         const patientSnap = await getDoc(patientRef);
         
         if (patientSnap.exists()) {
+          console.log('✅ Patient details found');
           setPatientDetails(patientSnap.data());
+        } else {
+          console.log('❌ Patient details not found');
         }
 
-        // Combine documents from multiple sources
+        // Initialize documents array
         const combinedDocs = [];
+        console.log('📂 Starting document search...');
 
-        // 1. Documents from Firestore (stored in consultation.documents array)
-        if (consultation.documents && Array.isArray(consultation.documents)) {
-          console.log('Found Firestore documents:', consultation.documents);
-          consultation.documents.forEach((doc, index) => {
-            combinedDocs.push({
-              ...doc,
-              source: 'firestore',
-              id: `firestore-${index}`
+        // 1. CHECK FIRESTORE DOCUMENTS FIRST
+        console.log('🔍 Checking Firestore documents...');
+        console.log('consultation.documents:', consultation.documents);
+        console.log('consultation.documents type:', typeof consultation.documents);
+        console.log('consultation.documents is array:', Array.isArray(consultation.documents));
+        
+        if (consultation.documents) {
+          if (Array.isArray(consultation.documents)) {
+            console.log(`✅ Found ${consultation.documents.length} documents in Firestore array`);
+            consultation.documents.forEach((doc, index) => {
+              console.log(`📄 Document ${index}:`, doc);
+              combinedDocs.push({
+                ...doc,
+                source: 'firestore',
+                id: `firestore-${index}`,
+                displayName: doc.name || `Document ${index + 1}`
+              });
             });
-          });
+          } else {
+            console.log('⚠️ consultation.documents exists but is not an array:', consultation.documents);
+          }
+        } else {
+          console.log('❌ No consultation.documents found');
         }
 
-        // 2. Try to find documents in Firebase Storage with multiple possible paths
+        // 2. CHECK FIREBASE STORAGE
+        console.log('🗄️ Checking Firebase Storage...');
         const storagePaths = [
-          `consultations/${consultation.id}/documents`, // Current path in your code
-          `consultations/documents`, // Root documents folder
-          `consultation-documents/${consultation.id}`, // Alternative naming
-          `appointments/${consultation.id}/documents`, // If using appointments
+          `consultations/${consultation.id}/documents`,
+          `consultations/documents`,
+          `consultation-documents/${consultation.id}`,
+          `appointments/${consultation.id}/documents`,
+          `temp-${consultation.patientId}*`, // Check for temp files
         ];
+
+        console.log('📁 Storage paths to check:', storagePaths);
 
         for (const path of storagePaths) {
           try {
-            console.log(`Checking storage path: ${path}`);
+            console.log(`🔍 Checking storage path: ${path}`);
             const storageRef = ref(storage, path);
             const files = await listAll(storageRef);
             
+            console.log(`📁 Path ${path}: Found ${files.items.length} files`);
+            
             if (files.items.length > 0) {
-              console.log(`Found ${files.items.length} files in ${path}`);
+              console.log(`✅ Found ${files.items.length} files in ${path}`);
               const urls = await Promise.all(
                 files.items.map(async (fileRef) => {
+                  try {
+                    const url = await getDownloadURL(fileRef);
+                    console.log(`📄 File: ${fileRef.name} -> ${url}`);
+                    return { 
+                      name: fileRef.name, 
+                      url,
+                      source: 'storage',
+                      path: path,
+                      id: `storage-${fileRef.name}`,
+                      displayName: fileRef.name
+                    };
+                  } catch (urlError) {
+                    console.error(`❌ Error getting download URL for ${fileRef.name}:`, urlError);
+                    return null;
+                  }
+                })
+              );
+              
+              const validUrls = urls.filter(url => url !== null);
+              console.log(`✅ Got ${validUrls.length} valid URLs from ${path}`);
+              combinedDocs.push(...validUrls);
+            } else {
+              console.log(`❌ No files found in ${path}`);
+            }
+          } catch (storageError) {
+            console.log(`❌ Error checking ${path}:`, storageError.message);
+          }
+        }
+
+        // 3. PATTERN MATCHING SEARCH
+        console.log('🔍 Starting pattern matching search...');
+        try {
+          const rootStorageRef = ref(storage, 'consultations/documents');
+          const allFiles = await listAll(rootStorageRef);
+          console.log(`📁 Root documents folder contains ${allFiles.items.length} files`);
+          
+          // Filter files that might belong to this consultation
+          const consultationDate = consultation.date?.replace(/-/g, '');
+          const patientName = consultation.patientName?.toLowerCase().replace(/\s+/g, '');
+          
+          console.log('🔍 Pattern matching criteria:');
+          console.log('- Consultation date:', consultationDate);
+          console.log('- Patient name:', patientName);
+          
+          const potentialFiles = allFiles.items.filter(item => {
+            const fileName = item.name.toLowerCase();
+            const matchesDate = consultationDate && fileName.includes(consultationDate);
+            const matchesName = patientName && fileName.includes(patientName);
+            
+            console.log(`📄 File ${item.name}: matchesDate=${matchesDate}, matchesName=${matchesName}`);
+            
+            return matchesDate || matchesName;
+          });
+
+          console.log(`🔍 Found ${potentialFiles.length} potential files based on pattern matching`);
+          
+          if (potentialFiles.length > 0) {
+            const urls = await Promise.all(
+              potentialFiles.map(async (fileRef) => {
+                try {
                   const url = await getDownloadURL(fileRef);
                   return { 
                     name: fileRef.name, 
                     url,
-                    source: 'storage',
-                    path: path,
-                    id: `storage-${fileRef.name}`
+                    source: 'storage-pattern',
+                    id: `pattern-${fileRef.name}`,
+                    displayName: fileRef.name
                   };
-                })
-              );
-              combinedDocs.push(...urls);
-            }
-          } catch (storageError) {
-            console.log(`No documents found in ${path}:`, storageError.message);
-          }
-        }
-
-        // 3. Also try searching for files that might match the consultation date/time pattern
-        try {
-          const rootStorageRef = ref(storage, 'consultations/documents');
-          const allFiles = await listAll(rootStorageRef);
-          
-          // Filter files that might belong to this consultation
-          const potentialFiles = allFiles.items.filter(item => {
-            const fileName = item.name.toLowerCase();
-            const consultationDate = consultation.date?.replace(/-/g, '');
-            const patientName = consultation.patientName?.toLowerCase().replace(/\s+/g, '');
-            
-            // Check if filename contains consultation date or patient info
-            return fileName.includes(consultationDate) || 
-                   (patientName && fileName.includes(patientName));
-          });
-
-          if (potentialFiles.length > 0) {
-            console.log(`Found ${potentialFiles.length} potential files based on pattern matching`);
-            const urls = await Promise.all(
-              potentialFiles.map(async (fileRef) => {
-                const url = await getDownloadURL(fileRef);
-                return { 
-                  name: fileRef.name, 
-                  url,
-                  source: 'storage-pattern',
-                  id: `pattern-${fileRef.name}`
-                };
+                } catch (urlError) {
+                  console.error(`❌ Error getting URL for pattern file ${fileRef.name}:`, urlError);
+                  return null;
+                }
               })
             );
-            combinedDocs.push(...urls);
+            
+            const validPatternUrls = urls.filter(url => url !== null);
+            console.log(`✅ Got ${validPatternUrls.length} valid pattern URLs`);
+            combinedDocs.push(...validPatternUrls);
           }
         } catch (patternError) {
-          console.log('Pattern matching search failed:', patternError.message);
+          console.log('❌ Pattern matching search failed:', patternError.message);
         }
 
-        // Remove duplicates based on URL or name
+        // Remove duplicates
+        console.log(`📊 Before deduplication: ${combinedDocs.length} documents`);
         const uniqueDocs = combinedDocs.filter((doc, index, self) => 
           index === self.findIndex(d => d.url === doc.url || d.name === doc.name)
         );
+        console.log(`📊 After deduplication: ${uniqueDocs.length} documents`);
 
-        console.log('All found documents:', uniqueDocs);
+        console.log('📋 Final documents list:', uniqueDocs);
         setAllDocuments(uniqueDocs);
 
+        // Update debug info
+        setDebugInfo(prev => ({
+          ...prev,
+          totalDocumentsFound: uniqueDocs.length,
+          firestoreDocsCount: combinedDocs.filter(d => d.source === 'firestore').length,
+          storageDocsCount: combinedDocs.filter(d => d.source === 'storage').length,
+          patternDocsCount: combinedDocs.filter(d => d.source === 'storage-pattern').length,
+          finalDocuments: uniqueDocs
+        }));
+
       } catch (err) {
-        console.error('Error fetching patient details and documents:', err);
+        console.error('❌ Error in fetchPatientDetailsAndDocuments:', err);
         setError('Failed to load patient information');
+        setDebugInfo(prev => ({
+          ...prev,
+          error: err.message,
+          stack: err.stack
+        }));
       }
     };
 
@@ -236,10 +327,18 @@ const ConsultationManager = ({ consultation, onClose }) => {
   };
 
   const openDocument = (doc) => {
+    console.log('📄 Opening document:', doc);
     if (doc.url) {
       window.open(doc.url, '_blank');
+    } else {
+      console.error('❌ No URL found for document:', doc);
     }
   };
+
+  // Add logging for render
+  console.log('🎨 Rendering ConsultationManager');
+  console.log('📋 allDocuments state:', allDocuments);
+  console.log('🐛 debugInfo state:', debugInfo);
 
   return (
     <div className="consultation-manager">
@@ -278,57 +377,96 @@ const ConsultationManager = ({ consultation, onClose }) => {
         </div>
       </div>
 
-      {/* Display all found documents */}
-      {allDocuments.length > 0 && (
-        <div className="documents-section">
-          <h3>Patient Uploaded Documents ({allDocuments.length})</h3>
+      {/* ALWAYS SHOW DOCUMENTS SECTION - Even if empty for debugging */}
+      <div className="documents-section">
+        <h3>Patient Uploaded Documents ({allDocuments.length})</h3>
+        
+        {allDocuments.length > 0 ? (
           <div className="documents-list">
             {allDocuments.map((doc) => (
               <div key={doc.id} className="document-item">
-                <button
-                  className="document-link"
-                  onClick={() => openDocument(doc)}
-                  title={`Open ${doc.name}`}
-                >
-                  📄 {doc.name}
-                </button>
-                <span className="document-source">
-                  ({doc.source === 'firestore' ? 'Firestore' : 
-                    doc.source === 'storage' ? 'Storage' : 
-                    doc.source === 'storage-pattern' ? 'Storage (Pattern)' : 'Unknown'})
-                </span>
-                {doc.path && (
-                  <span className="document-path" title={`Storage path: ${doc.path}`}>
-                    📁 {doc.path}
+                <div className="doc-info">
+                  <span className="doc-name">📄 {doc.displayName || doc.name}</span>
+                  <span className="doc-type">
+                    Source: {doc.source === 'firestore' ? 'Firestore' : 
+                            doc.source === 'storage' ? 'Storage' : 
+                            doc.source === 'storage-pattern' ? 'Storage (Pattern)' : 'Unknown'}
+                    {doc.path && ` | Path: ${doc.path}`}
                   </span>
-                )}
+                </div>
+                <div className="doc-actions">
+                  <button
+                    className="view-doc-btn"
+                    onClick={() => openDocument(doc)}
+                    title={`Open ${doc.name}`}
+                  >
+                    View
+                  </button>
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="no-documents">
+            <p>No documents found.</p>
+            <p>Check console for detailed debug information.</p>
+          </div>
+        )}
+      </div>
 
-      {/* Debug information - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="debug-section" style={{ 
-          marginTop: '20px', 
-          padding: '10px', 
-          backgroundColor: '#f5f5f5', 
-          borderRadius: '5px',
-          fontSize: '12px' 
-        }}>
-          <h4>Debug Information:</h4>
-          <p><strong>Consultation ID:</strong> {consultation.id}</p>
-          <p><strong>Documents in Firestore:</strong> {consultation.documents?.length || 0}</p>
+      {/* ALWAYS SHOW DEBUG SECTION */}
+      <div className="debug-section" style={{ 
+        marginTop: '20px', 
+        padding: '15px', 
+        backgroundColor: '#f0f0f0', 
+        borderRadius: '5px',
+        fontSize: '12px',
+        border: '1px solid #ccc'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>🐛 Debug Information:</h4>
+        <div style={{ fontFamily: 'monospace', lineHeight: '1.4' }}>
+          <p><strong>Consultation ID:</strong> {consultation?.id || 'Not found'}</p>
+          <p><strong>Patient ID:</strong> {consultation?.patientId || 'Not found'}</p>
+          <p><strong>Patient Name:</strong> {consultation?.patientName || 'Not found'}</p>
+          <p><strong>Date:</strong> {consultation?.date || 'Not found'}</p>
+          <p><strong>Documents in consultation object:</strong> {consultation?.documents?.length || 0}</p>
+          <p><strong>Documents type:</strong> {typeof consultation?.documents}</p>
+          <p><strong>Documents is array:</strong> {Array.isArray(consultation?.documents) ? 'Yes' : 'No'}</p>
           <p><strong>Total Documents Found:</strong> {allDocuments.length}</p>
-          {consultation.documents && (
-            <details>
-              <summary>Firestore Documents Raw Data</summary>
-              <pre>{JSON.stringify(consultation.documents, null, 2)}</pre>
+          <p><strong>Documents State:</strong> {JSON.stringify(allDocuments, null, 2)}</p>
+          
+          {consultation?.documents && (
+            <details style={{ marginTop: '10px' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Raw Consultation.documents</summary>
+              <pre style={{ 
+                background: '#fff', 
+                padding: '10px', 
+                borderRadius: '3px', 
+                marginTop: '5px',
+                fontSize: '11px',
+                overflow: 'auto'
+              }}>
+                {JSON.stringify(consultation.documents, null, 2)}
+              </pre>
             </details>
           )}
+          
+          <details style={{ marginTop: '10px' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Full Consultation Object</summary>
+            <pre style={{ 
+              background: '#fff', 
+              padding: '10px', 
+              borderRadius: '3px', 
+              marginTop: '5px',
+              fontSize: '11px',
+              overflow: 'auto',
+              maxHeight: '200px'
+            }}>
+              {JSON.stringify(consultation, null, 2)}
+            </pre>
+          </details>
         </div>
-      )}
+      </div>
 
       {!consultation.reschedulePending && (
         <div className="reschedule-section">
