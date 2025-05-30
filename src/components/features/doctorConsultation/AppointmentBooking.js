@@ -220,9 +220,8 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
       });
 
       // NOW MOVE FILES TO FINAL LOCATION WITH CONSULTATION ID
+      const finalDocuments = [];
       if (documents.length > 0) {
-        const finalDocuments = [];
-        
         for (const doc of documents) {
           try {
             // If the document has a tempPath, we need to move it
@@ -254,6 +253,8 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         await updateDoc(consultationRef, {
           documents: finalDocuments
         });
+
+        console.log('Appointment booked successfully with documents:', finalDocuments);
       }
 
       // Create a notification for the doctor
@@ -282,7 +283,6 @@ const AppointmentBooking = ({ doctor, onClose, onSuccess }) => {
         });
       }
 
-      console.log('Appointment booked successfully with documents:', finalDocuments);
       onSuccess();
     } catch (error) {
       console.error('Error booking consultation:', error);

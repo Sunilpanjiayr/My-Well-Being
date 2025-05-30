@@ -318,24 +318,6 @@ const DoctorDashboard = () => {
               setSelectedConsultation(null);
             }}
           />
-          {appointmentDocs.length > 0 && (
-            <div className="documents-section">
-              <h3>Uploaded Documents (Storage)</h3>
-              <div className="documents-list">
-                {appointmentDocs.map((doc, index) => (
-                  <a 
-                    key={index}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="document-link"
-                  >
-                    {doc.name}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
