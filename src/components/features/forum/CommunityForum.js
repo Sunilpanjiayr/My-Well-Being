@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import './CommunityForum.css';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { auth, db } from '../../Auth/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -8,8 +10,6 @@ import {
   toggleBookmark,
   getUserBookmarks
 } from './api/forumApi';
-import './CommunityForum.css';
-import { useNavigate } from 'react-router-dom';
 
 function CommunityForum() {
   const { darkMode } = useTheme();
