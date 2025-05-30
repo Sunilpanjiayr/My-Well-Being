@@ -7,7 +7,7 @@ const cron = require("node-cron");
 const router = express.Router();
 
 // Initialize Firebase Admin (add this to your main app.js)
-const serviceAccount = require("../config/firebase-service-account.json"); // Download from Firebase Console
+const serviceAccount = require("../../src/forum_backend/config/firebase-service-account.json"); // Download from Firebase Console
 
 const notificationRoutes = require("./routes/notifications");
 const medicationRoutes = require("./routes/medications");
