@@ -239,7 +239,7 @@ function TopicDetailView() {
     return replies
       .filter(reply => reply.parentReplyId === parentId)
       .map(reply => (
-        <div key={reply._id} className={`reply-item depth-${depth}`}>
+        <div key={reply.id || reply._id} className={`reply-item depth-${depth}`}>
           <div className="reply-author">
             <div className="author-avatar">
               {reply.author?.username?.charAt(0) || '👤'}
@@ -284,21 +284,21 @@ function TopicDetailView() {
 
             <div className="reply-actions">
               <button 
-                onClick={() => handleLikeReply(reply._id)}
+                onClick={() => handleLikeReply(reply.id || reply._id)}
                 className={`action-btn like-btn ${reply.isLiked ? 'active' : ''}`}
               >
                 👍 Like ({reply.likes || 0})
               </button>
               
               <button 
-                onClick={() => setReplyingTo(reply._id)}
+                onClick={() => setReplyingTo(reply.id || reply._id)}
                 className="action-btn reply-btn"
               >
                 💬 Reply
               </button>
               
               <button 
-                onClick={() => handleReport(reply._id, 'reply')}
+                onClick={() => handleReport(reply.id || reply._id, 'reply')}
                 className="action-btn report-btn"
               >
                 🚨 Report
@@ -308,7 +308,7 @@ function TopicDetailView() {
 
           {/* Nested replies */}
           <div className="nested-replies">
-            {renderReplies(replies, reply._id, depth + 1)}
+            {renderReplies(replies, reply.id || reply._id, depth + 1)}
           </div>
         </div>
       ));
@@ -402,7 +402,7 @@ function TopicDetailView() {
           </button>
           
           <button 
-            onClick={() => handleReport(topic._id, 'topic')}
+            onClick={() => handleReport(topic.id || topic._id, 'topic')}
             className="action-btn report-btn"
           >
             🚨 Report

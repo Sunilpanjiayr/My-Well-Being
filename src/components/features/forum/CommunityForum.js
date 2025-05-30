@@ -240,7 +240,7 @@ function CommunityForum() {
       });
       
       if (result && result.topic) {
-        navigate(`/forum/topic/${result.topic._id}`);
+        navigate(`/forum/topic/${result.topic.id || result.topic._id}`);
       }
     } catch (error) {
       console.error('Failed to create topic:', error);
@@ -252,7 +252,7 @@ function CommunityForum() {
 
   // Navigate to topic detail page
   const viewTopic = (topic) => {
-    navigate(`/forum/topic/${topic._id}`);
+    navigate(`/forum/topic/${topic.id || topic._id}`);
   };
 
   const handleSearch = (e) => {
@@ -488,7 +488,7 @@ function CommunityForum() {
               <div className="topics-table">
                 {topics.map(topic => (
                   <div 
-                    key={topic._id} 
+                    key={topic.id || topic._id}
                     className={`topic-row ${topic.isPinned ? 'pinned' : ''}`}
                     onClick={() => viewTopic(topic)}
                     style={{ cursor: 'pointer' }}
@@ -540,11 +540,11 @@ function CommunityForum() {
                     
                     <div className="topic-actions" onClick={(e) => e.stopPropagation()}>
                       <button 
-                        className={`bookmark-button-small ${isBookmarked(topic._id) ? 'active' : ''}`}
-                        onClick={(e) => toggleBookmarkHandler(topic._id, e)}
-                        title={isBookmarked(topic._id) ? 'Remove Bookmark' : 'Add Bookmark'}
+                        className={`bookmark-button-small ${isBookmarked(topic.id || topic._id) ? 'active' : ''}`}
+                        onClick={(e) => toggleBookmarkHandler(topic.id || topic._id, e)}
+                        title={isBookmarked(topic.id || topic._id) ? 'Remove Bookmark' : 'Add Bookmark'}
                       >
-                        {isBookmarked(topic._id) ? '★' : '☆'}
+                        {isBookmarked(topic.id || topic._id) ? '★' : '☆'}
                       </button>
                     </div>
                   </div>
