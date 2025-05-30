@@ -43,13 +43,13 @@ const AppLayout = () => {
           <Route path="/register" element={<Signup />} />
 
           
-          {/* Forum Routes - Place specific routes before wildcards */}
+          {/* Forum Routes for Patients */}
           <Route path="/forum/topic/:topicId" element={<TopicDetailView />} />
           <Route path="/forum/bookmarks" element={<CommunityForum />} />
           <Route path="/forum/my-topics" element={<CommunityForum />} />
           <Route path="/forum" element={<CommunityForum />} />
 
-          {/* Doctor Forum Routes */}
+          {/* Forum Routes for Doctors */}
           <Route path="/doctor/forum/topic/:topicId" element={
             <DoctorProtectedRoute>
               <TopicDetailView />
