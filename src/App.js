@@ -48,6 +48,28 @@ const AppLayout = () => {
           <Route path="/forum/bookmarks" element={<CommunityForum />} />
           <Route path="/forum/my-topics" element={<CommunityForum />} />
           <Route path="/forum" element={<CommunityForum />} />
+
+          {/* Doctor Forum Routes */}
+          <Route path="/doctor/forum/topic/:topicId" element={
+            <DoctorProtectedRoute>
+              <TopicDetailView />
+            </DoctorProtectedRoute>
+          } />
+          <Route path="/doctor/forum/bookmarks" element={
+            <DoctorProtectedRoute>
+              <CommunityForum />
+            </DoctorProtectedRoute>
+          } />
+          <Route path="/doctor/forum/my-topics" element={
+            <DoctorProtectedRoute>
+              <CommunityForum />
+            </DoctorProtectedRoute>
+          } />
+          <Route path="/doctor/forum" element={
+            <DoctorProtectedRoute>
+              <CommunityForum />
+            </DoctorProtectedRoute>
+          } />
           
           <Route 
             path="/dashboardHome" 

@@ -505,7 +505,10 @@ function CommunityForum() {
                           {categories.find(cat => cat.id === topic.category)?.name || 'General'}
                         </span>
                         <span className="topic-author">
-                          by {topic.author?.username || 'User'}
+                          {topic.author?.specialty
+                            ? <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+                            : <>by {topic.author?.username || 'User'}</>
+                          }
                         </span>
                         <span className="topic-date">{formatDate(topic.createdAt)}</span>
                       </div>

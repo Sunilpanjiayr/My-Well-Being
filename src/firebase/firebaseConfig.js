@@ -5,13 +5,13 @@ import { getMessaging, getToken, onMessage } from "firebase/messaging";
 // Your Firebase configuration
 // Replace with your actual Firebase project config
 const firebaseConfig = {
-  apiKey: "AIzaSyAoj5-8kDrH-szlWpTgYS4a_jbk7KVqGZ4",
-  authDomain: "healthcare-reminders.firebaseapp.com",
-  projectId: "healthcare-reminders",
-  storageBucket: "healthcare-reminders.firebasestorage.app",
-  messagingSenderId: "356131790766",
-  appId: "1:356131790766:web:d4c3e6e9731d1ad006723f",
-  measurementId: "G-V00GX4DFFD",
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyCzzJWZTkVoSWp5J_0u7IlPBCvLQ5G9Fas",
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "my-well-being-19cdc.firebaseapp.com",
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "my-well-being-19cdc",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "gs://my-well-being-19cdc.firebasestorage.app",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "43094405528",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:43094405528:web:b953036bdc35fbdfc97bed",
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-4BYKBCXKT8"
 };
 
 // VAPID key for web push notifications

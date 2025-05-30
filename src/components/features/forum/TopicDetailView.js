@@ -245,7 +245,10 @@ function TopicDetailView() {
               {reply.author?.username?.charAt(0) || '👤'}
             </div>
             <div className="author-info">
-              <div className="author-name">{reply.author?.username || 'User'}</div>
+              <div className="author-name">{reply.author?.specialty
+                ? <>Dr. {reply.author.username} <span className="author-specialty">• {reply.author.specialty}</span></>
+                : <>{reply.author?.username || 'User'}</>
+              }</div>
               <div className="reply-date">{formatDate(reply.createdAt)}</div>
             </div>
           </div>
@@ -342,7 +345,10 @@ function TopicDetailView() {
         <h1>{topic.title}</h1>
         <div className="topic-meta">
           <span className="category">{topic.category}</span>
-          <span className="author">by {topic.author?.username || 'User'}</span>
+          <span className="author">{topic.author?.specialty
+            ? <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+            : <>by {topic.author?.username || 'User'}</>
+          }</span>
           <span className="date">{formatDate(topic.createdAt)}</span>
           <span className="views">{topic.views || 0} views</span>
         </div>
@@ -363,7 +369,10 @@ function TopicDetailView() {
             {topic.author?.username?.charAt(0) || '👤'}
           </div>
           <div className="author-info">
-            <div className="author-name">{topic.author?.username || 'User'}</div>
+            <div className="author-name">{topic.author?.specialty
+              ? <>Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+              : <>{topic.author?.username || 'User'}</>
+            }</div>
             <div className="join-date">
               Joined: {topic.author?.joinDate 
                 ? new Date(topic.author.joinDate).toLocaleDateString() 
