@@ -305,6 +305,43 @@ function CommunityForum() {
     loadTopics();
   };
 
+  useEffect(() => {
+    const fetchBookmarks = async () => {
+      if (activeView === 'bookmarks') {
+        const bookmarks = await getUserBookmarks();
+        setUserBookmarks(Array.isArray(bookmarks) ? bookmarks : []);
+        if (!bookmarks || bookmarks.length === 0) {
+          setTopics([]);
+        } else {
+          // Fetch all topics whose IDs are in bookmarks
+          // Efficient: fetch only those topics by ID
+          const topicDocs = await Promise.all(
+            bookmarks.map(async (topicId) => {
+              const topicDoc = await getDoc(doc(db, 'topics', topicId));
+              if (topicDoc.exists()) {
+                // Fetch avatar for each topic
+                let avatarUrl = '';
+                if (topicDoc.data().authorId) {
+                  let userDoc = await getDoc(doc(db, 'users', topicDoc.data().authorId));
+                  if (!userDoc.exists()) {
+                    userDoc = await getDoc(doc(db, 'doctors', topicDoc.data().authorId));
+                  }
+                  if (userDoc.exists() && userDoc.data().avatarUrl) {
+                    avatarUrl = userDoc.data().avatarUrl;
+                  }
+                }
+                return { id: topicDoc.id, ...topicDoc.data(), authorAvatarUrl: avatarUrl };
+              }
+              return null;
+            })
+          );
+          setTopics(topicDocs.filter(Boolean));
+        }
+      }
+    };
+    fetchBookmarks();
+  }, [activeView]);
+
   return (
     <div className={`community-forum ${darkMode ? 'dark-mode' : ''}`}>
       {/* Error message */}

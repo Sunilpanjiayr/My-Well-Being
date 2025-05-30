@@ -226,18 +226,44 @@ function TopicDetailView() {
     setReplyFiles(files => files.filter((_, i) => i !== index));
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
+  const formatDate = (dateValue) => {
+    if (!dateValue) return 'Unknown';
+    let date;
+    if (typeof dateValue === 'object' && dateValue.seconds) {
+      // Firestore Timestamp
+      date = new Date(dateValue.seconds * 1000);
+    } else if (typeof dateValue === 'string') {
+      // Try to parse as ISO or readable string
+      const parsed = Date.parse(dateValue);
+      if (!isNaN(parsed)) {
+        date = new Date(parsed);
+      } else {
+        // Try to parse custom format (e.g., "31 May 2025 at 03:13:50 UTC+5:30")
+        // Remove "at" and "UTC" for parsing
+        const cleaned = dateValue.replace('at', '').replace('UTC', '');
+        date = new Date(cleaned);
+        if (isNaN(date.getTime())) return dateValue; // fallback: show as is
+      }
+    } else if (typeof dateValue === 'number') {
+      date = new Date(dateValue);
+    } else {
+      return 'Unknown';
+    }
     const now = new Date();
     const diffMs = now - date;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-    
-    if (diffDays > 0) {
-      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    } else if (diffHours > 0) {
-      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffDay > 30) {
+      return date.toLocaleDateString();
+    } else if (diffDay > 0) {
+      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    } else if (diffHour > 0) {
+      return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    } else if (diffMin > 0) {
+      return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
     } else {
       return 'Just now';
     }

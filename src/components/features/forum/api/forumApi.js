@@ -257,7 +257,9 @@ export const toggleBookmark = async (topicId) => {
     if (!user) throw new Error('Not authenticated');
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
-    const bookmarks = userSnap.data().bookmarks || [];
+    const bookmarks = userSnap.exists() && Array.isArray(userSnap.data().bookmarks)
+      ? userSnap.data().bookmarks
+      : [];
     const isBookmarked = bookmarks.includes(topicId);
     await updateDoc(userRef, {
       bookmarks: isBookmarked ? arrayRemove(topicId) : arrayUnion(topicId)
