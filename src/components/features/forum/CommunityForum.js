@@ -123,9 +123,39 @@ function CommunityForum() {
       console.log('Fetched topics:', result.topics || result);
       
       if (result && Array.isArray(result.topics)) {
-        setTopics(result.topics);
+        const topicsWithAvatars = await Promise.all(
+          result.topics.map(async (topic) => {
+            let avatarUrl = '';
+            if (topic.authorId) {
+              let userDoc = await getDoc(doc(db, 'users', topic.authorId));
+              if (!userDoc.exists()) {
+                userDoc = await getDoc(doc(db, 'doctors', topic.authorId));
+              }
+              if (userDoc.exists() && userDoc.data().avatarUrl) {
+                avatarUrl = userDoc.data().avatarUrl;
+              }
+            }
+            return { ...topic, authorAvatarUrl: avatarUrl };
+          })
+        );
+        setTopics(topicsWithAvatars);
       } else if (Array.isArray(result)) {
-        setTopics(result);
+        const topicsWithAvatars = await Promise.all(
+          result.map(async (topic) => {
+            let avatarUrl = '';
+            if (topic.authorId) {
+              let userDoc = await getDoc(doc(db, 'users', topic.authorId));
+              if (!userDoc.exists()) {
+                userDoc = await getDoc(doc(db, 'doctors', topic.authorId));
+              }
+              if (userDoc.exists() && userDoc.data().avatarUrl) {
+                avatarUrl = userDoc.data().avatarUrl;
+              }
+            }
+            return { ...topic, authorAvatarUrl: avatarUrl };
+          })
+        );
+        setTopics(topicsWithAvatars);
       } else {
         setTopics([]);
       }
@@ -503,9 +533,6 @@ function CommunityForum() {
               <div className="topics-table">
                 {topics.map(topic => {
                   console.log('Rendering topic:', topic);
-                  console.log('authorName found:', !!topic.authorName, 'Value:', topic.authorName);
-                  console.log('authorSpecialty found:', !!topic.authorSpecialty, 'Value:', topic.authorSpecialty);
-                  console.log('createdAt found:', !!topic.createdAt, 'Value:', topic.createdAt);
                   return (
                     <div 
                       key={topic.id}
@@ -524,7 +551,38 @@ function CommunityForum() {
                           <span className="topic-category">
                             {categories.find(cat => cat.id === topic.category)?.name || 'General'}
                           </span>
-                          <span className="topic-author">
+                          <span className="topic-author" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {topic.authorAvatarUrl ? (
+                              <img
+                                src={topic.authorAvatarUrl}
+                                alt={topic.authorName}
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                  marginRight: 4,
+                                  border: '1px solid #eee'
+                                }}
+                              />
+                            ) : (
+                              <span
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: '50%',
+                                  background: '#ddd',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 600,
+                                  fontSize: 14,
+                                  marginRight: 4
+                                }}
+                              >
+                                {topic.authorName?.charAt(0).toUpperCase() || '👤'}
+                              </span>
+                            )}
                             {topic.authorSpecialty
                               ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
                               : <>by {topic.authorName || 'User'}</>

@@ -10,6 +10,8 @@ import {
   createReplyWithAttachments 
 } from './api/forumApi';
 import './TopicDetail.css';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../../Auth/firebase';
 
 function TopicDetailView() {
   const { topicId } = useParams();
@@ -42,6 +44,17 @@ function TopicDetailView() {
       setLoading(true);
       const result = await fetchTopic(topicId);
       if (result && result.topic) {
+        let authorProfile = null;
+        if (result.topic.authorId) {
+          let userDoc = await getDoc(doc(db, 'users', result.topic.authorId));
+          if (!userDoc.exists()) {
+            userDoc = await getDoc(doc(db, 'doctors', result.topic.authorId));
+          }
+          if (userDoc.exists()) {
+            authorProfile = userDoc.data();
+          }
+        }
+        result.topic.author = authorProfile;
         setTopic(result.topic);
       } else {
         setTopic(null);
@@ -381,7 +394,9 @@ function TopicDetailView() {
       <div className="topic-content">
         <div className="topic-author">
           <div className="author-avatar large">
-            {topic.authorName?.charAt(0) || '👤'}
+            {topic.author?.avatarUrl
+              ? <img src={topic.author.avatarUrl} alt={topic.authorName} style={{ width: 60, height: 60, borderRadius: '50%' }} />
+              : (topic.authorName?.charAt(0) || '👤')}
           </div>
           <div className="author-info">
             <div className="author-name">
@@ -391,8 +406,8 @@ function TopicDetailView() {
               }
             </div>
             <div className="join-date">
-              Joined: {topic.author?.joinDate 
-                ? new Date(topic.author.joinDate).toLocaleDateString() 
+              Joined: {topic.author?.createdAt
+                ? formatDate(topic.author.createdAt)
                 : 'Unknown'}
             </div>
           </div>
@@ -408,7 +423,7 @@ function TopicDetailView() {
             onClick={handleLikeTopic}
             className={`action-btn like-btn ${topic.isLiked ? 'active' : ''}`}
           >
-            �� Like ({topic.likes?.length || 0})
+            👍 Like ({topic.likes?.length || 0})
           </button>
           
           <button 
@@ -512,7 +527,6 @@ function TopicDetailView() {
           <div className="report-modal">
             <h3>Report Content</h3>
             <p>Why are you reporting this content?</p>
-            
             <select 
               value={reportReason} 
               onChange={(e) => setReportReason(e.target.value)}
@@ -524,7 +538,6 @@ function TopicDetailView() {
               <option value="misinformation">Misinformation</option>
               <option value="other">Other reason</option>
             </select>
-
             <div className="modal-actions">
               <button 
                 onClick={() => setShowReportModal(false)}

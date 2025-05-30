@@ -20,6 +20,37 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// --- FORMAT DATE ---
+const formatDate = (dateValue) => {
+  if (!dateValue) return 'Unknown';
+  let date;
+  if (typeof dateValue === 'object' && dateValue.seconds) {
+    date = new Date(dateValue.seconds * 1000);
+  } else if (typeof dateValue === 'string' || typeof dateValue === 'number') {
+    date = new Date(dateValue);
+  } else {
+    return 'Unknown';
+  }
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffDay > 30) {
+    return date.toLocaleDateString();
+  } else if (diffDay > 0) {
+    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  } else if (diffHour > 0) {
+    return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+  } else if (diffMin > 0) {
+    return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+  } else {
+    return 'Just now';
+  }
+};
+
 // --- TOPICS ---
 export const fetchTopics = async ({ category, sort, search, view, pageSize = 20, lastDoc = null } = {}) => {
   try {
@@ -46,12 +77,28 @@ export const fetchTopic = async (topicId) => {
     const topicRef = doc(db, 'topics', topicId);
     const topicSnap = await getDoc(topicRef);
     if (!topicSnap.exists()) throw new Error('Topic not found');
-    // Fetch replies for this topic
+    const topicData = { id: topicSnap.id, ...topicSnap.data() };
+
+    // Fetch author profile (users or doctors)
+    let authorProfile = null;
+    if (topicData.authorId) {
+      let userDoc = await getDoc(doc(db, 'users', topicData.authorId));
+      if (!userDoc.exists()) {
+        userDoc = await getDoc(doc(db, 'doctors', topicData.authorId));
+      }
+      if (userDoc.exists()) {
+        authorProfile = userDoc.data();
+      }
+    }
+    topicData.author = authorProfile;
+
+    // Fetch replies
     const repliesRef = collection(db, 'replies');
     const repliesQuery = query(repliesRef, where('topicId', '==', topicId), orderBy('createdAt', 'asc'));
     const repliesSnap = await getDocs(repliesQuery);
     const replies = repliesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return { topic: { id: topicSnap.id, ...topicSnap.data(), replies } };
+
+    return { topic: { ...topicData, replies } };
   } catch (error) {
     console.error('Error fetching topic:', error);
     throw error;
@@ -223,30 +270,20 @@ export const toggleBookmark = async (topicId) => {
 };
 
 export const getUserBookmarks = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) return [];
-    const userRef = doc(db, 'users', user.uid);
-    const userSnap = await getDoc(userRef);
-    return userSnap.exists() ? (userSnap.data().bookmarks || []) : [];
-  } catch (error) {
-    console.error('Error fetching user bookmarks:', error);
-    return [];
-  }
+  const user = auth.currentUser;
+  if (!user) return [];
+  const userDoc = await getDoc(doc(db, 'users', user.uid));
+  if (!userDoc.exists()) return [];
+  return userDoc.data().bookmarks || [];
 };
 
 // --- USER TOPICS ---
 export const getUserTopics = async () => {
-  try {
-    const user = auth.currentUser;
-    if (!user) return [];
-    const q = query(collection(db, 'topics'), where('authorId', '==', user.uid));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Error fetching user topics:', error);
-    return [];
-  }
+  const user = auth.currentUser;
+  if (!user) return [];
+  const q = query(collection(db, 'topics'), where('authorId', '==', user.uid));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 // --- REPORTS ---
