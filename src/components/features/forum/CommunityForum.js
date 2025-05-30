@@ -516,7 +516,7 @@ function CommunityForum() {
                         <span className="topic-author">
                           {topic.authorSpecialty
                             ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-                            : <>by {topic.authorName || 'User'}</>
+                            : <>by {topic.authorName}</>
                           }
                         </span>
                         <span className="topic-date">{formatDate(topic.createdAt)}</span>

@@ -250,7 +250,7 @@ function TopicDetailView() {
               <div className="author-name">
                 {reply.authorSpecialty
                   ? <>Dr. {reply.authorName} <span className="author-specialty">• {reply.authorSpecialty}</span></>
-                  : <>{reply.authorName || 'User'}</>
+                  : <>{reply.authorName}</>
                 }
               </div>
               <div className="reply-date">{formatDate(reply.createdAt)}</div>
@@ -352,7 +352,7 @@ function TopicDetailView() {
           <span className="author">
             {topic.authorSpecialty
               ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-              : <>by {topic.authorName || 'User'}</>
+              : <>by {topic.authorName}</>
             }
           </span>
           <span className="date">{formatDate(topic.createdAt)}</span>
@@ -378,7 +378,7 @@ function TopicDetailView() {
             <div className="author-name">
               {topic.authorSpecialty
                 ? <>Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-                : <>{topic.authorName || 'User'}</>
+                : <>{topic.authorName}</>
               }
             </div>
             <div className="join-date">
