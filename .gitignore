@@ -11,7 +11,7 @@
 # firebase-service-account-key
 src/forum_backend/forum/service-account.env
 src/forum_backend/config/firebase-service-account.json
-
+src/forum_backend/config/firebase-service-account.json:1
 # misc
 .DS_Store
 .env.local
