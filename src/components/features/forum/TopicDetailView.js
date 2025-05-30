@@ -17,6 +17,7 @@ function TopicDetailView() {
   const [currentUser, setCurrentUser] = useState(null);
   const [topic, setTopic] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [replyLoading, setReplyLoading] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyFiles, setReplyFiles] = useState([]);
@@ -31,31 +32,47 @@ function TopicDetailView() {
   }, []);
 
   useEffect(() => {
-    if (topicId) {
-      console.log('Loading topic:', topicId); // Debug log
+    if (topicId && topicId !== 'undefined') {
+      console.log('🔗 Loading topic:', topicId);
       loadTopic();
+    } else {
+      console.error('❌ Invalid topic ID:', topicId);
+      navigate('/forum');
     }
-  }, [topicId]);
+  }, [topicId, navigate]);
 
   const loadTopic = async () => {
     try {
       setLoading(true);
-      console.log('Fetching topic data...'); // Debug log
+      console.log('📖 Fetching topic data for ID:', topicId);
+      
       const result = await fetchTopic(topicId);
-      console.log('Topic data received:', result); // Debug log
+      console.log('📖 Topic fetch result:', result);
       
       if (result && result.topic) {
+        console.log('✅ Topic loaded successfully');
+        console.log('📊 Topic data:', {
+          id: result.topic.id || result.topic._id,
+          title: result.topic.title,
+          repliesCount: result.topic.replies?.length || 0
+        });
         setTopic(result.topic);
-      } else if (result && result._id) {
-        setTopic(result);
       } else {
-        console.error('Invalid topic data structure:', result);
+        console.error('❌ Invalid topic data structure:', result);
         alert('Failed to load topic - invalid data structure');
         navigate('/forum');
       }
     } catch (error) {
-      console.error('Error loading topic:', error);
-      alert('Failed to load topic: ' + error.message);
+      console.error('❌ Error loading topic:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
+      
+      if (error.response?.status === 404) {
+        alert('Topic not found');
+      } else if (error.response?.status === 401) {
+        alert('Please log in to view this topic');
+      } else {
+        alert('Failed to load topic: ' + (error.response?.data?.message || error.message));
+      }
       navigate('/forum');
     } finally {
       setLoading(false);
@@ -68,19 +85,27 @@ function TopicDetailView() {
       return;
     }
 
+    if (!topicId || topicId === 'undefined') {
+      console.error('❌ Invalid topic ID for like:', topicId);
+      return;
+    }
+
     try {
-      console.log('Liking topic:', topicId); // Debug log
+      console.log('👍 Liking topic:', topicId);
       const result = await likeTopic(topicId);
-      console.log('Like result:', result); // Debug log
+      console.log('👍 Like result:', result);
       
-      setTopic(prev => ({
-        ...prev,
-        likes: result.likes,
-        isLiked: result.isLiked
-      }));
+      if (result && result.success) {
+        setTopic(prev => ({
+          ...prev,
+          likes: result.likes,
+          isLiked: result.isLiked
+        }));
+        console.log('✅ Topic like updated');
+      }
     } catch (error) {
-      console.error('Error liking topic:', error);
-      alert('Failed to like topic: ' + error.message);
+      console.error('❌ Error liking topic:', error);
+      alert('Failed to like topic: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -90,22 +115,32 @@ function TopicDetailView() {
       return;
     }
 
+    if (!replyId || replyId === 'undefined') {
+      console.error('❌ Invalid reply ID for like:', replyId);
+      return;
+    }
+
     try {
-      console.log('Liking reply:', replyId); // Debug log
-      const result = await likeReply(replyId);
-      console.log('Reply like result:', result); // Debug log
+      console.log('👍 Liking reply:', replyId);
       
-      setTopic(prev => ({
-        ...prev,
-        replies: prev.replies.map(reply => 
-          reply._id === replyId 
-            ? { ...reply, likes: result.likes, isLiked: result.isLiked }
-            : reply
-        )
-      }));
+      // For replies, we need to pass the topicId and replyId to the backend
+      const result = await likeReply(replyId, { topicId });
+      console.log('👍 Reply like result:', result);
+      
+      if (result && result.success) {
+        setTopic(prev => ({
+          ...prev,
+          replies: prev.replies.map(reply => 
+            (reply.id || reply._id) === replyId 
+              ? { ...reply, likes: result.likes, isLiked: result.isLiked }
+              : reply
+          )
+        }));
+        console.log('✅ Reply like updated');
+      }
     } catch (error) {
-      console.error('Error liking reply:', error);
-      alert('Failed to like reply: ' + error.message);
+      console.error('❌ Error liking reply:', error);
+      alert('Failed to like reply: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -120,45 +155,70 @@ function TopicDetailView() {
       return;
     }
 
+    if (!topicId || topicId === 'undefined') {
+      console.error('❌ Invalid topic ID for reply:', topicId);
+      alert('Invalid topic ID');
+      return;
+    }
+
     try {
-      console.log('Submitting reply:', { topicId, content: replyContent, parentReplyId: replyingTo }); // Debug log
+      setReplyLoading(true);
+      console.log('💬 Submitting reply:', { 
+        topicId, 
+        content: replyContent.substring(0, 50) + '...', 
+        parentReplyId: replyingTo,
+        filesCount: replyFiles.length 
+      });
       
       const replyData = {
         content: replyContent.trim(),
-        parentReplyId: replyingTo
+        parentReplyId: replyingTo || null
       };
 
       let result;
       if (replyFiles.length > 0) {
-        console.log('Creating reply with attachments'); // Debug log
+        console.log('💬 Creating reply with attachments');
         result = await createReplyWithAttachments(topicId, replyData, replyFiles);
       } else {
-        console.log('Creating reply without attachments'); // Debug log
+        console.log('💬 Creating reply without attachments');
         result = await createReply(topicId, replyData);
       }
 
-      console.log('Reply creation result:', result); // Debug log
+      console.log('💬 Reply creation result:', result);
 
-      // Clear form
-      setReplyContent('');
-      setReplyFiles([]);
-      setReplyingTo(null);
-      
-      // Reload topic to show new reply
-      console.log('Reloading topic after reply submission'); // Debug log
-      await loadTopic();
-      
-      alert('Reply posted successfully!'); // Success feedback
+      if (result && result.success) {
+        console.log('✅ Reply created successfully');
+        
+        // Clear form
+        setReplyContent('');
+        setReplyFiles([]);
+        setReplyingTo(null);
+        
+        // Reload topic to show new reply
+        console.log('🔄 Reloading topic to show new reply');
+        await loadTopic();
+        
+        alert('Reply posted successfully!');
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
-      console.error('Error submitting reply:', error);
-      console.error('Error details:', error.response?.data || error.message); // More detailed error
+      console.error('❌ Error submitting reply:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
       alert('Failed to submit reply: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setReplyLoading(false);
     }
   };
 
   const handleReport = async (itemId, itemType) => {
     if (!currentUser) {
       alert('Please log in to report content');
+      return;
+    }
+
+    if (!itemId || itemId === 'undefined') {
+      console.error('❌ Invalid item ID for report:', itemId);
       return;
     }
 
@@ -174,16 +234,25 @@ function TopicDetailView() {
     }
 
     try {
-      console.log('Submitting report:', { itemId: reportItemId, itemType: reportItemType, reason: reportReason }); // Debug log
-      await reportContent(reportItemId, reportItemType, reportReason);
-      setShowReportModal(false);
-      setReportReason('');
-      setReportItemId(null);
-      setReportItemType(null);
-      alert('Content reported successfully');
+      console.log('🚨 Submitting report:', { 
+        itemId: reportItemId, 
+        itemType: reportItemType, 
+        reason: reportReason 
+      });
+      
+      const result = await reportContent(reportItemId, reportItemType, reportReason);
+      console.log('🚨 Report result:', result);
+      
+      if (result && result.success) {
+        setShowReportModal(false);
+        setReportReason('');
+        setReportItemId(null);
+        setReportItemType(null);
+        alert('Content reported successfully');
+      }
     } catch (error) {
-      console.error('Error reporting content:', error);
-      alert('Failed to report content: ' + error.message);
+      console.error('❌ Error reporting content:', error);
+      alert('Failed to report content: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -213,111 +282,159 @@ function TopicDetailView() {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
     
-    if (diffDays > 0) {
-      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    } else if (diffHours > 0) {
-      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date string:', dateString);
+        return 'Unknown';
+      }
+      
+      const now = new Date();
+      const diffMs = now - date;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+      
+      if (diffDays > 0) {
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      } else if (diffHours > 0) {
+        return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      } else {
+        return 'Just now';
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Unknown';
     }
   };
 
   const renderReplies = (replies, parentId = null, depth = 0) => {
     if (!Array.isArray(replies)) {
-      console.log('Replies is not an array:', replies); // Debug log
+      console.log('⚠️ Replies is not an array:', replies);
       return null;
     }
 
-    console.log('Rendering replies:', replies.length, 'total replies'); // Debug log
+    console.log(`📝 Rendering replies at depth ${depth}:`, replies.length, 'total replies');
 
     return replies
-      .filter(reply => reply.parentReplyId === parentId)
-      .map(reply => (
-        <div key={reply.id || reply._id} className={`reply-item depth-${depth}`}>
-          <div className="reply-author">
-            <div className="author-avatar">
-              {reply.author?.username?.charAt(0) || '👤'}
-            </div>
-            <div className="author-info">
-              <div className="author-name">{reply.author?.specialty
-                ? <>Dr. {reply.author.username} <span className="author-specialty">• {reply.author.specialty}</span></>
-                : <>{reply.author?.username || 'User'}</>
-              }</div>
-              <div className="reply-date">{formatDate(reply.createdAt)}</div>
-            </div>
-          </div>
+      .filter(reply => {
+        // Handle both null and undefined parentReplyId
+        const replyParentId = reply.parentReplyId === null ? null : reply.parentReplyId;
+        return replyParentId === parentId;
+      })
+      .map(reply => {
+        const replyId = reply.id || reply._id;
+        
+        if (!replyId) {
+          console.error('❌ Reply missing ID:', reply);
+          return null;
+        }
 
-          <div className="reply-content">
-            <p>{reply.content}</p>
-            
-            {/* Attachments */}
-            {reply.attachments && reply.attachments.length > 0 && (
-              <div className="reply-attachments">
-                {reply.attachments.map((attachment, index) => (
-                  <div key={index} className="attachment">
-                    {attachment.fileType === 'image' ? (
-                      <img 
-                        src={attachment.fileUrl} 
-                        alt={attachment.fileName} 
-                        className="attachment-image" 
-                      />
-                    ) : (
-                      <a 
-                        href={attachment.fileUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="attachment-pdf"
-                      >
-                        📄 {attachment.fileName}
-                      </a>
-                    )}
-                  </div>
-                ))}
+        return (
+          <div key={replyId} className={`reply-item depth-${depth}`}>
+            <div className="reply-author">
+              <div className="author-avatar">
+                {reply.author?.avatarUrl ? (
+                  <img src={reply.author.avatarUrl} alt={reply.author.username} />
+                ) : (
+                  reply.author?.username?.charAt(0) || '👤'
+                )}
+              </div>
+              <div className="author-info">
+                <div className="author-name">
+                  {reply.author?.specialty
+                    ? <>Dr. {reply.author.username} <span className="author-specialty">• {reply.author.specialty}</span></>
+                    : <>{reply.author?.username || 'User'}</>
+                  }
+                </div>
+                <div className="reply-date">{formatDate(reply.createdAt)}</div>
+              </div>
+            </div>
+
+            <div className="reply-content">
+              <p>{reply.content}</p>
+              
+              {/* Attachments */}
+              {reply.attachments && reply.attachments.length > 0 && (
+                <div className="reply-attachments">
+                  {reply.attachments.map((attachment, index) => (
+                    <div key={index} className="attachment">
+                      {attachment.fileType === 'image' ? (
+                        <img 
+                          src={attachment.fileUrl} 
+                          alt={attachment.fileName} 
+                          className="attachment-image" 
+                        />
+                      ) : (
+                        <a 
+                          href={attachment.fileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="attachment-pdf"
+                        >
+                          📄 {attachment.fileName}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="reply-actions">
+                <button 
+                  onClick={() => handleLikeReply(replyId)}
+                  className={`action-btn like-btn ${reply.isLiked ? 'active' : ''}`}
+                  disabled={!currentUser}
+                >
+                  👍 Like ({reply.likes || 0})
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    setReplyingTo(replyId);
+                    // Scroll to reply form
+                    const replyForm = document.querySelector('.reply-form');
+                    if (replyForm) {
+                      replyForm.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="action-btn reply-btn"
+                  disabled={!currentUser}
+                >
+                  💬 Reply
+                </button>
+                
+                <button 
+                  onClick={() => handleReport(replyId, 'reply')}
+                  className="action-btn report-btn"
+                  disabled={!currentUser}
+                >
+                  🚨 Report
+                </button>
+              </div>
+            </div>
+
+            {/* Nested replies */}
+            {depth < 3 && ( // Limit nesting depth to prevent UI issues
+              <div className="nested-replies">
+                {renderReplies(replies, replyId, depth + 1)}
               </div>
             )}
-
-            <div className="reply-actions">
-              <button 
-                onClick={() => handleLikeReply(reply.id || reply._id)}
-                className={`action-btn like-btn ${reply.isLiked ? 'active' : ''}`}
-              >
-                👍 Like ({reply.likes || 0})
-              </button>
-              
-              <button 
-                onClick={() => setReplyingTo(reply.id || reply._id)}
-                className="action-btn reply-btn"
-              >
-                💬 Reply
-              </button>
-              
-              <button 
-                onClick={() => handleReport(reply.id || reply._id, 'reply')}
-                className="action-btn report-btn"
-              >
-                🚨 Report
-              </button>
-            </div>
           </div>
-
-          {/* Nested replies */}
-          <div className="nested-replies">
-            {renderReplies(replies, reply.id || reply._id, depth + 1)}
-          </div>
-        </div>
-      ));
+        );
+      })
+      .filter(Boolean); // Remove null entries
   };
 
   if (loading) {
     return (
       <div className="topic-detail-container">
-        <div className="loading">Loading topic...</div>
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Loading topic...</p>
+        </div>
       </div>
     );
   }
@@ -325,13 +442,19 @@ function TopicDetailView() {
   if (!topic) {
     return (
       <div className="topic-detail-container">
-        <div className="error">Topic not found</div>
+        <div className="error">
+          <h2>Topic not found</h2>
+          <p>The topic you're looking for doesn't exist or has been removed.</p>
+          <button onClick={() => navigate('/forum')} className="back-btn">
+            ← Back to Forum
+          </button>
+        </div>
       </div>
     );
   }
 
-  console.log('Rendering topic:', topic); // Debug log
-  console.log('Topic replies:', topic.replies); // Debug log
+  console.log('🎨 Rendering topic:', topic.title);
+  console.log('📝 Topic replies:', topic.replies?.length || 0);
 
   return (
     <div className="topic-detail-container">
@@ -345,10 +468,12 @@ function TopicDetailView() {
         <h1>{topic.title}</h1>
         <div className="topic-meta">
           <span className="category">{topic.category}</span>
-          <span className="author">{topic.author?.specialty
-            ? <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
-            : <>by {topic.author?.username || 'User'}</>
-          }</span>
+          <span className="author">
+            {topic.author?.specialty
+              ? <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+              : <>by {topic.author?.username || 'User'}</>
+            }
+          </span>
           <span className="date">{formatDate(topic.createdAt)}</span>
           <span className="views">{topic.views || 0} views</span>
         </div>
@@ -366,16 +491,22 @@ function TopicDetailView() {
       <div className="topic-content">
         <div className="topic-author">
           <div className="author-avatar large">
-            {topic.author?.username?.charAt(0) || '👤'}
+            {topic.author?.avatarUrl ? (
+              <img src={topic.author.avatarUrl} alt={topic.author.username} />
+            ) : (
+              topic.author?.username?.charAt(0) || '👤'
+            )}
           </div>
           <div className="author-info">
-            <div className="author-name">{topic.author?.specialty
-              ? <>Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
-              : <>{topic.author?.username || 'User'}</>
-            }</div>
+            <div className="author-name">
+              {topic.author?.specialty
+                ? <>Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+                : <>{topic.author?.username || 'User'}</>
+              }
+            </div>
             <div className="join-date">
               Joined: {topic.author?.joinDate 
-                ? new Date(topic.author.joinDate).toLocaleDateString() 
+                ? formatDate(topic.author.joinDate)
                 : 'Unknown'}
             </div>
           </div>
@@ -390,13 +521,22 @@ function TopicDetailView() {
           <button 
             onClick={handleLikeTopic}
             className={`action-btn like-btn ${topic.isLiked ? 'active' : ''}`}
+            disabled={!currentUser}
           >
             👍 Like ({topic.likes || 0})
           </button>
           
           <button 
-            onClick={() => setReplyingTo(null)}
+            onClick={() => {
+              setReplyingTo(null);
+              // Scroll to reply form
+              const replyForm = document.querySelector('.reply-form');
+              if (replyForm) {
+                replyForm.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             className="action-btn reply-btn"
+            disabled={!currentUser}
           >
             💬 Reply
           </button>
@@ -404,6 +544,7 @@ function TopicDetailView() {
           <button 
             onClick={() => handleReport(topic.id || topic._id, 'topic')}
             className="action-btn report-btn"
+            disabled={!currentUser}
           >
             🚨 Report
           </button>
@@ -428,19 +569,33 @@ function TopicDetailView() {
       {/* Reply Form */}
       {currentUser && !topic.isLocked && (
         <div className="reply-form">
-          <h4>{replyingTo ? 'Reply to Comment' : 'Post a Reply'}</h4>
+          <h4>
+            {replyingTo ? (
+              <>
+                Reply to Comment
+                <button 
+                  onClick={() => setReplyingTo(null)}
+                  className="cancel-reply-to"
+                  style={{ marginLeft: '10px', fontSize: '12px' }}
+                >
+                  (Cancel)
+                </button>
+              </>
+            ) : 'Post a Reply'}
+          </h4>
           
           <textarea
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             placeholder="Write your reply..."
             rows={4}
+            disabled={replyLoading}
           />
 
           {/* File Upload */}
           <div className="file-upload">
             <label htmlFor="file-input" className="file-label">
-              📎 Attach files
+              📎 Attach files (images or PDFs, max 2MB each)
             </label>
             <input
               id="file-input"
@@ -449,6 +604,7 @@ function TopicDetailView() {
               multiple
               onChange={handleFileSelect}
               style={{ display: 'none' }}
+              disabled={replyLoading}
             />
             
             {replyFiles.length > 0 && (
@@ -456,7 +612,12 @@ function TopicDetailView() {
                 {replyFiles.map((file, index) => (
                   <span key={index} className="file-tag">
                     {file.name}
-                    <button onClick={() => removeFile(index)}>×</button>
+                    <button 
+                      onClick={() => removeFile(index)}
+                      disabled={replyLoading}
+                    >
+                      ×
+                    </button>
                   </span>
                 ))}
               </div>
@@ -472,12 +633,17 @@ function TopicDetailView() {
                   setReplyFiles([]);
                 }}
                 className="cancel-btn"
+                disabled={replyLoading}
               >
-                Cancel
+                Cancel Reply
               </button>
             )}
-            <button onClick={handleSubmitReply} className="submit-btn">
-              Post Reply
+            <button 
+              onClick={handleSubmitReply} 
+              className="submit-btn"
+              disabled={!replyContent.trim() || replyLoading}
+            >
+              {replyLoading ? 'Posting...' : 'Post Reply'}
             </button>
           </div>
         </div>
@@ -486,6 +652,12 @@ function TopicDetailView() {
       {!currentUser && (
         <div className="login-prompt">
           <p>Please <a href="/login">log in</a> to reply to this topic.</p>
+        </div>
+      )}
+
+      {topic.isLocked && (
+        <div className="locked-notice">
+          <p>🔒 This topic has been locked and no longer accepts new replies.</p>
         </div>
       )}
 
@@ -510,12 +682,21 @@ function TopicDetailView() {
 
             <div className="modal-actions">
               <button 
-                onClick={() => setShowReportModal(false)}
+                onClick={() => {
+                  setShowReportModal(false);
+                  setReportReason('');
+                  setReportItemId(null);
+                  setReportItemType(null);
+                }}
                 className="cancel-btn"
               >
                 Cancel
               </button>
-              <button onClick={submitReport} className="submit-btn">
+              <button 
+                onClick={submitReport} 
+                className="submit-btn"
+                disabled={!reportReason.trim()}
+              >
                 Submit Report
               </button>
             </div>

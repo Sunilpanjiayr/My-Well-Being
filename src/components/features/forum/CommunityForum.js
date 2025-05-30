@@ -8,8 +8,10 @@ import {
   fetchTopics, 
   createTopic,
   toggleBookmark,
-  getUserBookmarks
+  getUserBookmarks,
+  getForumStats
 } from './api/forumApi';
+
 
 function CommunityForum() {
   const { darkMode } = useTheme();
@@ -39,11 +41,13 @@ function CommunityForum() {
     topicsCount: 0,
     postsCount: 0,
     membersCount: 0,
-    newestMember: 'User'
+    newestMember: null
   });
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      console.log('🔐 Auth state changed:', user ? user.uid : 'No user');
+      
       if (user) {
         setCurrentUser(user);
         
@@ -69,15 +73,18 @@ function CommunityForum() {
             setUserAvatar(firstLetter);
           }
           
+          // Load user bookmarks
           try {
+            console.log('📚 Loading user bookmarks...');
             const bookmarks = await getUserBookmarks();
+            console.log('📚 Bookmarks loaded:', bookmarks);
             setUserBookmarks(Array.isArray(bookmarks) ? bookmarks : []);
           } catch (error) {
-            console.error('Error loading bookmarks:', error);
+            console.error('❌ Error loading bookmarks:', error);
             setUserBookmarks([]);
           }
         } catch (error) {
-          console.error('Error loading user data:', error);
+          console.error('❌ Error loading user data:', error);
         }
       } else {
         setCurrentUser(null);
@@ -91,7 +98,9 @@ function CommunityForum() {
   }, []);
   
   useEffect(() => {
+    console.log('🔄 Loading topics due to filter change...');
     loadTopics();
+    loadForumStats();
   }, [activeCategory, sortOrder, activeView]);
   
   const loadTopics = async () => {
@@ -99,6 +108,13 @@ function CommunityForum() {
     setError(null);
     
     try {
+      console.log('📋 Fetching topics with params:', {
+        category: activeCategory !== 'all' ? activeCategory : undefined,
+        sort: sortOrder,
+        search: searchQuery || undefined,
+        view: activeView !== 'forum' ? activeView : undefined
+      });
+      
       const queryParams = {
         category: activeCategory !== 'all' ? activeCategory : undefined,
         sort: sortOrder,
@@ -107,24 +123,43 @@ function CommunityForum() {
       };
       
       const result = await fetchTopics(queryParams);
+      console.log('📋 Topics fetch result:', result);
       
+      // Handle the response structure from backend
       if (result && Array.isArray(result.topics)) {
+        console.log('✅ Using result.topics array');
         setTopics(result.topics);
       } else if (Array.isArray(result)) {
+        console.log('✅ Using result as topics array');
         setTopics(result);
       } else {
+        console.log('⚠️ No topics found in result');
         setTopics([]);
       }
       
-      if (result && result.stats) {
-        setForumStats(result.stats);
-      }
+      console.log(`✅ Loaded ${topics.length} topics`);
     } catch (error) {
-      console.error('Error loading topics:', error);
+      console.error('❌ Error loading topics:', error);
       setError('Failed to load topics. Please try again.');
       setTopics([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadForumStats = async () => {
+    try {
+      console.log('📊 Loading forum stats...');
+      const stats = await getForumStats();
+      console.log('📊 Forum stats loaded:', stats);
+      setForumStats(stats || {
+        topicsCount: 0,
+        postsCount: 0,
+        membersCount: 0,
+        newestMember: null
+      });
+    } catch (error) {
+      console.error('❌ Error loading forum stats:', error);
     }
   };
   
@@ -143,24 +178,36 @@ function CommunityForum() {
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown';
     
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
-    
-    if (diffDay > 30) {
-      return date.toLocaleDateString();
-    } else if (diffDay > 0) {
-      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-    } else if (diffHour > 0) {
-      return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-    } else if (diffMin > 0) {
-      return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date string:', dateString);
+        return 'Unknown';
+      }
+      
+      const now = new Date();
+      const diffMs = now - date;
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHour = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHour / 24);
+      
+      if (diffDay > 30) {
+        return date.toLocaleDateString();
+      } else if (diffDay > 0) {
+        return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+      } else if (diffHour > 0) {
+        return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+      } else if (diffMin > 0) {
+        return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+      } else {
+        return 'Just now';
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Unknown';
     }
   };
   
@@ -180,20 +227,32 @@ function CommunityForum() {
       return;
     }
     
+    if (!topicId || topicId === 'undefined') {
+      console.error('Invalid topic ID for bookmark:', topicId);
+      return;
+    }
+    
     try {
+      console.log('🔖 Toggling bookmark for topic:', topicId);
       const result = await toggleBookmark(topicId);
+      console.log('🔖 Bookmark result:', result);
       
-      if (result.isBookmarked) {
-        setUserBookmarks(prev => [...prev, topicId]);
-      } else {
-        setUserBookmarks(prev => prev.filter(id => id !== topicId));
-      }
-      
-      if (activeView === 'bookmarks' && !result.isBookmarked) {
-        loadTopics();
+      if (result && result.success) {
+        if (result.isBookmarked) {
+          setUserBookmarks(prev => [...prev, topicId]);
+          console.log('✅ Bookmark added');
+        } else {
+          setUserBookmarks(prev => prev.filter(id => id !== topicId));
+          console.log('✅ Bookmark removed');
+        }
+        
+        // Reload topics if in bookmarks view and bookmark was removed
+        if (activeView === 'bookmarks' && !result.isBookmarked) {
+          loadTopics();
+        }
       }
     } catch (error) {
-      console.error('Failed to toggle bookmark:', error);
+      console.error('❌ Failed to toggle bookmark:', error);
       alert('Failed to update bookmark. Please try again.');
     }
   };
@@ -221,6 +280,7 @@ function CommunityForum() {
     setError(null);
     
     try {
+      console.log('📝 Creating new topic...');
       const tags = extractTags(content);
       
       const topicData = {
@@ -230,21 +290,31 @@ function CommunityForum() {
         tags
       };
       
+      console.log('📝 Topic data:', topicData);
       const result = await createTopic(topicData);
+      console.log('📝 Topic creation result:', result);
       
-      setNewTopicForm({
-        visible: false,
-        title: '',
-        category: 'general',
-        content: ''
-      });
-      
-      if (result && result.topic) {
-        navigate(`/forum/topic/${result.topic.id || result.topic._id}`);
+      if (result && result.success && result.topic) {
+        console.log('✅ Topic created successfully, navigating to topic page...');
+        
+        // Reset form
+        setNewTopicForm({
+          visible: false,
+          title: '',
+          category: 'general',
+          content: ''
+        });
+        
+        // Navigate to the new topic
+        const topicId = result.topic.id || result.topic._id;
+        navigate(`/forum/topic/${topicId}`);
+      } else {
+        throw new Error('Invalid response from server');
       }
     } catch (error) {
-      console.error('Failed to create topic:', error);
+      console.error('❌ Failed to create topic:', error);
       setError('Failed to create topic. Please try again.');
+      alert('Failed to create topic: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -252,11 +322,18 @@ function CommunityForum() {
 
   // Navigate to topic detail page
   const viewTopic = (topic) => {
-    navigate(`/forum/topic/${topic.id || topic._id}`);
+    const topicId = topic.id || topic._id;
+    if (!topicId) {
+      console.error('No topic ID found:', topic);
+      return;
+    }
+    console.log('🔗 Navigating to topic:', topicId);
+    navigate(`/forum/topic/${topicId}`);
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
+    console.log('🔍 Searching for:', searchQuery);
     loadTopics();
   };
 
@@ -299,6 +376,8 @@ function CommunityForum() {
         <button 
           className="new-topic-button"
           onClick={() => setNewTopicForm(prev => ({ ...prev, visible: !prev.visible }))}
+          disabled={!currentUser}
+          title={!currentUser ? 'Please log in to create topics' : 'Create a new topic'}
         >
           {newTopicForm.visible ? 'Cancel' : 'New Topic'}
         </button>
@@ -322,18 +401,28 @@ function CommunityForum() {
             <button 
               className={activeView === 'bookmarks' ? 'active' : ''}
               onClick={() => {
+                if (!currentUser) {
+                  alert('Please log in to view bookmarks');
+                  return;
+                }
                 setActiveView('bookmarks');
                 navigate('/forum/bookmarks');
               }}
+              disabled={!currentUser}
             >
               ⭐ My Bookmarks
             </button>
             <button 
               className={activeView === 'myTopics' ? 'active' : ''}
               onClick={() => {
+                if (!currentUser) {
+                  alert('Please log in to view your topics');
+                  return;
+                }
                 setActiveView('myTopics');
                 navigate('/forum/my-topics');
               }}
+              disabled={!currentUser}
             >
               📝 My Topics
             </button>
@@ -367,16 +456,22 @@ function CommunityForum() {
             <h3>Forum Stats</h3>
             <div className="stat-item">
               <span className="stat-label">Topics</span>
-              <span className="stat-value">{forumStats.topicsCount}</span>
+              <span className="stat-value">{forumStats.topicsCount || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Posts</span>
-              <span className="stat-value">{forumStats.postsCount}</span>
+              <span className="stat-value">{forumStats.postsCount || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Members</span>
-              <span className="stat-value">{forumStats.membersCount}</span>
+              <span className="stat-value">{forumStats.membersCount || 0}</span>
             </div>
+            {forumStats.newestMember && (
+              <div className="stat-item">
+                <span className="stat-label">Newest Member</span>
+                <span className="stat-value">{forumStats.newestMember.username || 'User'}</span>
+              </div>
+            )}
           </div>
           
           {/* Forum Guidelines */}
@@ -539,13 +634,15 @@ function CommunityForum() {
                     </div>
                     
                     <div className="topic-actions" onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className={`bookmark-button-small ${isBookmarked(topic.id || topic._id) ? 'active' : ''}`}
-                        onClick={(e) => toggleBookmarkHandler(topic.id || topic._id, e)}
-                        title={isBookmarked(topic.id || topic._id) ? 'Remove Bookmark' : 'Add Bookmark'}
-                      >
-                        {isBookmarked(topic.id || topic._id) ? '★' : '☆'}
-                      </button>
+                      {currentUser && (
+                        <button 
+                          className={`bookmark-button-small ${isBookmarked(topic.id || topic._id) ? 'active' : ''}`}
+                          onClick={(e) => toggleBookmarkHandler(topic.id || topic._id, e)}
+                          title={isBookmarked(topic.id || topic._id) ? 'Remove Bookmark' : 'Add Bookmark'}
+                        >
+                          {isBookmarked(topic.id || topic._id) ? '★' : '☆'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
