@@ -240,82 +240,88 @@ function TopicDetailView() {
 
     return replies
       .filter(reply => reply.parentReplyId === parentId)
-      .map(reply => (
-        <div key={reply.id} className={`reply-item depth-${depth}`}>
-          <div className="reply-author">
-            <div className="author-avatar">
-              {(reply.authorName || reply.author?.username)?.charAt(0) || '👤'}
-            </div>
-            <div className="author-info">
-              <div className="author-name">
-                {(reply.authorSpecialty || reply.author?.specialty)
-                  ? <>Dr. {reply.authorName || reply.author?.username} <span className="author-specialty">• {reply.authorSpecialty || reply.author?.specialty}</span></>
-                  : <>{reply.authorName || reply.author?.username || 'User'}</>
-                }
+      .map(reply => {
+        console.log('Rendering reply:', reply);
+        console.log('authorName found (reply):', !!reply.authorName, 'Value:', reply.authorName);
+        console.log('authorSpecialty found (reply):', !!reply.authorSpecialty, 'Value:', reply.authorSpecialty);
+        console.log('createdAt found (reply):', !!reply.createdAt, 'Value:', reply.createdAt);
+        return (
+          <div key={reply.id} className={`reply-item depth-${depth}`}>
+            <div className="reply-author">
+              <div className="author-avatar">
+                {reply.authorName?.charAt(0) || '👤'}
               </div>
-              <div className="reply-date">{formatDate(reply.createdAt)}</div>
-            </div>
-          </div>
-
-          <div className="reply-content">
-            <p>{reply.content}</p>
-            
-            {/* Attachments */}
-            {reply.attachments && reply.attachments.length > 0 && (
-              <div className="reply-attachments">
-                {reply.attachments.map((attachment, index) => (
-                  <div key={index} className="attachment">
-                    {attachment.fileType === 'image' ? (
-                      <img 
-                        src={attachment.fileUrl} 
-                        alt={attachment.fileName} 
-                        className="attachment-image" 
-                      />
-                    ) : (
-                      <a 
-                        href={attachment.fileUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="attachment-pdf"
-                      >
-                        📄 {attachment.fileName}
-                      </a>
-                    )}
-                  </div>
-                ))}
+              <div className="author-info">
+                <div className="author-name">
+                  {reply.authorSpecialty
+                    ? <>Dr. {reply.authorName} <span className="author-specialty">• {reply.authorSpecialty}</span></>
+                    : <>{reply.authorName}</>
+                  }
+                </div>
+                <div className="reply-date">{formatDate(reply.createdAt)}</div>
               </div>
-            )}
+            </div>
 
-            <div className="reply-actions">
-              <button 
-                onClick={() => handleLikeReply(reply.id)}
-                className={`action-btn like-btn ${reply.isLiked ? 'active' : ''}`}
-              >
-                �� Like ({reply.likes?.length || 0})
-              </button>
+            <div className="reply-content">
+              <p>{reply.content}</p>
               
-              <button 
-                onClick={() => setReplyingTo(reply.id)}
-                className="action-btn reply-btn"
-              >
-                💬 Reply
-              </button>
-              
-              <button 
-                onClick={() => handleReport(reply.id, 'reply')}
-                className="action-btn report-btn"
-              >
-                🚨 Report
-              </button>
+              {/* Attachments */}
+              {reply.attachments && reply.attachments.length > 0 && (
+                <div className="reply-attachments">
+                  {reply.attachments.map((attachment, index) => (
+                    <div key={index} className="attachment">
+                      {attachment.fileType === 'image' ? (
+                        <img 
+                          src={attachment.fileUrl} 
+                          alt={attachment.fileName} 
+                          className="attachment-image" 
+                        />
+                      ) : (
+                        <a 
+                          href={attachment.fileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="attachment-pdf"
+                        >
+                          📄 {attachment.fileName}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="reply-actions">
+                <button 
+                  onClick={() => handleLikeReply(reply.id)}
+                  className={`action-btn like-btn ${reply.isLiked ? 'active' : ''}`}
+                >
+                   Like ({reply.likes?.length || 0})
+                </button>
+                
+                <button 
+                  onClick={() => setReplyingTo(reply.id)}
+                  className="action-btn reply-btn"
+                >
+                  💬 Reply
+                </button>
+                
+                <button 
+                  onClick={() => handleReport(reply.id, 'reply')}
+                  className="action-btn report-btn"
+                >
+                  🚨 Report
+                </button>
+              </div>
+            </div>
+
+            {/* Nested replies */}
+            <div className="nested-replies">
+              {renderReplies(replies, reply.id, depth + 1)}
             </div>
           </div>
-
-          {/* Nested replies */}
-          <div className="nested-replies">
-            {renderReplies(replies, reply.id, depth + 1)}
-          </div>
-        </div>
-      ));
+        );
+      });
   };
 
   if (loading) {
@@ -334,8 +340,11 @@ function TopicDetailView() {
     );
   }
 
-  console.log('Rendering topic:', topic); // Debug log
-  console.log('Topic replies:', topic.replies); // Debug log
+  console.log('Rendering topic:', topic);
+  console.log('authorName found (topic):', !!topic.authorName, 'Value:', topic.authorName);
+  console.log('authorSpecialty found (topic):', !!topic.authorSpecialty, 'Value:', topic.authorSpecialty);
+  console.log('createdAt found (topic):', !!topic.createdAt, 'Value:', topic.createdAt);
+  console.log('Rendering topic replies:', topic.replies);
 
   return (
     <div className="topic-detail-container">
@@ -350,9 +359,9 @@ function TopicDetailView() {
         <div className="topic-meta">
           <span className="category">{topic.category}</span>
           <span className="author">
-            {(topic.authorSpecialty || topic.author?.specialty)
-              ? <>by Dr. {topic.authorName || topic.author?.username} <span className="author-specialty">• {topic.authorSpecialty || topic.author?.specialty}</span></>
-              : <>by {topic.authorName || topic.author?.username || 'User'}</>
+            {topic.authorSpecialty
+              ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
+              : <>by {topic.authorName}</>
             }
           </span>
           <span className="date">{formatDate(topic.createdAt)}</span>
@@ -372,13 +381,13 @@ function TopicDetailView() {
       <div className="topic-content">
         <div className="topic-author">
           <div className="author-avatar large">
-            {(topic.authorName || topic.author?.username)?.charAt(0) || '👤'}
+            {topic.authorName?.charAt(0) || '👤'}
           </div>
           <div className="author-info">
             <div className="author-name">
-              {(topic.authorSpecialty || topic.author?.specialty)
-                ? <>Dr. {topic.authorName || topic.author?.username} <span className="author-specialty">• {topic.authorSpecialty || topic.author?.specialty}</span></>
-                : <>{topic.authorName || topic.author?.username || 'User'}</>
+              {topic.authorSpecialty
+                ? <>Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
+                : <>{topic.authorName}</>
               }
             </div>
             <div className="join-date">

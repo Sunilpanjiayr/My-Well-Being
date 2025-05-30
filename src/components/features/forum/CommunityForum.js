@@ -503,6 +503,9 @@ function CommunityForum() {
               <div className="topics-table">
                 {topics.map(topic => {
                   console.log('Rendering topic:', topic);
+                  console.log('authorName found:', !!topic.authorName, 'Value:', topic.authorName);
+                  console.log('authorSpecialty found:', !!topic.authorSpecialty, 'Value:', topic.authorSpecialty);
+                  console.log('createdAt found:', !!topic.createdAt, 'Value:', topic.createdAt);
                   return (
                     <div 
                       key={topic.id}
@@ -522,9 +525,9 @@ function CommunityForum() {
                             {categories.find(cat => cat.id === topic.category)?.name || 'General'}
                           </span>
                           <span className="topic-author">
-                            {(topic.authorSpecialty || topic.author?.specialty)
-                              ? <>by Dr. {topic.authorName || topic.author?.username} <span className="author-specialty">• {topic.authorSpecialty || topic.author?.specialty}</span></>
-                              : <>by {topic.authorName || topic.author?.username || 'User'}</>
+                            {topic.authorSpecialty
+                              ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
+                              : <>by {topic.authorName || 'User'}</>
                             }
                           </span>
                           <span className="topic-date">{formatDate(topic.createdAt)}</span>
