@@ -2,7 +2,7 @@ import axios from 'axios';
 import { auth, storage } from '../../../Auth/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://my-wellbeing-new01-production.up.railway.app/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
