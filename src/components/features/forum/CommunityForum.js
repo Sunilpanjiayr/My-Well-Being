@@ -94,6 +94,19 @@ function CommunityForum() {
     loadTopics();
   }, [activeCategory, sortOrder, activeView]);
   
+  useEffect(() => {
+    // Fetch forum stats on mount and when topics change
+    const fetchStats = async () => {
+      try {
+        const stats = await import('./api/forumApi').then(m => m.getForumStats());
+        setForumStats(stats);
+      } catch (error) {
+        console.error('Error fetching forum stats:', error);
+      }
+    };
+    fetchStats();
+  }, [topics.length]);
+  
   const loadTopics = async () => {
     setLoading(true);
     setError(null);
@@ -114,10 +127,6 @@ function CommunityForum() {
         setTopics(result);
       } else {
         setTopics([]);
-      }
-      
-      if (result && result.stats) {
-        setForumStats(result.stats);
       }
     } catch (error) {
       console.error('Error loading topics:', error);
@@ -239,8 +248,8 @@ function CommunityForum() {
         content: ''
       });
       
-      if (result && result.topic) {
-        navigate(`/forum/topic/${result.topic.id || result.topic._id}`);
+      if (result && result.id) {
+        navigate(`/forum/topic/${result.id}`);
       }
     } catch (error) {
       console.error('Failed to create topic:', error);
@@ -488,7 +497,7 @@ function CommunityForum() {
               <div className="topics-table">
                 {topics.map(topic => (
                   <div 
-                    key={topic.id || topic._id}
+                    key={topic.id}
                     className={`topic-row ${topic.isPinned ? 'pinned' : ''}`}
                     onClick={() => viewTopic(topic)}
                     style={{ cursor: 'pointer' }}
@@ -505,10 +514,11 @@ function CommunityForum() {
                           {categories.find(cat => cat.id === topic.category)?.name || 'General'}
                         </span>
                         <span className="topic-author">
-                          {topic.author?.specialty
-                            ? <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
-                            : <>by {topic.author?.username || 'User'}</>
-                          }
+                          {topic.author && topic.author.specialty ? (
+                            <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+                          ) : (
+                            <>by {topic.author?.username || 'User'}</>
+                          )}
                         </span>
                         <span className="topic-date">{formatDate(topic.createdAt)}</span>
                       </div>
@@ -533,18 +543,18 @@ function CommunityForum() {
                         <span className="stat-label">Views</span>
                       </div>
                       <div className="stat-box likes">
-                        <span className="stat-value">{topic.likes || 0}</span>
+                        <span className="stat-value">{topic.likes?.length || 0}</span>
                         <span className="stat-label">Likes</span>
                       </div>
                     </div>
                     
                     <div className="topic-actions" onClick={(e) => e.stopPropagation()}>
                       <button 
-                        className={`bookmark-button-small ${isBookmarked(topic.id || topic._id) ? 'active' : ''}`}
-                        onClick={(e) => toggleBookmarkHandler(topic.id || topic._id, e)}
-                        title={isBookmarked(topic.id || topic._id) ? 'Remove Bookmark' : 'Add Bookmark'}
+                        className={`bookmark-button-small ${isBookmarked(topic.id) ? 'active' : ''}`}
+                        onClick={(e) => toggleBookmarkHandler(topic.id, e)}
+                        title={isBookmarked(topic.id) ? 'Remove Bookmark' : 'Add Bookmark'}
                       >
-                        {isBookmarked(topic.id || topic._id) ? '★' : '☆'}
+                        {isBookmarked(topic.id) ? '★' : '☆'}
                       </button>
                     </div>
                   </div>

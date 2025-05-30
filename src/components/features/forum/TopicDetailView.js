@@ -40,16 +40,11 @@ function TopicDetailView() {
   const loadTopic = async () => {
     try {
       setLoading(true);
-      console.log('Fetching topic data...'); // Debug log
       const result = await fetchTopic(topicId);
-      console.log('Topic data received:', result); // Debug log
-      
       if (result && result.topic) {
         setTopic(result.topic);
-      } else if (result && result._id) {
-        setTopic(result);
       } else {
-        console.error('Invalid topic data structure:', result);
+        setTopic(null);
         alert('Failed to load topic - invalid data structure');
         navigate('/forum');
       }
@@ -67,17 +62,19 @@ function TopicDetailView() {
       alert('Please log in to like topics');
       return;
     }
-
     try {
-      console.log('Liking topic:', topicId); // Debug log
-      const result = await likeTopic(topicId);
-      console.log('Like result:', result); // Debug log
-      
-      setTopic(prev => ({
-        ...prev,
-        likes: result.likes,
-        isLiked: result.isLiked
-      }));
+      await likeTopic(topicId);
+      setTopic(prev => {
+        if (!prev) return prev;
+        const likes = Array.isArray(prev.likes) ? prev.likes : [];
+        const alreadyLiked = likes.includes(currentUser.uid);
+        const newLikes = alreadyLiked ? likes.filter(uid => uid !== currentUser.uid) : [...likes, currentUser.uid];
+        return {
+          ...prev,
+          likes: newLikes,
+          isLiked: !alreadyLiked
+        };
+      });
     } catch (error) {
       console.error('Error liking topic:', error);
       alert('Failed to like topic: ' + error.message);
@@ -89,20 +86,25 @@ function TopicDetailView() {
       alert('Please log in to like replies');
       return;
     }
-
     try {
-      console.log('Liking reply:', replyId); // Debug log
-      const result = await likeReply(replyId);
-      console.log('Reply like result:', result); // Debug log
-      
-      setTopic(prev => ({
-        ...prev,
-        replies: prev.replies.map(reply => 
-          reply._id === replyId 
-            ? { ...reply, likes: result.likes, isLiked: result.isLiked }
-            : reply
-        )
-      }));
+      await likeReply(replyId);
+      setTopic(prev => {
+        if (!prev) return prev;
+        const replies = prev.replies.map(reply => {
+          if (reply.id === replyId) {
+            const likes = Array.isArray(reply.likes) ? reply.likes : [];
+            const alreadyLiked = likes.includes(currentUser.uid);
+            const newLikes = alreadyLiked ? likes.filter(uid => uid !== currentUser.uid) : [...likes, currentUser.uid];
+            return {
+              ...reply,
+              likes: newLikes,
+              isLiked: !alreadyLiked
+            };
+          }
+          return reply;
+        });
+        return { ...prev, replies };
+      });
     } catch (error) {
       console.error('Error liking reply:', error);
       alert('Failed to like reply: ' + error.message);
@@ -239,16 +241,17 @@ function TopicDetailView() {
     return replies
       .filter(reply => reply.parentReplyId === parentId)
       .map(reply => (
-        <div key={reply.id || reply._id} className={`reply-item depth-${depth}`}>
+        <div key={reply.id} className={`reply-item depth-${depth}`}>
           <div className="reply-author">
             <div className="author-avatar">
               {reply.author?.username?.charAt(0) || '👤'}
             </div>
             <div className="author-info">
-              <div className="author-name">{reply.author?.specialty
-                ? <>Dr. {reply.author.username} <span className="author-specialty">• {reply.author.specialty}</span></>
-                : <>{reply.author?.username || 'User'}</>
-              }</div>
+              <div className="author-name">{reply.author && reply.author.specialty ? (
+                <>Dr. {reply.author.username} <span className="author-specialty">• {reply.author.specialty}</span></>
+              ) : (
+                <>{(reply.author?.username || 'User')}</>
+              )}</div>
               <div className="reply-date">{formatDate(reply.createdAt)}</div>
             </div>
           </div>
@@ -284,21 +287,21 @@ function TopicDetailView() {
 
             <div className="reply-actions">
               <button 
-                onClick={() => handleLikeReply(reply.id || reply._id)}
+                onClick={() => handleLikeReply(reply.id)}
                 className={`action-btn like-btn ${reply.isLiked ? 'active' : ''}`}
               >
-                👍 Like ({reply.likes || 0})
+                �� Like ({reply.likes?.length || 0})
               </button>
               
               <button 
-                onClick={() => setReplyingTo(reply.id || reply._id)}
+                onClick={() => setReplyingTo(reply.id)}
                 className="action-btn reply-btn"
               >
                 💬 Reply
               </button>
               
               <button 
-                onClick={() => handleReport(reply.id || reply._id, 'reply')}
+                onClick={() => handleReport(reply.id, 'reply')}
                 className="action-btn report-btn"
               >
                 🚨 Report
@@ -308,7 +311,7 @@ function TopicDetailView() {
 
           {/* Nested replies */}
           <div className="nested-replies">
-            {renderReplies(replies, reply.id || reply._id, depth + 1)}
+            {renderReplies(replies, reply.id, depth + 1)}
           </div>
         </div>
       ));
@@ -345,10 +348,11 @@ function TopicDetailView() {
         <h1>{topic.title}</h1>
         <div className="topic-meta">
           <span className="category">{topic.category}</span>
-          <span className="author">{topic.author?.specialty
-            ? <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
-            : <>by {topic.author?.username || 'User'}</>
-          }</span>
+          <span className="author">{topic.author && topic.author.specialty ? (
+            <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+          ) : (
+            <>by {(topic.author?.username || 'User')}</>
+          )}</span>
           <span className="date">{formatDate(topic.createdAt)}</span>
           <span className="views">{topic.views || 0} views</span>
         </div>
@@ -369,10 +373,11 @@ function TopicDetailView() {
             {topic.author?.username?.charAt(0) || '👤'}
           </div>
           <div className="author-info">
-            <div className="author-name">{topic.author?.specialty
-              ? <>Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
-              : <>{topic.author?.username || 'User'}</>
-            }</div>
+            <div className="author-name">{topic.author && topic.author.specialty ? (
+              <>Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
+            ) : (
+              <>{(topic.author?.username || 'User')}</>
+            )}</div>
             <div className="join-date">
               Joined: {topic.author?.joinDate 
                 ? new Date(topic.author.joinDate).toLocaleDateString() 
@@ -391,7 +396,7 @@ function TopicDetailView() {
             onClick={handleLikeTopic}
             className={`action-btn like-btn ${topic.isLiked ? 'active' : ''}`}
           >
-            👍 Like ({topic.likes || 0})
+            �� Like ({topic.likes?.length || 0})
           </button>
           
           <button 
@@ -402,7 +407,7 @@ function TopicDetailView() {
           </button>
           
           <button 
-            onClick={() => handleReport(topic.id || topic._id, 'topic')}
+            onClick={() => handleReport(topic.id, 'topic')}
             className="action-btn report-btn"
           >
             🚨 Report

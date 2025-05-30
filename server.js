@@ -105,20 +105,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.options('*', cors(corsOptions));
 
-// --- Forum API routes integration ---
-const forumTopicsRoutes = require('./src/forum_backend/forum/routes/topics');
-const forumRepliesRoutes = require('./src/forum_backend/forum/routes/replies');
-const forumUsersRoutes = require('./src/forum_backend/forum/routes/users');
-const forumStatsRoutes = require('./src/forum_backend/forum/routes/stats');
-const forumAuthRoutes = require('./src/forum_backend/forum/routes/auth');
-
-app.use('/api/topics', forumTopicsRoutes);
-app.use('/api/replies', forumRepliesRoutes);
-app.use('/api/users', forumUsersRoutes);
-app.use('/api/stats', forumStatsRoutes);
-app.use('/api/auth', forumAuthRoutes);
-// --- End Forum API routes integration ---
-
 // IMPROVED: Static file serving with better error handling
 if (fs.existsSync(buildPath)) {
   console.log('🎯 Setting up static file serving from:', buildPath);
