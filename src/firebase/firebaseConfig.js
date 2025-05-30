@@ -10,8 +10,8 @@ const firebaseConfig = {
   projectId: "my-well-being-19cdc",
   storageBucket: "my-well-being-19cdc.firebasestorage.app",
   messagingSenderId: "43094405528",
-  appId: "1:43094405528:web:05f6dc8e3f93be20c97bed",
-  measurementId: "G-MYY0YDW87T"
+  appId: "1:43094405528:web:b953036bdc35fbdfc97bed",
+  measurementId: "G-4BYKBCXKT8"
 };
 
 // VAPID key for web push notifications
