@@ -17,7 +17,7 @@ const firebaseConfig = {
 // VAPID key for web push notifications
 const VAPID_KEY =
   process.env.REACT_APP_FIREBASE_VAPID_KEY ||
-  "BK5RAYIuNX7Ha4rQCtOypVd9MfhjDkybbyBxff6Ktr4QXSi68ETRxJiTaFlxCanE3Y7bp2WZJeWR3idnUA3pOqc";
+  "BAv9NuWQPgEFHYTN5QV2gRIn6xTlzDgODOoT_xF3Ptq4fa-1e1mfv-FQZreAjjNWRlRSVdVDq47GH0hxJI4gHBk";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

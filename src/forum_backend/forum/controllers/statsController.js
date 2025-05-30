@@ -1,5 +1,5 @@
 // forum_backend/controllers/statsController.js
-const admin = require('firebase-admin');
+const admin = require('../../config/firebaseAdmin');
 const db = admin.firestore();
 
 // Get forum statistics

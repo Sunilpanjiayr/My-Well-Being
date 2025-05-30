@@ -187,9 +187,30 @@ const ConsultationManager = ({ consultation, onClose }) => {
         </div>
       </div>
 
+      {/* Show attached files from consultation.documents (Firestore) */}
+      {consultation.documents && consultation.documents.length > 0 && (
+        <div className="documents-section">
+          <h3>Patient Uploaded Documents</h3>
+          <div className="documents-list">
+            {consultation.documents.map((doc, index) => (
+              <a
+                key={index}
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="document-link"
+              >
+                {doc.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Existing fallback: files from Firebase Storage */}
       {appointmentDocs.length > 0 && (
         <div className="documents-section">
-          <h3>Uploaded Documents</h3>
+          <h3>Uploaded Documents (Storage)</h3>
           <div className="documents-list">
             {appointmentDocs.map((doc, index) => (
               <a 

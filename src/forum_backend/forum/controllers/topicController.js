@@ -1,5 +1,5 @@
 // server/controllers/topicController.js
-const admin = require('firebase-admin');
+const admin = require('../../config/firebaseAdmin');
 const db = admin.firestore();
 
 // Helper: get topic doc ref

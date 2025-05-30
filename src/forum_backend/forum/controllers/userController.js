@@ -1,5 +1,5 @@
 // server/controllers/userController.js
-const admin = require('firebase-admin');
+const admin = require('../../config/firebaseAdmin');
 const db = admin.firestore();
 
 // Helper: get user doc ref

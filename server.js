@@ -68,12 +68,7 @@ try {
 
 // 1) Health-check endpoint FIRST so it's never shadowed by any middleware
 app.get('/health', (req, res) => {
-  console.log('🔍 /health probe hit');
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-  });
+  res.status(200).send('OK');
 });
 
 // Back-compat for some platforms that probe /healthz
