@@ -244,14 +244,15 @@ function TopicDetailView() {
         <div key={reply.id} className={`reply-item depth-${depth}`}>
           <div className="reply-author">
             <div className="author-avatar">
-              {reply.author?.username?.charAt(0) || '👤'}
+              {reply.authorName?.charAt(0) || '👤'}
             </div>
             <div className="author-info">
-              <div className="author-name">{reply.author && reply.author.specialty ? (
-                <>Dr. {reply.author.username} <span className="author-specialty">• {reply.author.specialty}</span></>
-              ) : (
-                <>{(reply.author?.username || 'User')}</>
-              )}</div>
+              <div className="author-name">
+                {reply.authorSpecialty
+                  ? <>Dr. {reply.authorName} <span className="author-specialty">• {reply.authorSpecialty}</span></>
+                  : <>{reply.authorName || 'User'}</>
+                }
+              </div>
               <div className="reply-date">{formatDate(reply.createdAt)}</div>
             </div>
           </div>
@@ -348,11 +349,12 @@ function TopicDetailView() {
         <h1>{topic.title}</h1>
         <div className="topic-meta">
           <span className="category">{topic.category}</span>
-          <span className="author">{topic.author && topic.author.specialty ? (
-            <>by Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
-          ) : (
-            <>by {(topic.author?.username || 'User')}</>
-          )}</span>
+          <span className="author">
+            {topic.authorSpecialty
+              ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
+              : <>by {topic.authorName || 'User'}</>
+            }
+          </span>
           <span className="date">{formatDate(topic.createdAt)}</span>
           <span className="views">{topic.views || 0} views</span>
         </div>
@@ -370,14 +372,15 @@ function TopicDetailView() {
       <div className="topic-content">
         <div className="topic-author">
           <div className="author-avatar large">
-            {topic.author?.username?.charAt(0) || '👤'}
+            {topic.authorName?.charAt(0) || '👤'}
           </div>
           <div className="author-info">
-            <div className="author-name">{topic.author && topic.author.specialty ? (
-              <>Dr. {topic.author.username} <span className="author-specialty">• {topic.author.specialty}</span></>
-            ) : (
-              <>{(topic.author?.username || 'User')}</>
-            )}</div>
+            <div className="author-name">
+              {topic.authorSpecialty
+                ? <>Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
+                : <>{topic.authorName || 'User'}</>
+              }
+            </div>
             <div className="join-date">
               Joined: {topic.author?.joinDate 
                 ? new Date(topic.author.joinDate).toLocaleDateString() 

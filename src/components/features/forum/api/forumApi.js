@@ -62,10 +62,17 @@ export const createTopic = async (topicData) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Not authenticated');
+    // Fetch specialty if available (optional, adjust as needed)
+    let authorSpecialty = null;
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists() && userDoc.data().specialty) {
+      authorSpecialty = userDoc.data().specialty;
+    }
     const docRef = await addDoc(collection(db, 'topics'), {
       ...topicData,
       authorId: user.uid,
       authorName: user.displayName || user.email,
+      authorSpecialty,
       createdAt: serverTimestamp(),
       likes: [],
       replyCount: 0,
@@ -109,11 +116,18 @@ export const createReply = async (topicId, replyData) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('Not authenticated');
+    // Fetch specialty if available (optional, adjust as needed)
+    let authorSpecialty = null;
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists() && userDoc.data().specialty) {
+      authorSpecialty = userDoc.data().specialty;
+    }
     const docRef = await addDoc(collection(db, 'replies'), {
       ...replyData,
       topicId,
       authorId: user.uid,
       authorName: user.displayName || user.email,
+      authorSpecialty,
       createdAt: serverTimestamp(),
       likes: [],
       attachments: replyData.attachments || [],
