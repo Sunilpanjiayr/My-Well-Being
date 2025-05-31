@@ -1,0 +1,96 @@
+.patient-records-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+.section-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 24px;
+  color: #2d3748;
+}
+.loading-indicator {
+  color: #3182ce;
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+.error-message {
+  color: #e53e3e;
+  background: #fff5f5;
+  border-left: 4px solid #e53e3e;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+.no-records {
+  color: #718096;
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+.patients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.patient-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 24px 28px;
+  margin-bottom: 8px;
+}
+.patient-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2b6cb0;
+  margin-bottom: 12px;
+}
+.consultation-section {
+  margin-bottom: 18px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+.consultation-header {
+  display: flex;
+  gap: 18px;
+  font-size: 1rem;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+.consultation-date {
+  font-weight: 500;
+}
+.consultation-type {
+  background: #ebf8ff;
+  color: #3182ce;
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-size: 0.95em;
+  font-weight: 500;
+}
+.consultation-files {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.files-block {
+  min-width: 220px;
+}
+.files-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+}
+.files-list li {
+  margin-bottom: 6px;
+}
+.files-list a {
+  color: #2b6cb0;
+  text-decoration: underline;
+  font-weight: 500;
+}
+.no-files {
+  color: #a0aec0;
+  font-size: 0.98em;
+  margin-left: 4px;
+} 

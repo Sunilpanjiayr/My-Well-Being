@@ -24,6 +24,7 @@ import ConsultationRoom from './components/features/consultation/ConsultationRoo
 // Import Forum Components
 import CommunityForum from './components/features/forum/CommunityForum';
 import TopicDetailView from './components/features/forum/TopicDetailView';
+import PatientRecords from './components/features/doctorPatients/PatientRecords';
 
 // Wrapper component to conditionally render Header and Footer
 const AppLayout = () => {
@@ -117,6 +118,7 @@ const AppLayout = () => {
             </DoctorProtectedRoute>
           } />
           <Route path="/consultation-room/:roomId" element={<ConsultationRoom />} />
+          <Route path="/doctor/patients-records" element={<DoctorProtectedRoute><PatientRecords /></DoctorProtectedRoute>} />
         </Routes>
       </main>
       {!isDashboard && <Footer />}

@@ -305,6 +305,7 @@ const DoctorDashboard = () => {
           <h2>Medical Tools</h2>
           <div className="features-grid">
             <Link to="/doctor/patients" className="feature-card">
+            
               <div className="feature-icon">
                 📋
               </div>
