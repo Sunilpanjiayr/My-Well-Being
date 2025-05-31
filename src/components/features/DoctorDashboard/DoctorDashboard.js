@@ -31,6 +31,7 @@ const DoctorDashboard = () => {
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [showConsultationManager, setShowConsultationManager] = useState(false);
   const navigate = useNavigate();
+  const [doctorAvatarUrl, setDoctorAvatarUrl] = useState(null);
 
   const handleLogout = async () => {
     try {
@@ -129,6 +130,23 @@ const DoctorDashboard = () => {
     fetchDashboardData();
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+    const fetchDoctorAvatar = async () => {
+      try {
+        const docSnap = await getDoc(doc(db, 'doctors', user.uid));
+        if (docSnap.exists() && docSnap.data().avatarUrl) {
+          setDoctorAvatarUrl(docSnap.data().avatarUrl);
+        } else {
+          setDoctorAvatarUrl(null);
+        }
+      } catch (error) {
+        setDoctorAvatarUrl(null);
+      }
+    };
+    fetchDoctorAvatar();
+  }, [user]);
+
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
@@ -154,7 +172,11 @@ const DoctorDashboard = () => {
         <div className="header-left">
           <div className="user-info">
             <div className="user-avatar">
-              {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'D'}
+              {doctorAvatarUrl ? (
+                <img src={doctorAvatarUrl} alt={user?.displayName || 'Doctor'} style={{ width: 48, height: 48, borderRadius: '50%' }} />
+              ) : (
+                user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'D'
+              )}
             </div>
             <div className="user-details">
               <h1>Hello, Dr. {user?.displayName || 'Doctor'}!</h1>

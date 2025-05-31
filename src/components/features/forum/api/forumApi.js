@@ -252,31 +252,51 @@ export const likeTopic = async (topicId) => {
 };
 
 export const toggleBookmark = async (topicId) => {
-  try {
-    const user = auth.currentUser;
-    if (!user) throw new Error('Not authenticated');
-    const userRef = doc(db, 'users', user.uid);
-    const userSnap = await getDoc(userRef);
-    const bookmarks = userSnap.exists() && Array.isArray(userSnap.data().bookmarks)
-      ? userSnap.data().bookmarks
-      : [];
-    const isBookmarked = bookmarks.includes(topicId);
-    await updateDoc(userRef, {
-      bookmarks: isBookmarked ? arrayRemove(topicId) : arrayUnion(topicId)
-    });
-    return { isBookmarked: !isBookmarked };
-  } catch (error) {
-    console.error('Error toggling bookmark:', error);
-    throw error;
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not logged in');
+
+  // Try users collection first
+  let userRef = doc(db, 'users', user.uid);
+  let userSnap = await getDoc(userRef);
+
+  // If not found, try doctors collection
+  if (!userSnap.exists()) {
+    userRef = doc(db, 'doctors', user.uid);
+    userSnap = await getDoc(userRef);
   }
+
+  if (!userSnap.exists()) {
+    throw new Error('User profile not found');
+  }
+
+  const data = userSnap.data();
+  let bookmarks = Array.isArray(data.bookmarks) ? data.bookmarks : [];
+  let isBookmarked;
+
+  if (bookmarks.includes(topicId)) {
+    bookmarks = bookmarks.filter(id => id !== topicId);
+    isBookmarked = false;
+  } else {
+    bookmarks.push(topicId);
+    isBookmarked = true;
+  }
+
+  await updateDoc(userRef, { bookmarks });
+  return { isBookmarked, bookmarks };
 };
 
 export const getUserBookmarks = async () => {
   const user = auth.currentUser;
   if (!user) return [];
-  const userDoc = await getDoc(doc(db, 'users', user.uid));
-  if (!userDoc.exists()) return [];
-  return userDoc.data().bookmarks || [];
+  let userRef = doc(db, 'users', user.uid);
+  let userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    userRef = doc(db, 'doctors', user.uid);
+    userSnap = await getDoc(userRef);
+  }
+  if (!userSnap.exists()) return [];
+  const data = userSnap.data();
+  return Array.isArray(data.bookmarks) ? data.bookmarks : [];
 };
 
 // --- USER TOPICS ---

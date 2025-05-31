@@ -39,6 +39,14 @@ function TopicDetailView() {
     }
   }, [topicId]);
 
+  const getAuthorProfile = async (authorId) => {
+    let userDoc = await getDoc(doc(db, 'users', authorId));
+    if (!userDoc.exists()) {
+      userDoc = await getDoc(doc(db, 'doctors', authorId));
+    }
+    return userDoc.exists() ? userDoc.data() : null;
+  };
+
   const loadTopic = async () => {
     try {
       setLoading(true);
@@ -46,15 +54,28 @@ function TopicDetailView() {
       if (result && result.topic) {
         let authorProfile = null;
         if (result.topic.authorId) {
-          let userDoc = await getDoc(doc(db, 'users', result.topic.authorId));
-          if (!userDoc.exists()) {
-            userDoc = await getDoc(doc(db, 'doctors', result.topic.authorId));
-          }
-          if (userDoc.exists()) {
-            authorProfile = userDoc.data();
-          }
+          authorProfile = await getAuthorProfile(result.topic.authorId);
         }
         result.topic.author = authorProfile;
+        // Add authorName, authorSpecialty, avatarUrl for convenience
+        result.topic.authorName = authorProfile?.username || authorProfile?.name || 'User';
+        result.topic.authorSpecialty = authorProfile?.specialty || null;
+        result.topic.authorAvatarUrl = authorProfile?.avatarUrl || '';
+        // For replies, fetch author profile for each reply
+        if (Array.isArray(result.topic.replies)) {
+          result.topic.replies = await Promise.all(result.topic.replies.map(async (reply) => {
+            let replyAuthorProfile = null;
+            if (reply.authorId) {
+              replyAuthorProfile = await getAuthorProfile(reply.authorId);
+            }
+            return {
+              ...reply,
+              authorName: replyAuthorProfile?.username || replyAuthorProfile?.name || 'User',
+              authorSpecialty: replyAuthorProfile?.specialty || null,
+              authorAvatarUrl: replyAuthorProfile?.avatarUrl || '',
+            };
+          }));
+        }
         setTopic(result.topic);
       } else {
         setTopic(null);
@@ -288,14 +309,15 @@ function TopicDetailView() {
           <div key={reply.id} className={`reply-item depth-${depth}`}>
             <div className="reply-author">
               <div className="author-avatar">
-                {reply.authorName?.charAt(0) || '👤'}
+                {reply.authorAvatarUrl
+                  ? <img src={reply.authorAvatarUrl} alt={reply.authorName} style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                  : (reply.authorName?.charAt(0) || '👤')}
               </div>
               <div className="author-info">
                 <div className="author-name">
                   {reply.authorSpecialty
                     ? <>Dr. {reply.authorName} <span className="author-specialty">• {reply.authorSpecialty}</span></>
-                    : <>{reply.authorName}</>
-                  }
+                    : <>{reply.authorName}</>}
                 </div>
                 <div className="reply-date">{formatDate(reply.createdAt)}</div>
               </div>
@@ -400,11 +422,9 @@ function TopicDetailView() {
           <span className="author">
             {topic.authorSpecialty
               ? <>by Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-              : <>by {topic.authorName}</>
-            }
+              : <>by {topic.authorName}</>}
           </span>
           <span className="date">{formatDate(topic.createdAt)}</span>
-          <span className="views">{topic.views || 0} views</span>
         </div>
         
         {topic.tags && topic.tags.length > 0 && (
@@ -420,16 +440,15 @@ function TopicDetailView() {
       <div className="topic-content">
         <div className="topic-author">
           <div className="author-avatar large">
-            {topic.author?.avatarUrl
-              ? <img src={topic.author.avatarUrl} alt={topic.authorName} style={{ width: 60, height: 60, borderRadius: '50%' }} />
+            {topic.authorAvatarUrl
+              ? <img src={topic.authorAvatarUrl} alt={topic.authorName} style={{ width: 60, height: 60, borderRadius: '50%' }} />
               : (topic.authorName?.charAt(0) || '👤')}
           </div>
           <div className="author-info">
             <div className="author-name">
               {topic.authorSpecialty
                 ? <>Dr. {topic.authorName} <span className="author-specialty">• {topic.authorSpecialty}</span></>
-                : <>{topic.authorName}</>
-              }
+                : <>{topic.authorName}</>}
             </div>
             <div className="join-date">
               Joined: {topic.author?.createdAt

@@ -125,34 +125,26 @@ function CommunityForum() {
       if (result && Array.isArray(result.topics)) {
         const topicsWithAvatars = await Promise.all(
           result.topics.map(async (topic) => {
-            let avatarUrl = '';
-            if (topic.authorId) {
-              let userDoc = await getDoc(doc(db, 'users', topic.authorId));
-              if (!userDoc.exists()) {
-                userDoc = await getDoc(doc(db, 'doctors', topic.authorId));
-              }
-              if (userDoc.exists() && userDoc.data().avatarUrl) {
-                avatarUrl = userDoc.data().avatarUrl;
-              }
-            }
-            return { ...topic, authorAvatarUrl: avatarUrl };
+            const authorProfile = await getAuthorProfile(topic.authorId);
+            return {
+              ...topic,
+              authorAvatarUrl: authorProfile?.avatarUrl || '',
+              authorName: authorProfile?.username || authorProfile?.name || 'User',
+              authorSpecialty: authorProfile?.specialty || null
+            };
           })
         );
         setTopics(topicsWithAvatars);
       } else if (Array.isArray(result)) {
         const topicsWithAvatars = await Promise.all(
           result.map(async (topic) => {
-            let avatarUrl = '';
-            if (topic.authorId) {
-              let userDoc = await getDoc(doc(db, 'users', topic.authorId));
-              if (!userDoc.exists()) {
-                userDoc = await getDoc(doc(db, 'doctors', topic.authorId));
-              }
-              if (userDoc.exists() && userDoc.data().avatarUrl) {
-                avatarUrl = userDoc.data().avatarUrl;
-              }
-            }
-            return { ...topic, authorAvatarUrl: avatarUrl };
+            const authorProfile = await getAuthorProfile(topic.authorId);
+            return {
+              ...topic,
+              authorAvatarUrl: authorProfile?.avatarUrl || '',
+              authorName: authorProfile?.username || authorProfile?.name || 'User',
+              authorSpecialty: authorProfile?.specialty || null
+            };
           })
         );
         setTopics(topicsWithAvatars);
