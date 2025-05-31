@@ -320,18 +320,14 @@ function CommunityForum() {
               bookmarks.map(async (topicId) => {
                 const topicDoc = await getDoc(doc(db, 'topics', topicId));
                 if (topicDoc.exists()) {
-                  // Fetch avatar for each topic
-                  let avatarUrl = '';
-                  if (topicDoc.data().authorId) {
-                    let userDoc = await getDoc(doc(db, 'users', topicDoc.data().authorId));
-                    if (!userDoc.exists()) {
-                      userDoc = await getDoc(doc(db, 'doctors', topicDoc.data().authorId));
-                    }
-                    if (userDoc.exists() && userDoc.data().avatarUrl) {
-                      avatarUrl = userDoc.data().avatarUrl;
-                    }
-                  }
-                  return { id: topicDoc.id, ...topicDoc.data(), authorAvatarUrl: avatarUrl };
+                  const authorProfile = await getAuthorProfile(topicDoc.data().authorId);
+                  return { 
+                    id: topicDoc.id, 
+                    ...topicDoc.data(), 
+                    authorAvatarUrl: authorProfile?.avatarUrl || '', 
+                    authorName: authorProfile?.username || authorProfile?.name || 'User',
+                    authorSpecialty: authorProfile?.specialty || null
+                  };
                 }
                 return null;
               })
@@ -348,6 +344,14 @@ function CommunityForum() {
     };
     fetchBookmarks();
   }, [activeView]);
+
+  const getAuthorProfile = async (authorId) => {
+    let userDoc = await getDoc(doc(db, 'users', authorId));
+    if (!userDoc.exists()) {
+      userDoc = await getDoc(doc(db, 'doctors', authorId));
+    }
+    return userDoc.exists() ? userDoc.data() : null;
+  };
 
   return (
     <div className={`community-forum ${darkMode ? 'dark-mode' : ''}`}>
@@ -649,10 +653,6 @@ function CommunityForum() {
                         <div className="stat-box replies">
                           <span className="stat-value">{topic.replyCount || 0}</span>
                           <span className="stat-label">Replies</span>
-                        </div>
-                        <div className="stat-box views">
-                          <span className="stat-value">{topic.views || 0}</span>
-                          <span className="stat-label">Views</span>
                         </div>
                         <div className="stat-box likes">
                           <span className="stat-value">{topic.likes?.length || 0}</span>
