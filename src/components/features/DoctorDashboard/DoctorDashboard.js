@@ -273,10 +273,9 @@ const DoctorDashboard = () => {
                   className="appointment-card"
                   data-status={appointment.status}
                 >
-                  {console.log('Avatar:', appointment.patientAvatar)}
                   <div className="appointment-avatar">
                     {appointment.patientAvatar ? (
-                      <img src={appointment.patientAvatar} alt={appointment.patientName} style={{ width: 48, height: 48, borderRadius: '50%' }} />
+                      <img src={appointment.patientAvatar} alt={appointment.patientName} />
                     ) : (
                       <div className="avatar-placeholder">
                         {appointment.patientName ? appointment.patientName.charAt(0).toUpperCase() : 'P'}

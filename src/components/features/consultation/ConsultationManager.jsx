@@ -35,140 +35,68 @@ const ConsultationManager = ({ consultation, onClose }) => {
     
     if (!consultation) {
       console.log('❌ No consultation provided');
+      setAllDocuments([]);
       setDocumentsLoading(false);
       return;
     }
 
-    const fetchDocuments = async () => {
-      console.log('🚀 Starting document fetch...');
-      setDocumentsLoading(true);
-      
-      try {
-        // STEP 1: Check what's in consultation.documents
-        console.log('📊 Raw consultation.documents:', consultation.documents);
-        console.log('📊 Type:', typeof consultation.documents);
-        console.log('📊 Is Array:', Array.isArray(consultation.documents));
-        console.log('📊 Length:', consultation.documents?.length);
+    const fetchPatientConsultationDocuments = async (patientId, consultationId) => {
+      // 1. Get the user's consultations
+      const userConsultationsRef = doc(db, 'userConsultations', patientId);
+      const userConsultationsSnap = await getDoc(userConsultationsRef);
 
-        const foundDocuments = [];
+      if (!userConsultationsSnap.exists()) return [];
 
-        // STEP 2: Process Firestore documents
-        if (consultation.documents && Array.isArray(consultation.documents) && consultation.documents.length > 0) {
-          console.log('✅ Processing Firestore documents...');
-          consultation.documents.forEach((doc, index) => {
-            console.log(`📄 Processing document ${index}:`, doc);
-            
-            if (doc && (doc.url || doc.downloadURL)) {
-              foundDocuments.push({
-                id: `firestore-${index}`,
-                name: doc.name || `Document ${index + 1}`,
-                url: doc.url || doc.downloadURL,
-                source: 'firestore',
-                type: doc.type || 'unknown',
-                size: doc.size || 0,
-                uploadedAt: doc.uploadedAt || doc.createdAt
-              });
-              console.log(`✅ Added Firestore document: ${doc.name}`);
-            } else {
-              console.log(`❌ Invalid document structure:`, doc);
-            }
+      const consultationIds = userConsultationsSnap.data().consultations || [];
+      const allConsultationDocs = [];
+
+      for (const cId of consultationIds) {
+        if (consultationId && cId !== consultationId) continue; // Only fetch the specific consultation if provided
+
+        const consultationRef = doc(db, 'consultations', cId);
+        const consultationSnap = await getDoc(consultationRef);
+
+        if (
+          consultationSnap.exists() &&
+          consultationSnap.data().patientId === patientId &&
+          Array.isArray(consultationSnap.data().documents) &&
+          consultationSnap.data().documents.length > 0
+        ) {
+          allConsultationDocs.push({
+            consultationId: cId,
+            date: consultationSnap.data().date,
+            time: consultationSnap.data().time,
+            documents: consultationSnap.data().documents, // Array of { name, url, ... }
           });
-        } else {
-          console.log('❌ No valid Firestore documents found');
         }
-
-        // STEP 3: Check Firebase Storage locations
-        console.log('🗄️ Searching Firebase Storage...');
-        const storagePaths = [
-          `consultations/${consultation.id}/documents`,
-          `consultations/temp-${consultation.patientId}-*`,
-          `consultation-documents/${consultation.id}`,
-          `consultations/documents`
-        ];
-
-        for (const pathPattern of storagePaths) {
-          try {
-            console.log(`🔍 Checking storage path: ${pathPattern}`);
-            
-            // Handle wildcard patterns
-            if (pathPattern.includes('*')) {
-              // For temp files, we need to check the parent directory
-              const basePath = pathPattern.split('*')[0];
-              const parentPath = basePath.split('/').slice(0, -1).join('/');
-              console.log(`🔍 Checking parent path: ${parentPath}`);
-              
-              const parentRef = ref(storage, parentPath);
-              const parentList = await listAll(parentRef);
-              
-              for (const folder of parentList.prefixes) {
-                if (folder.name.startsWith(`temp-${consultation.patientId}-`)) {
-                  console.log(`🔍 Found temp folder: ${folder.name}`);
-                  const tempFiles = await listAll(folder);
-                  
-                  for (const fileRef of tempFiles.items) {
-                    try {
-                      const url = await getDownloadURL(fileRef);
-                      foundDocuments.push({
-                        id: `storage-temp-${fileRef.name}`,
-                        name: fileRef.name,
-                        url: url,
-                        source: 'storage-temp',
-                        path: folder.fullPath
-                      });
-                      console.log(`✅ Added temp file: ${fileRef.name}`);
-                    } catch (urlError) {
-                      console.error(`❌ Error getting URL for ${fileRef.name}:`, urlError);
-                    }
-                  }
-                }
-              }
-            } else {
-              // Regular path
-              const storageRef = ref(storage, pathPattern);
-              const files = await listAll(storageRef);
-              
-              console.log(`📁 Found ${files.items.length} files in ${pathPattern}`);
-              
-              for (const fileRef of files.items) {
-                try {
-                  const url = await getDownloadURL(fileRef);
-                  foundDocuments.push({
-                    id: `storage-${fileRef.name}`,
-                    name: fileRef.name,
-                    url: url,
-                    source: 'storage',
-                    path: pathPattern
-                  });
-                  console.log(`✅ Added storage file: ${fileRef.name}`);
-                } catch (urlError) {
-                  console.error(`❌ Error getting URL for ${fileRef.name}:`, urlError);
-                }
-              }
-            }
-          } catch (storageError) {
-            console.log(`❌ Error checking storage path ${pathPattern}:`, storageError.message);
-          }
-        }
-
-        // STEP 4: Remove duplicates
-        const uniqueDocuments = foundDocuments.filter((doc, index, self) => 
-          index === self.findIndex(d => d.name === doc.name || d.url === doc.url)
-        );
-
-        console.log(`📊 Total documents found: ${uniqueDocuments.length}`);
-        console.log('📋 Final documents:', uniqueDocuments);
-
-        setAllDocuments(uniqueDocuments);
-
-      } catch (error) {
-        console.error('❌ Error fetching documents:', error);
-        setError('Failed to load documents');
-      } finally {
-        setDocumentsLoading(false);
       }
+
+      return allConsultationDocs;
     };
 
-    fetchDocuments();
+    setDocumentsLoading(true);
+    setError('');
+    fetchPatientConsultationDocuments(consultation.patientId, consultation.id)
+      .then((docsArr) => {
+        if (docsArr.length > 0) {
+          setAllDocuments(docsArr[0].documents.map((doc, index) => ({
+            id: `firestore-${index}`,
+            name: doc.name || `Document ${index + 1}`,
+            url: doc.url || doc.downloadURL,
+            source: 'firestore',
+            type: doc.type || 'unknown',
+            size: doc.size || 0,
+            uploadedAt: doc.uploadedAt || doc.createdAt
+          })));
+        } else {
+          setAllDocuments([]);
+        }
+      })
+      .catch(() => {
+        setAllDocuments([]);
+        setError('Failed to load documents');
+      })
+      .finally(() => setDocumentsLoading(false));
   }, [consultation]);
 
   const handleReschedule = async (newDate, newTime, message) => {
@@ -353,57 +281,6 @@ const ConsultationManager = ({ consultation, onClose }) => {
             </p>
           </div>
         )}
-      </div>
-
-      {/* DEBUG SECTION - ALWAYS VISIBLE */}
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '15px', 
-        backgroundColor: '#f9f9f9', 
-        borderRadius: '5px',
-        fontSize: '11px',
-        border: '1px solid #ddd'
-      }}>
-        <h4 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '12px' }}>🐛 Debug Info:</h4>
-        <div style={{ fontFamily: 'monospace' }}>
-          <p><strong>Consultation ID:</strong> {consultation?.id}</p>
-          <p><strong>Patient ID:</strong> {consultation?.patientId}</p>
-          <p><strong>Documents in consultation:</strong> {consultation?.documents?.length || 0}</p>
-          <p><strong>Documents found:</strong> {allDocuments.length}</p>
-          <p><strong>Documents loading:</strong> {documentsLoading ? 'Yes' : 'No'}</p>
-          
-          {consultation?.documents && (
-            <details style={{ marginTop: '10px' }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Raw consultation.documents</summary>
-              <pre style={{ 
-                background: '#fff', 
-                padding: '8px', 
-                borderRadius: '3px', 
-                marginTop: '5px',
-                fontSize: '10px',
-                overflow: 'auto',
-                maxHeight: '150px'
-              }}>
-                {JSON.stringify(consultation.documents, null, 2)}
-              </pre>
-            </details>
-          )}
-
-          <details style={{ marginTop: '10px' }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Found documents</summary>
-            <pre style={{ 
-              background: '#fff', 
-              padding: '8px', 
-              borderRadius: '3px', 
-              marginTop: '5px',
-              fontSize: '10px',
-              overflow: 'auto',
-              maxHeight: '150px'
-            }}>
-              {JSON.stringify(allDocuments, null, 2)}
-            </pre>
-          </details>
-        </div>
       </div>
 
       {!consultation.reschedulePending && (
