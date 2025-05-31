@@ -8,7 +8,8 @@ import {
   fetchTopics, 
   createTopic,
   toggleBookmark,
-  getUserBookmarks
+  getUserBookmarks,
+  getUserTopics
 } from './api/forumApi';
 
 function CommunityForum() {
@@ -112,45 +113,32 @@ function CommunityForum() {
     setError(null);
     
     try {
-      const queryParams = {
-        category: activeCategory !== 'all' ? activeCategory : undefined,
-        sort: sortOrder,
-        search: searchQuery || undefined,
-        view: activeView !== 'forum' ? activeView : undefined
-      };
-      
-      const result = await fetchTopics(queryParams);
-      console.log('Fetched topics:', result.topics || result);
-      
-      if (result && Array.isArray(result.topics)) {
-        const topicsWithAvatars = await Promise.all(
-          result.topics.map(async (topic) => {
-            const authorProfile = await getAuthorProfile(topic.authorId);
-            return {
-              ...topic,
-              authorAvatarUrl: authorProfile?.avatarUrl || '',
-              authorName: authorProfile?.username || authorProfile?.name || 'User',
-              authorSpecialty: authorProfile?.specialty || null
-            };
-          })
-        );
-        setTopics(topicsWithAvatars);
-      } else if (Array.isArray(result)) {
-        const topicsWithAvatars = await Promise.all(
-          result.map(async (topic) => {
-            const authorProfile = await getAuthorProfile(topic.authorId);
-            return {
-              ...topic,
-              authorAvatarUrl: authorProfile?.avatarUrl || '',
-              authorName: authorProfile?.username || authorProfile?.name || 'User',
-              authorSpecialty: authorProfile?.specialty || null
-            };
-          })
-        );
-        setTopics(topicsWithAvatars);
+      let topicsResult;
+      if (activeView === 'myTopics') {
+        topicsResult = await getUserTopics();
       } else {
-        setTopics([]);
+        const queryParams = {
+          category: activeCategory !== 'all' ? activeCategory : undefined,
+          sort: sortOrder,
+          search: searchQuery || undefined,
+          view: activeView !== 'forum' ? activeView : undefined
+        };
+        const result = await fetchTopics(queryParams);
+        topicsResult = result && Array.isArray(result.topics) ? result.topics : Array.isArray(result) ? result : [];
       }
+      
+      const topicsWithAvatars = await Promise.all(
+        topicsResult.map(async (topic) => {
+          const authorProfile = await getAuthorProfile(topic.authorId);
+          return {
+            ...topic,
+            authorAvatarUrl: authorProfile?.avatarUrl || '',
+            authorName: authorProfile?.username || authorProfile?.name || 'User',
+            authorSpecialty: authorProfile?.specialty || null
+          };
+        })
+      );
+      setTopics(topicsWithAvatars);
     } catch (error) {
       console.error('Error loading topics:', error);
       setError('Failed to load topics. Please try again.');
