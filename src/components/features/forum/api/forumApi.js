@@ -16,7 +16,8 @@ import {
   arrayUnion,
   arrayRemove,
   increment,
-  getCountFromServer
+  getCountFromServer,
+  setDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -265,10 +266,13 @@ export const toggleBookmark = async (topicId) => {
     userSnap = await getDoc(userRef);
   }
 
+  // If still not found, create the document with bookmarks array
   if (!userSnap.exists()) {
-    throw new Error('User profile not found');
+    await setDoc(userRef, { bookmarks: [topicId] }, { merge: true });
+    return { isBookmarked: true, bookmarks: [topicId] };
   }
 
+  // Always treat bookmarks as an array
   const data = userSnap.data();
   let bookmarks = Array.isArray(data.bookmarks) ? data.bookmarks : [];
   let isBookmarked;

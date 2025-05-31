@@ -3,7 +3,7 @@ import './CommunityForum.css';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { auth, db } from '../../Auth/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { 
   fetchTopics, 
   createTopic,
