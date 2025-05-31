@@ -68,11 +68,26 @@ const DoctorDashboard = () => {
         );
         
         // Set up real-time listener for appointments
-        const unsubscribe = onSnapshot(activeAppointmentsQuery, (snapshot) => {
-          const appointments = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            formattedStartedAt: doc.data().startedAt ? new Date(doc.data().startedAt.seconds * 1000).toLocaleString() : null
+        const unsubscribe = onSnapshot(activeAppointmentsQuery, async (snapshot) => {
+          const appointments = await Promise.all(snapshot.docs.map(async doc => {
+            const data = doc.data();
+            let patientAvatar = null;
+            if (data.patientId) {
+              try {
+                const userDoc = await getDoc(doc(db, 'users', data.patientId));
+                if (userDoc.exists() && userDoc.data().avatarUrl) {
+                  patientAvatar = userDoc.data().avatarUrl;
+                }
+              } catch (e) {
+                // ignore error, fallback to initial
+              }
+            }
+            return {
+              id: doc.id,
+              ...data,
+              patientAvatar,
+              formattedStartedAt: data.startedAt ? new Date(data.startedAt.seconds * 1000).toLocaleString() : null
+            };
           }));
 
           // Sort appointments:
@@ -258,9 +273,10 @@ const DoctorDashboard = () => {
                   className="appointment-card"
                   data-status={appointment.status}
                 >
+                  {console.log('Avatar:', appointment.patientAvatar)}
                   <div className="appointment-avatar">
                     {appointment.patientAvatar ? (
-                      <img src={appointment.patientAvatar} alt={appointment.patientName} />
+                      <img src={appointment.patientAvatar} alt={appointment.patientName} style={{ width: 48, height: 48, borderRadius: '50%' }} />
                     ) : (
                       <div className="avatar-placeholder">
                         {appointment.patientName ? appointment.patientName.charAt(0).toUpperCase() : 'P'}
@@ -304,11 +320,8 @@ const DoctorDashboard = () => {
         <div className="health-features">
           <h2>Medical Tools</h2>
           <div className="features-grid">
-            <Link to="/doctor/patients" className="feature-card">
-            
-              <div className="feature-icon">
-                📋
-              </div>
+            <Link to="/doctor/patients-records" className="feature-card">
+              <div className="feature-icon">📋</div>
               <h3>Patient Records</h3>
               <p>Manage and view patient medical records</p>
             </Link>

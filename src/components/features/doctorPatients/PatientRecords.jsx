@@ -35,16 +35,35 @@ const PatientRecords = () => {
         }
         const patientsArr = Object.entries(patientsMap).map(([id, data]) => ({ id, ...data }));
 
-        // 3. For each consultation, fetch after-consultation files
+        // 3. For each consultation, find the consultationRoom and after-consultation files
         for (const patient of patientsArr) {
           for (const consult of patient.consultations) {
+            // Find the consultationRoom with both doctorId and patientId
+            let consultationRoomId = null;
+            const roomsQuery = query(
+              collection(db, 'consultationRooms'),
+              where('doctorId', '==', doctorId),
+              where('patientId', '==', consult.patientId)
+            );
+            const roomsSnap = await getDocs(roomsQuery);
+            if (!roomsSnap.empty) {
+              consultationRoomId = roomsSnap.docs[0].id;
+            } else {
+              // fallback: use consultation id if no room found
+              consultationRoomId = consult.id;
+            }
+
+            // Fetch after-consultation files from consultationMessages
             const messagesQuery = query(
               collection(db, 'consultationMessages'),
-              where('consultationId', '==', consult.id),
-              where('type', '==', 'file')
+              where('consultationId', '==', consultationRoomId)
             );
             const messagesSnap = await getDocs(messagesQuery);
-            consult.afterConsultationFiles = messagesSnap.docs.map(doc => doc.data());
+            consult.afterConsultationFiles = messagesSnap.docs
+              .map(doc => doc.data())
+              .filter(msg => msg.fileUrl);
+
+            // If no before or after files, still show the consultation
           }
         }
 
