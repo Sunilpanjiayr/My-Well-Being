@@ -1,5 +1,5 @@
 // src/components/features/sleepTracker/SleepTracker.js
-import { requestNotificationPermission, onMessageListener } from '../firebaseConfig';
+import { requestPermission, onMessageListener } from '../../../firebase/firebaseConfig';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { saveAs } from "file-saver";
 import {
@@ -478,15 +478,15 @@ function SleepTracker() {
     calculateSleepPhases();
 
     // Calculate weekly goal progress
-  //   calculateWeeklyProgress();
-  // }, [
-  //   sleepLogs,
-  //   sleepGoal,
-  //   reminderTime,
-  //   reminderEnabled,
-  //   darkMode,
-  //   healthConnections,
-  // ]);
+     calculateWeeklyProgress();
+   }, [
+     sleepLogs,
+     sleepGoal,
+     reminderTime,
+     reminderEnabled,
+     darkMode,
+     healthConnections,
+   ]);
 
   // Calculate duration when bedtime/wakeup changes
   useEffect(() => {
@@ -1039,7 +1039,7 @@ const handleSaveSettings = async () => {
   setTimeout(() => setShowSaved(false), 2000);
 
   if (reminderEnabled) {
-    await requestNotificationPermission(setNotification);
+    await requestPermission(setNotification);
     // Schedule notification (simplified client-side scheduling)
     const now = new Date();
     const [hours, minutes] = reminderTime.split(':').map(Number);
